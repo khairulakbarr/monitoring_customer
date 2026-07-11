@@ -174,7 +174,7 @@
     <!-- HEADER -->
     <div class="p-4 bg-gradient-blue rounded-4 shadow-sm mb-4">
         <h2 class="mb-0 fs-4 fw-bold d-flex align-items-center gap-2">
-            <i class="bi bi-receipt-cutoff"></i> MONITORING PIUTANG
+            <i class="bi bi-receipt-cutoff"></i> TAGIHAN CUSTOMER
         </h2>
         <p class="mb-0 small opacity-75 mt-1" id="current-date"></p>
     </div>
@@ -268,7 +268,7 @@
                     <div class="mb-3 p-3 rounded-3 block-kuning">
                         <div class="row g-2">
                             <div class="col-6">
-                                <label class="text-muted small fw-bold">Sisa tagihan</label>
+                                <label class="text-muted small fw-bold">Sisa Tagihan</label>
                                 <input type="number" class="form-control form-control-sm" id="sub-sisa-tagihan" value="0">
                             </div>
                             <div class="col-6">
@@ -614,7 +614,7 @@
             let rataRataStr = "";
             if (i.ekor > 0 && i.qty > 0) {
                 let avg = (i.qty / i.ekor).toFixed(2);
-                rataRataStr = `<br><small class="text-muted">Rt-rt: ${avg} kg/ekor</small>`;
+                rataRataStr = `<br><small class="text-muted">ABW: ${avg} kg/ekor</small>`;
             }
             
             return `<tr>
