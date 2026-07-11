@@ -143,9 +143,6 @@
         }
         .invoice-footer-info { margin-top: 35px; border-top: 1px dashed #dddddd; padding-top: 15px; font-size: 11px; color: #666; }
 
-        /* ==========================================================================
-           PERBAIKAN CSS: STRUKTUR TABEL FAKTUR RESPONSIF KHUSUS LAYAR HP
-           ========================================================================== */
         @media (max-width: 576px) {
             .invoice-box-premium { padding: 15px !important; }
             .table-invoice-maroon thead { display: none !important; }
@@ -317,7 +314,7 @@
     </div>
 </div>
 
-<!-- POPUPS/MODALS (Dasbor Individu, Faktur, Kelola Customer) -->
+<!-- POPUPS/MODALS -->
 <!-- 1. Jendela Dasbor Customer -->
 <div class="modal fade" id="customerDashboardModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -378,9 +375,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // ==========================================================================
-    // PENTING: PASTE URL SCRIPT ANDA YANG DI SALIN PADA LANGKAH 2 DI SINI!
-    // ==========================================================================
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDjUKtMnrv5pjfJJLX-jODZdvzKjaZiLlVRQK7tw2VCVD08TusJS_VLrDczr7797UT-Q/exec"; 
 
     let masterCustomer = [];
@@ -393,15 +387,13 @@
 
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka); }
     function parseTanggal(str) {
-    if (!str) return new Date(0);
-    const parts = str.split('/');
-    // Format: YYYY, MM-1, DD
-    return new Date(parts[2], parts[1] - 1, parts[0]);
-}
+        if (!str) return new Date(0);
+        const parts = str.split('/');
+        return new Date(parts[2], parts[1] - 1, parts[0]);
+    }
     function convertDateToDisplay(dateStr) { if(dateStr.includes("/")) return dateStr; const d = dateStr.split("-"); return `${d[2]}/${d[1]}/${d[0]}`; }
     function convertDateToInput(dateStr) { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
 
-    // ENGINE INTERFACES KE GOOGLE SHEETS CLOUD
     async function muatDataDariSheets() {
         showSyncStatus("loading", "Menarik data terbaru dari Google Sheets...");
         if(GOOGLE_SCRIPT_URL === "") {
@@ -429,7 +421,7 @@
     }
 
     async function pushDataKeSheets() {
-        showSyncStatus("loading", "Menyimpan & Mensinkronkan data ke Cloud...");
+        showSyncStatus("loading", "Mennyimpan & Mensinkronkan data ke Cloud...");
         try {
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: "POST",
@@ -453,7 +445,6 @@
         if(type === "error") bar.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> ${msg}</span>`;
     }
 
-    // FORM & TRANSACTION LOGIC
     function tambahKeKeranjang() {
         const produk = document.getElementById("input-produk").value;
         const qty = parseFloat(document.getElementById("input-jumlah").value) || 0;
@@ -490,10 +481,10 @@
     }
 
     function hitungUlangPiutangForm() {
-        const piutangLama = parseInt(document.getElementById("sub-piutang-lama").value) || 0;
-        document.getElementById("input-piutang-total").value = piutangLama + totalBelanjaHariIni;
+        const piutangLama = parseInt(document.getElementById("sub-sisa-tagihan").value) || 0;
+        document.getElementById("input-tagihan-total").value = piutangLama + totalBelanjaHariIni;
     }
-    document.getElementById("sub-piutang-lama").addEventListener("input", hitungUlangPiutangForm);
+    document.getElementById("sub-sisa-tagihan").addEventListener("input", hitungUlangPiutangForm);
 
     function renderCustomerGridMenu() {
         const container = document.getElementById("customer-grid-container");
@@ -530,56 +521,53 @@
         renderDashboard();
     }
 
-   function renderDashboard() {
-    const tbody = document.getElementById("table-body");
-    tbody.innerHTML = "";
-    let kj = 0, kd = 0, kp = 0;
-    
-    // 1. Buat salinan data transaksi yang sudah dilengkapi index aslinya agar fitur edit/hapus tidak salah sasaran
-    let transaksiMapped = dataTransaksi.map((tx, idx) => ({ ...tx, originalIdx: idx }));
-    
-    // 2. Urutkan dari tanggal tertua ke terbaru
-    transaksiMapped.sort((a, b) => parseTanggal(a.tanggal) - parseTanggal(b.tanggal));
+    function renderDashboard() {
+        const tbody = document.getElementById("table-body");
+        tbody.innerHTML = "";
+        let kj = 0, kd = 0, kp = 0;
+        
+        let transaksiMapped = dataTransaksi.map((tx, idx) => ({ ...tx, originalIdx: idx }));
+        transaksiMapped.sort((a, b) => parseTanggal(a.tanggal) - parseTanggal(b.tanggal));
 
-    let saldoTerakhir = {};
-    masterCustomer.forEach(c => saldoTerakhir[c.nama] = 0);
+        let saldoTerakhir = {};
+        masterCustomer.forEach(c => saldoTerakhir[c.nama] = 0);
 
-    // 3. Render ke tabel utama
-    transaksiMapped.forEach((tx, viewIdx) => {
-        const meta = masterCustomer.find(c => c.nama === tx.pelanggan) || {kategori: "Customer Umum"};
-        const sisa = Math.round(tx.tagihan - tx.payment);
-        saldoTerakhir[tx.pelanggan] = sisa;
+        transaksiMapped.forEach((tx, viewIdx) => {
+            const meta = masterCustomer.find(c => c.nama === tx.pelanggan) || {kategori: "Customer Umum"};
+            const sisa = Math.round(tx.tagihan - tx.payment);
+            saldoTerakhir[tx.pelanggan] = sisa;
 
-        if(currentFilter === "Semua" || currentFilter === meta.kategori) {
-            kj += tx.totalBelanja; kd += tx.payment;
-            let itemsStr = tx.items.map(i => `${i.nama}(${i.qty}kg)`).join(", ");
-            tbody.innerHTML += `
-                <tr>
-                    <td>${viewIdx + 1}</td>
-                    <td>${tx.tanggal}</td>
-                    <td class="fw-bold">${tx.pelanggan}</td>
-                    <td class="small">${itemsStr}</td>
-                    <td>${formatRupiah(Math.round(tx.totalBelanja))}</td>
-                    <td>${formatRupiah(Math.round(tx.tagihan))}</td>
-                    <td>${formatRupiah(Math.round(tx.payment))}</td>
-                    <td class="text-danger fw-bold">${formatRupiah(sisa)}</td>
-                    <td><button class="btn btn-sm btn-danger py-0" data-bs-toggle="modal" data-bs-target="#invoiceModal" onclick="tampilkanFaktur(${tx.originalIdx})"><i class="bi bi-file-earmark-pdf"></i></button></td>
-                    <td>
-                        <i class="bi bi-pencil-square text-warning me-2" onclick="pilihEditTransaksi(${tx.originalIdx})"></i>
-                        <i class="bi bi-trash text-danger" onclick="hapusData(${tx.originalIdx})"></i>
-                    </td>
-                </tr>`;
-        }
-    });
+            if(currentFilter === "Semua" || currentFilter === meta.kategori) {
+                kj += tx.totalBelanja; kd += tx.payment;
+                let itemsStr = tx.items.map(i => `${i.nama}(${i.qty}kg)`).join(", ");
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${viewIdx + 1}</td>
+                        <td>${tx.tanggal}</td>
+                        <td class="fw-bold">${tx.pelanggan}</td>
+                        <td class="small">${itemsStr}</td>
+                        <td>${formatRupiah(Math.round(tx.totalBelanja))}</td>
+                        <td>${formatRupiah(Math.round(tx.tagihan))}</td>
+                        <td>${formatRupiah(Math.round(tx.payment))}</td>
+                        <td class="text-danger fw-bold">${formatRupiah(sisa)}</td>
+                        <td><button class="btn btn-sm btn-danger py-0" data-bs-toggle="modal" data-bs-target="#invoiceModal" onclick="tampilkanFaktur(${tx.originalIdx})"><i class="bi bi-file-earmark-pdf"></i></button></td>
+                        <td>
+                            <i class="bi bi-pencil-square text-warning me-2" onclick="pilihEditTransaksi(${tx.originalIdx})"></i>
+                            <i class="bi bi-trash text-danger" onclick="hapusData(${tx.originalIdx})"></i>
+                        </td>
+                    </tr>`;
+            }
+        });
 
-    masterCustomer.forEach(c => kp += (saldoTerakhir[c.nama] || 0));
-    document.getElementById("kpi-total-penjualan").innerText = formatRupiah(Math.round(kj));
-    document.getElementById("kpi-total-diterima").innerText = formatRupiah(Math.round(kd));
-    document.getElementById("kpi-sisa-piutang").innerText = formatRupiah(Math.round(kp));
+        masterCustomer.forEach(c => kp += (saldoTerakhir[c.nama] || 0));
+        document.getElementById("kpi-total-penjualan").innerText = formatRupiah(Math.round(kj));
+        document.getElementById("kpi-total-diterima").innerText = formatRupiah(Math.round(kd));
+        document.getElementById("kpi-sisa-piutang").innerText = formatRupiah(Math.round(kp));
 
-    renderCustomerGridMenu();
-    renderChartEngine();
-}
+        renderCustomerGridMenu();
+        renderChartEngine();
+    }
+
     function renderChartEngine() {
         let pts = {};
         dataTransaksi.forEach(t => { pts[t.tanggal] = (pts[t.tanggal] || 0) + (t.tagihan - t.payment); });
@@ -617,48 +605,48 @@
         setTimeout(() => { tampilkanFaktur(idx); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
     }
 
-   function tampilkanFaktur(idx) {
-    const trans = dataTransaksi[idx];
-    const sisa = Math.round(trans.tagihan - trans.payment);
-    namaFileGlobal = `Faktur_${trans.pelanggan}_${trans.tanggal.replace(/\//g,'-')}`;
-    
-    let rows = trans.items.map(i => {
-        let rataRataStr = "";
-        if (i.ekor > 0 && i.qty > 0) {
-            let avg = (i.qty / i.ekor).toFixed(2);
-            rataRataStr = `<br><small class="text-muted">Rt-rt: ${avg} kg/ekor</small>`;
-        }
+    function tampilkanFaktur(idx) {
+        const trans = dataTransaksi[idx];
+        const sisa = Math.round(trans.tagihan - trans.payment);
+        namaFileGlobal = `Faktur_${trans.pelanggan}_${trans.tanggal.replace(/\//g,'-')}`;
         
-        return `<tr>
-            <td><b>${i.nama}</b>${i.ekor > 0 ? '<br><small>('+i.ekor+' ekor)</small>':''}${rataRataStr}</td>
-            <td>${i.qty} kg</td>
-            <td>${formatRupiah(i.harga)}</td>
-            <td>${formatRupiah(Math.round(i.qty*i.harga))}</td>
-        </tr>`;
-    }).join("");
+        let rows = trans.items.map(i => {
+            let rataRataStr = "";
+            if (i.ekor > 0 && i.qty > 0) {
+                let avg = (i.qty / i.ekor).toFixed(2);
+                rataRataStr = `<br><small class="text-muted">Rt-rt: ${avg} kg/ekor</small>`;
+            }
+            
+            return `<tr>
+                <td><b>${i.nama}</b>${i.ekor > 0 ? '<br><small>('+i.ekor+' ekor)</small>':''}${rataRataStr}</td>
+                <td>${i.qty} kg</td>
+                <td>${formatRupiah(i.harga)}</td>
+                <td>${formatRupiah(Math.round(i.qty*i.harga))}</td>
+            </tr>`;
+        }).join("");
 
-    document.getElementById("invoice-content").innerHTML = `
-        <div class="d-flex justify-content-between mb-3">
-            <div><div class="invoice-title">FAKTUR</div><div class="small">Kepada: <b>${trans.pelanggan}</b></div></div>
-            <div class="text-end small"><b>No:</b> #${idx+101}<br><b>Tgl:</b> ${trans.tanggal}</div>
-        </div>
-        <table class="table-invoice-maroon"><thead><tr><th>Barang</th><th>Qty</th><th>Harga</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
-        <div class="mt-3 text-end" style="font-size:13px;">
-            <div class="invoice-summary-row"><div class="invoice-summary-label">Subtotal</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.totalBelanja))}</div></div>
-            <div class="invoice-summary-row"><div class="invoice-summary-label">Sisa Tagihan</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.hutangAwal))}</div></div>
-            <div class="invoice-total-badge"><div class="invoice-total-container"><span>TOTAL</span><span>${formatRupiah(Math.round(trans.tagihan))}</span></div></div>
-            <div class="invoice-summary-row mt-2 text-success"><div class="invoice-summary-label">Bayar/DP</div><div class="invoice-summary-value">-${formatRupiah(Math.round(trans.payment))}</div></div>
-            <div class="invoice-summary-row text-danger fw-bold"><div class="invoice-summary-label">Sisa Bon</div><div class="invoice-summary-value">${formatRupiah(sisa)}</div></div>
-        </div>
-        <div class="invoice-footer-info"><b>INFO:</b> Transfer SeaBank 9017-6605-7787 a.n Khairul Akbar</div>`;
-}
+        document.getElementById("invoice-content").innerHTML = `
+            <div class="d-flex justify-content-between mb-3">
+                <div><div class="invoice-title">FAKTUR</div><div class="small">Kepada: <b>${trans.pelanggan}</b></div></div>
+                <div class="text-end small"><b>No:</b> #${idx+101}<br><b>Tgl:</b> ${trans.tanggal}</div>
+            </div>
+            <table class="table-invoice-maroon"><thead><tr><th>Barang</th><th>Qty</th><th>Harga</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
+            <div class="mt-3 text-end" style="font-size:13px;">
+                <div class="invoice-summary-row"><div class="invoice-summary-label">Subtotal</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.totalBelanja))}</div></div>
+                <div class="invoice-summary-row"><div class="invoice-summary-label">Sisa Tagihan</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.hutangAwal))}</div></div>
+                <div class="invoice-total-badge"><div class="invoice-total-container"><span>TOTAL</span><span>${formatRupiah(Math.round(trans.tagihan))}</span></div></div>
+                <div class="invoice-summary-row mt-2 text-success"><div class="invoice-summary-label">Bayar/DP</div><div class="invoice-summary-value">-${formatRupiah(Math.round(trans.payment))}</div></div>
+                <div class="invoice-summary-row text-danger fw-bold"><div class="invoice-summary-label">Sisa Bon</div><div class="invoice-summary-value">${formatRupiah(sisa)}</div></div>
+            </div>
+            <div class="invoice-footer-info"><b>INFO:</b> Transfer SeaBank 9017-6605-7787 a.n Khairul Akbar</div>`;
+    }
+
     document.getElementById("btn-download-faktur").addEventListener("click", function() {
         html2canvas(document.getElementById("invoice-download-wrapper"), { scale: 2 }).then(canvas => {
             const a = document.createElement("a"); a.download = `${namaFileGlobal}.png`; a.href = canvas.toDataURL(); a.click();
         });
     });
 
-    // SUBMIT FORM MANAGEMENT
     document.getElementById("receivable-form").addEventListener("submit", function(e) {
         e.preventDefault();
         if(keranjangSementara.length === 0) return;
@@ -669,8 +657,8 @@
             tanggal: convertDateToDisplay(document.getElementById("input-tanggal").value),
             pelanggan: document.getElementById("input-pelanggan").value,
             totalBelanja: totalBelanjaHariIni,
-            hutangAwal: parseInt(document.getElementById("sub-piutang-lama").value) || 0,
-            tagihan: parseInt(document.getElementById("input-piutang-total").value) || 0,
+            hutangAwal: parseInt(document.getElementById("sub-sisa-tagihan").value) || 0,
+            tagihan: parseInt(document.getElementById("input-tagihan-total").value) || 0,
             payment: parseInt(document.getElementById("input-pelunasan").value) || 0,
             items: [...keranjangSementara]
         };
@@ -689,7 +677,7 @@
         document.getElementById("edit-transaksi-index").value = idx;
         document.getElementById("input-tanggal").value = convertDateToInput(tx.tanggal);
         document.getElementById("input-pelanggan").value = tx.pelanggan;
-        document.getElementById("sub-piutang-lama").value = tx.hutangAwal;
+        document.getElementById("sub-sisa-tagihan").value = tx.hutangAwal;
         document.getElementById("input-pelunasan").value = tx.payment;
         keranjangSementara = [...tx.items];
         renderKeranjang();
@@ -706,7 +694,6 @@
 
     function hapusData(idx) { if(confirm("Hapus?")) { dataTransaksi.splice(idx,1); renderDashboard(); pushDataKeSheets(); } }
 
-    // CUSTOMER MANAGEMENT CONTROL
     function renderKelolaCustomer() {
         document.getElementById("list-customer-table").innerHTML = masterCustomer.map((c,i) => `<tr><td>${i+1}</td><td>${c.nama}</td><td>${c.kategori}</td><td><i class="bi bi-trash text-danger" onclick="hapusCustomer(${i})"></i></td></tr>`).join("");
     }
@@ -718,11 +705,9 @@
     });
     function hapusCustomer(i) { masterCustomer.splice(i,1); renderUiControls(); renderKelolaCustomer(); renderDashboard(); pushDataKeSheets(); }
 
-    // INITIALIZATION
     document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
     document.getElementById("current-date").innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
-    // Auto Load saat website dibuka pertama kali
     muatDataDariSheets();
 </script>
 </body>
