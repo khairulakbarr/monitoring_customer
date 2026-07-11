@@ -565,7 +565,13 @@
 
             if(currentFilter === "Semua" || currentFilter === meta.kategori) {
                 kj += tx.totalBelanja; kd += tx.payment;
-                let itemsStr = tx.items.map(i => `${i.nama}(${i.qty}kg)`).join(", ");
+                let itemsStr = tx.items.map(i => {
+    if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
+        return `${i.nama}(${i.ekor}ekor)`;
+    } else {
+        return `${i.nama}(${i.qty}kg)`;
+    }
+}).join(", ");
                 tbody.innerHTML += `
                     <tr>
                         <td>${viewIdx + 1}</td>
@@ -630,7 +636,13 @@
             td += tx.payment; 
             ts += sisaBaris; // DI SINI PERBAIKANNYA: Nilai dijumlahkan kumulatif ke atas, bukan ditimpa
 
-            let iStr = tx.items.map(i => `${i.nama}(${i.qty}kg)`).join(", ");
+            let iStr = tx.items.map(i => {
+    if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
+        return `${i.nama}(${i.ekor}ekor)`;
+    } else {
+        return `${i.nama}(${i.qty}kg)`;
+    }
+}).join(", ");
             tbody.innerHTML += `<tr>
                 <td>${tx.tanggal}</td>
                 <td class="text-start">${iStr}</td>
