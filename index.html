@@ -589,7 +589,14 @@
         tbody.innerHTML = "";
         let tj = 0, td = 0, ts = 0;
 
-        dataTransaksi.filter(t => t.pelanggan === nama).forEach(tx => {
+        // 1. Filter transaksi berdasarkan nama customer
+        let txCustomer = dataTransaksi.filter(t => t.pelanggan === nama);
+
+        // 2. Urutkan dari TANGGAL TERKINI ke TERLAMA (Terbaru di paling atas)
+        txCustomer.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
+
+        // 3. Render ke tabel modal
+        txCustomer.forEach(tx => {
             tj += tx.totalBelanja; td += tx.payment; ts = tx.tagihan - tx.payment;
             let iStr = tx.items.map(i => `${i.nama}(${i.qty}kg)`).join(", ");
             tbody.innerHTML += `<tr><td>${tx.tanggal}</td><td class="text-start">${iStr}</td><td>${formatRupiah(tx.totalBelanja)}</td><td>${formatRupiah(tx.tagihan)}</td><td>${formatRupiah(tx.payment)}</td><td class="text-danger fw-bold">${formatRupiah(ts)}</td><td><button class="btn btn-sm btn-danger py-0" onclick="tutupDasborDanBukaFaktur(${dataTransaksi.indexOf(tx)})"><i class="bi bi-receipt"></i></button></td></tr>`;
@@ -599,7 +606,6 @@
         document.getElementById("cust-modal-piutang").innerText = formatRupiah(ts);
         new bootstrap.Modal(document.getElementById('customerDashboardModal')).show();
     }
-
     function tutupDasborDanBukaFaktur(idx) {
         bootstrap.Modal.getInstance(document.getElementById('customerDashboardModal')).hide();
         setTimeout(() => { tampilkanFaktur(idx); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
