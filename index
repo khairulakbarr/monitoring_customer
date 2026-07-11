@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Monitoring Piutang & Jendela Dasbor Customer</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Html2Canvas Library untuk Fitur Download Gambar Otomatis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-main: #f8f9fa;
+            --primary-blue: #1A73E8;
+            --secondary-blue: #E8F0FE;
+            --text-dark: #2D3748;
+            --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.03);
+            --maroon-theme: #A62424;
+        }
+        
+        body { 
+            background-color: var(--bg-main); 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-dark);
+        }
+
+        .bg-gradient-blue { 
+            background: linear-gradient(135deg, #1A73E8, #0D47A1); 
+            color: white; 
+        }
+
+        .premium-card {
+            background: #ffffff;
+            border-radius: 16px;
+            border: none;
+            box-shadow: var(--card-shadow);
+            padding: 24px;
+            height: 100%;
+        }
+        
+        .kpi-icon-wrapper {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--secondary-blue);
+            color: var(--primary-blue);
+        }
+
+        .custom-tabs .nav-link {
+            border: none;
+            color: #718096;
+            font-weight: 700;
+            padding: 12px 20px;
+            font-size: 15px;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .custom-tabs .nav-link.active {
+            color: var(--primary-blue);
+            background: transparent;
+        }
+        .custom-tabs .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 20px;
+            right: 20px;
+            height: 3px;
+            background-color: var(--primary-blue);
+            border-radius: 3px;
+        }
+        
+        .table-premium th {
+            background-color: #f8f9fa;
+            color: #718096;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #edf2f7;
+            padding: 14px;
+        }
+        .table-premium td {
+            padding: 14px;
+            vertical-align: middle;
+            border-bottom: 1px solid #edf2f7;
+        }
+        
+        .block-kuning {
+            background-color: #FFF9E6 !important;
+            border-left: 4px solid #FFCC00;
+        }
+
+        /* CUSTOMER GRID STYLING */
+        .customer-badge-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .customer-badge-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--maroon-theme);
+            box-shadow: 0 4px 12px rgba(166, 36, 36, 0.1);
+        }
+
+        /* DESAIN FAKTUR PRESET MAROON */
+        .invoice-box-premium {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            color: #333333;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        
+        .invoice-title {
+            color: var(--maroon-theme);
+            font-family: 'Arial Black', 'Impact', 'Inter', sans-serif;
+            font-weight: 900;
+            font-size: 26px;
+            line-height: 1.05;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        
+        .invoice-header-label {
+            color: #777777;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+        .table-invoice-maroon {
+            width: 100%;
+            margin-top: 15px;
+            border-collapse: collapse;
+        }
+        .table-invoice-maroon th {
+            background-color: var(--maroon-theme);
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .table-invoice-maroon th:last-child, .table-invoice-maroon td:last-child {
+            text-align: right;
+        }
+        .table-invoice-maroon td {
+            padding: 10px 12px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--maroon-theme);
+            color: #444444;
+        }
+        .invoice-summary-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+        .invoice-summary-label {
+            width: 160px;
+            text-align: right;
+            font-weight: 600;
+            color: var(--maroon-theme);
+            padding-right: 15px;
+        }
+        .invoice-summary-value {
+            width: 120px;
+            text-align: right;
+            font-weight: 600;
+            color: #333333;
+        }
+        .invoice-total-badge {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+        .invoice-total-container {
+            background-color: var(--maroon-theme);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 6px;
+            display: flex;
+            width: 280px;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        .invoice-footer-info {
+            margin-top: 35px;
+            border-top: 1px dashed #dddddd;
+            padding-top: 15px;
+            font-size: 11px;
+            color: #666666;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container py-4">
+    <!-- HEADER -->
+    <div class="p-4 bg-gradient-blue rounded-4 shadow-sm mb-4">
+        <h2 class="mb-0 fs-4 fw-bold d-flex align-items-center gap-2">
+            <i class="bi bi-receipt-cutoff"></i> MONITORING PIUTANG & FAKTUR PELANGGAN
+        </h2>
+        <p class="mb-0 small opacity-75 mt-1" id="current-date"></p>
+    </div>
+
+    <!-- TAB FILTER KATEGORI UTAMA -->
+    <div class="premium-card p-2 mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <ul class="nav nav-tabs custom-tabs border-0" id="categoryTabs" role="tablist">
+                <li class="nav-item"><button class="nav-link active" onclick="filterKategori('Semua')">Semua Pelanggan</button></li>
+                <li class="nav-item"><button class="nav-link" onclick="filterKategori('Customer Umum')">Customer Umum</button></li>
+                <li class="nav-item"><button class="nav-link" id="label-tetap" onclick="filterKategori('Customer Tetap')">Customer Tetap</button></li>
+            </ul>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-danger fw-bold" onclick="resetKeDataAwal()">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset Data
+                </button>
+                <button class="btn btn-sm btn-dark fw-bold px-3 py-2 rounded-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#customerModal" onclick="renderKelolaCustomer()">
+                    <i class="bi bi-people-fill me-1"></i> Kelola & Edit Customer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI SUMMARY CARDS GLOBAL -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="premium-card d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="small text-muted d-block fw-bold">TOTAL PENJUALAN</span>
+                    <h2 class="fw-bold mt-2 mb-0 text-dark" id="kpi-total-penjualan">Rp 0</h2>
+                </div>
+                <div class="kpi-icon-wrapper"><i class="bi bi-cart-check fs-4"></i></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="premium-card d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="small text-muted d-block fw-bold">TOTAL DITERIMA</span>
+                    <h2 class="fw-bold text-success mt-2 mb-0" id="kpi-total-diterima">Rp 0</h2>
+                </div>
+                <div class="kpi-icon-wrapper" style="background-color: #E6F4EA; color: #137333;"><i class="bi bi-cash-coin fs-4"></i></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="premium-card d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="small text-muted d-block fw-bold">SISA PIUTANG AKTIF</span>
+                    <h2 class="fw-bold text-danger mt-2 mb-0" id="kpi-sisa-piutang">Rp 0</h2>
+                </div>
+                <div class="kpi-icon-wrapper" style="background-color: #FCE8E6; color: #C5221F;"><i class="bi bi-graph-down-arrow fs-4"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRID AREA DAFTAR NAMA CUSTOMER BERDASARKAN KATEGORI -->
+    <div class="premium-card mb-4 bg-light border">
+        <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-person-bounding-box text-primary"></i> Klik Nama Customer Untuk Membuka Dasbor Transaksi Individu :</h6>
+        <div class="row g-2" id="customer-grid-container">
+            <!-- Inject Otomatis Via JS -->
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- FORM INPUT DATA -->
+        <div class="col-lg-5">
+            <div class="premium-card">
+                <h5 class="fw-bold mb-3 text-dark" id="form-title"><i class="bi bi-plus-circle-fill text-primary"></i> Input Transaksi Multi-Item</h5>
+                <form id="receivable-form">
+                    <input type="hidden" id="edit-transaksi-index" value="-1">
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-muted mb-1">Tanggal</label>
+                            <input type="date" class="form-control form-control-sm" id="input-tanggal" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-muted mb-1">Pelanggan</label>
+                            <select class="form-select form-select-sm" id="input-pelanggan" required></select>
+                        </div>
+                    </div>
+
+                    <!-- AREA SELEKSI ITEM -->
+                    <div class="p-3 bg-light rounded-3 mb-3 border">
+                        <label class="form-label small fw-bold text-dark mb-1">Tambah Item Barang:</label>
+                        <div class="mb-2">
+                            <select class="form-select form-select-sm" id="input-produk">
+                                <option value="Ayam Potong">1. Ayam Potong</option>
+                                <option value="Ayam Merah">2. Ayam Merah</option>
+                                <option value="Ayam Penyet">3. Ayam Penyet</option>
+                            </select>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-4">
+                                <input type="number" step="0.1" class="form-control form-control-sm" id="input-jumlah" placeholder="Berat (Kg)">
+                            </div>
+                            <div class="col-4">
+                                <input type="number" class="form-control form-control-sm" id="input-ekor" placeholder="Ekor (Opsional)">
+                            </div>
+                            <div class="col-4">
+                                <input type="number" class="form-control form-control-sm" id="input-harga" placeholder="Harga Satuan">
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary w-100 fw-bold" onclick="tambahKeKeranjang()"><i class="bi bi-plus"></i> Masukkan Item Ke Nota</button>
+                    </div>
+
+                    <!-- LIST KERANJANG SEMENTARA -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted mb-1">Item Dalam Orderan Ini:</label>
+                        <div class="border rounded p-2 bg-white" style="max-height: 130px; overflow-y:auto; font-size: 13px;">
+                            <table class="table table-sm m-0">
+                                <tbody id="cart-table-body">
+                                    <tr><td colspan="4" class="text-center text-muted small py-2">Belum ada item dimasukkan</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- DISPLAY TOTAL BELANJA -->
+                    <div class="mb-2 p-2 rounded bg-gradient-blue text-center shadow-sm">
+                        <span class="small opacity-75 d-block" style="font-size:11px;">TOTAL BELANJA HARI INI</span>
+                        <h4 class="fw-bold m-0" id="display-belanja-hari-ini">Rp 0</h4>
+                    </div>
+
+                    <!-- BOX HITUNG KUMULATIF PIUTANG -->
+                    <div class="mb-3 p-3 rounded-3 block-kuning">
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="text-muted small fw-bold">Piutang Lama</label>
+                                <input type="number" class="form-control form-control-sm border-warning shadow-sm" id="sub-piutang-lama" value="0">
+                            </div>
+                            <div class="col-6">
+                                <label class="text-muted small fw-bold">Total Piutang Baru</label>
+                                <input type="number" class="form-control form-control-sm border-warning fw-bold text-danger bg-white" id="input-piutang-total" readonly value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-success mb-1">Bayar / DP / Pelunasan Hari Ini</label>
+                        <input type="number" class="form-control border-success text-success fw-bold" id="input-pelunasan" value="0" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow" id="btn-submit-transaksi" style="background-color: var(--primary-blue); border: none;">Simpan Catatan & Buat Faktur</button>
+                    <button type="button" class="btn btn-secondary w-100 fw-bold mt-2 d-none" id="btn-batal-edit" onclick="batalEditTransaksi()">Batal Ubah</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- GRAFIK PIUTANG -->
+        <div class="col-lg-7">
+            <div class="premium-card">
+                <h5 class="fw-bold mb-4 text-dark">📊 Grafik Saldo Piutang Berjalan (Per Hari)</h5>
+                <div style="position: relative; height:340px;"><canvas id="receivableChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABEL ARUS ARUS BUKU UTAMA -->
+    <div class="row">
+        <div class="col-12">
+            <div class="premium-card">
+                <h5 class="fw-bold mb-3 text-dark" id="table-title">📄 Arus Buku Rincian Piutang & Cetak Faktur</h5>
+                <div class="table-responsive">
+                    <table class="table table-premium align-middle table-hover">
+                        <thead>
+                            <tr>
+                                <th class="text-center">No</th>
+                                <th>Tanggal</th>
+                                <th>Pelanggan</th>
+                                <th>Item Rincian</th>
+                                <th class="text-end">Total Jual</th>
+                                <th class="text-end">Total Piutang</th>
+                                <th class="text-end">Pelunasan</th>
+                                <th class="text-end">Sisa Piutang</th>
+                                <th class="text-center">Faktur</th>
+                                <th class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JENDELA BARU: POP UP DASBOR INDIVIDU CUSTOMER -->
+<div class="modal fade" id="customerDashboardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border:none; background-color: #f4f6f9;">
+            <div class="modal-header bg-dark text-white p-3">
+                <h5 class="modal-title fw-bold" id="cust-modal-title"><i class="bi bi-speedometer2 text-warning"></i> Jendela Dasbor Customer</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-white rounded-3 shadow-sm border-start border-primary border-4">
+                            <span class="small text-muted d-block fw-bold text-uppercase">TOTAL PENJUALAN</span>
+                            <h3 class="fw-bold text-primary mt-1 mb-0" id="cust-modal-jual">Rp 0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-white rounded-3 shadow-sm border-start border-success border-4">
+                            <span class="small text-muted d-block fw-bold text-uppercase">TOTAL DITERIMA / DP</span>
+                            <h3 class="fw-bold text-success mt-1 mb-0" id="cust-modal-terima">Rp 0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-white rounded-3 shadow-sm border-start border-danger border-4">
+                            <span class="small text-muted d-block fw-bold text-uppercase">SISA PIUTANG AKTIF</span>
+                            <h3 class="fw-bold text-danger mt-1 mb-0" id="cust-modal-piutang">Rp 0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-3 rounded-3 shadow-sm">
+                    <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-clock-history"></i> Buku Histori Riwayat Transaksi Berjalan</h6>
+                    <div class="table-responsive" style="max-height: 350px; overflow-y:auto;">
+                        <table class="table table-bordered table-striped table-sm align-middle text-center" style="font-size:13px;">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Tanggal</th>
+                                    <th>Rincian Item</th>
+                                    <th class="text-end">Belanja</th>
+                                    <th class="text-end">Piutang Kumulatif</th>
+                                    <th class="text-end">Pelunasan / DP</th>
+                                    <th class="text-end text-danger">Sisa Hutang</th>
+                                    <th>Faktur</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cust-modal-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CETAK/PRATINJAU FAKTUR -->
+<div class="modal fade" id="invoiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content" style="border-radius: 12px; border:none; background-color: #f1f5f9;">
+            <div class="modal-header border-0 bg-white shadow-sm">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-printer-fill text-danger"></i> Pratinjau Faktur</h5>
+                <button type="button" class="btn btn-sm btn-success fw-bold px-3 ms-auto me-2" id="btn-download-faktur">
+                    <i class="bi bi-download me-1"></i> Unduh Faktur (PNG)
+                </button>
+                <button type="button" class="btn-close" data-bs-toggle="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div id="invoice-download-wrapper" style="background-color: #f1f5f9; padding: 10px; border-radius: 8px;">
+                    <div class="invoice-box-premium" id="invoice-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL KELOLA CUSTOMER -->
+<div class="modal fade" id="customerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius: 12px; border:none;">
+            <div class="modal-header bg-dark text-white border-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-gear"></i> Master Data - Kelola Customer</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-toggle="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="customer-form" class="bg-light p-3 rounded border mb-3">
+                    <input type="hidden" id="edit-customer-index" value="-1">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold">Nama Customer</label>
+                            <input type="text" class="form-control form-control-sm" id="cust-nama" required placeholder="Contoh: Toko Berkah">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Kategori</label>
+                            <select class="form-select form-select-sm" id="cust-kategori">
+                                <option value="Customer Tetap">Customer Tetap</option>
+                                <option value="Customer Umum">Customer Umum</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold" id="btn-simpan-customer">Tambah Baru</button>
+                        </div>
+                    </div>
+                </form>
+                <div class="table-responsive" style="max-height: 300px; overflow-y:auto;">
+                    <table class="table table-sm table-bordered align-middle text-center" style="font-size: 13px;">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Customer</th>
+                                <th>Kategori</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="list-customer-table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // PRESET DEFAULT DATA AWAL JIKA LOCALSTORAGE KOSONG
+    const PRESET_CUSTOMER = [
+        { nama: "Bg Misran PJS", kategori: "Customer Tetap" }, { nama: "Apa Sop Ikan", kategori: "Customer Tetap" },
+        { nama: "Bakso Balqis", kategori: "Customer Tetap" }, { nama: "Bakso RTP", kategori: "Customer Tetap" },
+        { nama: "Bg Jal Minang", kategori: "Customer Tetap" }, { nama: "Kak Bodah", kategori: "Customer Tetap" },
+        { nama: "Kak Ton", kategori: "Customer Tetap" }, { nama: "Kak War Alue Bu", kategori: "Customer Tetap" },
+        { nama: "King KFC Perlak", kategori: "Customer Tetap" }, { nama: "Mak IDA", kategori: "Customer Tetap" },
+        { nama: "Maman", kategori: "Customer Tetap" }, { nama: "Pak H Armis", kategori: "Customer Tetap" },
+        { nama: "Pren PNR", kategori: "Customer Tetap" }, { nama: "Wahyu Diesel", kategori: "Customer Tetap" }
+    ];
+
+    const PRESET_TRANSAKSI = [
+        { 
+            tanggal: "09/07/2026", 
+            pelanggan: "Bg Misran PJS", 
+            items: [{ nama: "Ayam Potong", qty: 8.7, ekor: 0, harga: 25000 }],
+            totalBelanja: 217500, hutangAwal: 0, tagihan: 217500, payment: 0 
+        },
+        { 
+            tanggal: "10/07/2026", 
+            pelanggan: "Bg Misran PJS", 
+            items: [{ nama: "Ayam Potong", qty: 103.7, ekor: 55, harga: 25000 }],
+            totalBelanja: 2592500, hutangAwal: 217500, tagihan: 2810000, payment: 1500000 
+        }
+    ];
+
+    // INSTANSIASI DATABASE DARI LOCALSTORAGE
+    let masterCustomer = JSON.parse(localStorage.getItem("db_customer")) || PRESET_CUSTOMER;
+    let dataTransaksi = JSON.parse(localStorage.getItem("db_transaksi")) || PRESET_TRANSAKSI;
+
+    let keranjangSementara = [];
+    let totalBelanjaHariIni = 0;
+    let namaFileGlobal = "Faktur_Penjualan";
+    let currentFilter = "Semua";
+    let chartInstance = null;
+
+    // FUNGSI UNTUK MENGUNCI DATA KE MEMORI LOKAL BROWSER (AUTO-SAVE ENGINE)
+    function simpanKeLocalStorage() {
+        localStorage.setItem("db_customer", JSON.stringify(masterCustomer));
+        localStorage.setItem("db_transaksi", JSON.stringify(dataTransaksi));
+    }
+
+    function resetKeDataAwal() {
+        if(confirm("Apakah Anda yakin ingin mereset seluruh data kembali ke setelan default awal? Data baru inputan Anda akan hilang.")) {
+            localStorage.removeItem("db_customer");
+            localStorage.removeItem("db_transaksi");
+            masterCustomer = [...PRESET_CUSTOMER];
+            dataTransaksi = [...PRESET_TRANSAKSI];
+            renderUiControls();
+            renderDashboard();
+            alert("Data berhasil direset!");
+        }
+    }
+
+    function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka); }
+    function convertDateToDisplay(dateStr) { if(dateStr.includes("/")) return dateStr; const d = dateStr.split("-"); return `${d[2]}/${d[1]}/${d[0]}`; }
+    function convertDateToInput(dateStr) { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
+
+    function tambahKeKeranjang() {
+        const produk = document.getElementById("input-produk").value;
+        const qty = parseFloat(document.getElementById("input-jumlah").value) || 0;
+        const ekor = parseInt(document.getElementById("input-ekor").value) || 0;
+        const harga = parseInt(document.getElementById("input-harga").value) || 0;
+
+        if (qty <= 0 || harga <= 0) { alert("Isi berat dan harga!"); return; }
+
+        keranjangSementara.push({ nama: produk, qty: qty, ekor: ekor, harga: harga });
+        document.getElementById("input-jumlah").value = "";
+        document.getElementById("input-ekor").value = "";
+        renderKeranjang();
+        hitungUlangPiutangForm();
+    }
+
+    function hapusItemKeranjang(index) {
+        keranjangSementara.splice(index, 1);
+        renderKeranjang();
+        hitungUlangPiutangForm();
+    }
+
+    function renderKeranjang() {
+        const tbody = document.getElementById("cart-table-body");
+        if (keranjangSementara.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted small py-2">Belum ada item dimasukkan</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = "";
+        totalBelanjaHariIni = 0;
+        keranjangSementara.forEach((item, idx) => {
+            const subtotal = item.qty * item.harga;
+            totalBelanjaHariIni += subtotal;
+            const textEkor = item.ekor > 0 ? ` (${item.ekor} ekor)` : '';
+            tbody.innerHTML += `
+                <tr>
+                    <td><b>${item.nama}${textEkor}</b></td>
+                    <td>${item.qty} kg</td>
+                    <td class="text-end">${formatRupiah(item.harga)}</td>
+                    <td class="text-end text-danger"><i class="bi bi-x-circle" style="cursor:pointer;" onclick="hapusItemKeranjang(${idx})"></i></td>
+                </tr>
+            `;
+        });
+        document.getElementById("display-belanja-hari-ini").innerText = formatRupiah(totalBelanjaHariIni);
+    }
+
+    function hitungUlangPiutangForm() {
+        const piutangLama = parseInt(document.getElementById("sub-piutang-lama").value) || 0;
+        document.getElementById("input-piutang-total").value = piutangLama + totalBelanjaHariIni;
+    }
+
+    document.getElementById("sub-piutang-lama").addEventListener("input", hitungUlangPiutangForm);
+
+    function renderCustomerGridMenu() {
+        const gridContainer = document.getElementById("customer-grid-container");
+        gridContainer.innerHTML = "";
+
+        let listTersaring = masterCustomer.sort((a,b) => a.nama.localeCompare(b.nama));
+        if (currentFilter !== "Semua") {
+            listTersaring = listTersaring.filter(c => c.kategori === currentFilter);
+        }
+
+        if (listTersaring.length === 0) {
+            gridContainer.innerHTML = `<div class="col-12 text-center py-2 text-muted small">Tidak ada customer di kategori ini</div>`;
+            return;
+        }
+
+        listTersaring.forEach(cust => {
+            const txCust = dataTransaksi.filter(t => t.pelanggan === cust.nama);
+            let sisaHutangSekarang = 0;
+            if(txCust.length > 0) {
+                const lastTx = txCust[txCust.length - 1];
+                sisaHutangSekarang = lastTx.tagihan - lastTx.payment;
+            }
+
+            const warnaBadgeHutang = sisaHutangSekarang > 0 ? 'text-danger fw-bold' : 'text-muted small';
+
+            gridContainer.innerHTML += `
+                <div class="col-md-3 col-6">
+                    <div class="p-2 customer-badge-card d-flex flex-column justify-content-center text-center" onclick="bukaJendelaDasborCustomer('${cust.nama}')">
+                        <span class="fw-bold text-dark text-truncate" style="font-size:13px;">${cust.nama}</span>
+                        <span style="font-size:11px;" class="${warnaBadgeHutang}">${sisaHutangSekarang > 0 ? formatRupiah(sisaHutangSekarang) : 'Lunas / Kosong'}</span>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function renderUiControls() {
+        const selectContainer = document.getElementById("input-pelanggan");
+        let selectHtml = "";
+        masterCustomer.sort((a,b) => a.nama.localeCompare(b.nama)).forEach(c => { 
+            selectHtml += `<option value="${c.nama}">${c.nama} (${c.kategori})</option>`; 
+        });
+        selectContainer.innerHTML = selectHtml;
+
+        const jmlTetap = masterCustomer.filter(c => c.kategori === "Customer Tetap").length;
+        document.getElementById("label-tetap").innerText = `Customer Tetap (${jmlTetap})`;
+
+        renderCustomerGridMenu();
+    }
+
+    function filterKategori(kat) {
+        currentFilter = kat;
+        const tabs = document.querySelectorAll("#categoryTabs .nav-link");
+        tabs.forEach(t => { if(t.innerText.includes(kat)) t.classList.add("active"); else t.classList.remove("active"); });
+        renderDashboard();
+    }
+
+    function bukaJendelaDasborCustomer(namaCustomer) {
+        const modalTitle = document.getElementById("cust-modal-title");
+        const modalJual = document.getElementById("cust-modal-jual");
+        const modalTerima = document.getElementById("cust-modal-terima");
+        const modalPiutang = document.getElementById("cust-modal-piutang");
+        const modalTbody = document.getElementById("cust-modal-table-body");
+
+        modalTitle.innerHTML = `<i class="bi bi-speedometer2 text-warning"></i> Jendela Dasbor Jual & Piutang: <span class="text-info">${namaCustomer}</span>`;
+        modalTbody.innerHTML = "";
+
+        let txUser = dataTransaksi.filter(t => t.pelanggan === namaCustomer)
+                       .sort((a, b) => new Date(convertDateToInput(a.tanggal)) - new Date(convertDateToInput(b.tanggal)));
+
+        let akumulasiJual = 0;
+        let akumulasiTerima = 0;
+        let sisaPiutangBerjalan = 0;
+
+        if (txUser.length === 0) {
+            modalTbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">Belum ada riwayat transaksi historis untuk customer ini</td></tr>`;
+        } else {
+            txUser.forEach((tx, idx) => {
+                akumulasiJual += tx.totalBelanja;
+                akumulasiTerima += tx.payment;
+                sisaPiutangBerjalan = tx.tagihan - tx.payment;
+
+                let rincianItemText = tx.items.map(i => `${i.nama} (${i.qty}kg)`).join(", ");
+
+                modalTbody.innerHTML += `
+                    <tr>
+                        <td class="fw-bold">${tx.tanggal}</td>
+                        <td class="text-start">${rincianItemText}</td>
+                        <td class="text-end fw-bold text-primary">${formatRupiah(tx.totalBelanja)}</td>
+                        <td class="text-end bg-light">${formatRupiah(tx.tagihan)}</td>
+                        <td class="text-end text-success fw-bold">+${formatRupiah(tx.payment)}</td>
+                        <td class="text-end text-danger fw-bold bg-light">${formatRupiah(sisaPiutangBerjalan)}</td>
+                        <td>
+                            <button class="btn btn-sm btn-danger py-0 px-2" onclick="tutupDasborDanBukaFaktur(${dataTransaksi.indexOf(tx)})">
+                                <i class="bi bi-file-earmark-pdf"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        modalJual.innerText = formatRupiah(akumulasiJual);
+        modalTerima.innerText = formatRupiah(akumulasiTerima);
+        modalPiutang.innerText = formatRupiah(sisaPiutangBerjalan);
+
+        const modalInstance = new bootstrap.Modal(document.getElementById('customerDashboardModal'));
+        modalInstance.show();
+    }
+
+    function tutupDasborDanBukaFaktur(indexGlobal) {
+        const modalDasbor = bootstrap.Modal.getInstance(document.getElementById('customerDashboardModal'));
+        if (modalDasbor) modalDasbor.hide();
+
+        setTimeout(() => {
+            tampilkanFaktur(indexGlobal);
+            const modalFaktur = new bootstrap.Modal(document.getElementById('invoiceModal'));
+            modalFaktur.show();
+        }, 400);
+    }
+
+    function renderDashboard() {
+        const tbodyMain = document.getElementById("table-body");
+        tbodyMain.innerHTML = "";
+
+        dataTransaksi.sort((a, b) => new Date(convertDateToInput(a.tanggal)) - new Date(convertDateToInput(b.tanggal)));
+
+        let kpiJual = 0, kpiDiterima = 0;
+        let totalPiutangGlobalHariIni = 0;
+
+        let saldoPiutangTerakhirPerUser = {};
+        masterCustomer.forEach(c => saldoPiutangTerakhirPerUser[c.nama] = 0);
+
+        dataTransaksi.forEach((item, realIndex) => {
+            const custMeta = masterCustomer.find(c => c.nama === item.pelanggan) || { kategori: "Customer Umum" };
+            const sisaBaris = item.tagihan - item.payment;
+            
+            saldoPiutangTerakhirPerUser[item.pelanggan] = sisaBaris;
+
+            if (currentFilter === "Semua" || currentFilter === custMeta.kategori) {
+                kpiJual += item.totalBelanja;
+                kpiDiterima += item.payment;
+
+                let rincianItemText = item.items.map(i => {
+                    let ekorStr = i.ekor > 0 ? ` (${i.ekor}ekor)` : '';
+                    return `${i.nama}${ekorStr} [${i.qty}kg]`;
+                }).join(", ");
+
+                tbodyMain.innerHTML += `
+                    <tr>
+                        <td class="text-center text-muted small">${realIndex + 1}</td>
+                        <td>${item.tanggal}</td>
+                        <td class="fw-bold text-dark">${item.pelanggan}</td>
+                        <td style="font-size: 13px; color:#555;">${rincianItemText || "Tanpa Item"}</td>
+                        <td class="text-end fw-bold">${formatRupiah(item.totalBelanja)}</td>
+                        <td class="text-end fw-bold text-dark">${formatRupiah(item.tagihan)}</td>
+                        <td class="text-end"><span class="badge text-bg-success px-2 py-1">${formatRupiah(item.payment)}</span></td>
+                        <td class="text-end fw-bold text-danger">${formatRupiah(sisaBaris)}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-danger py-0 px-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#invoiceModal" onclick="tampilkanFaktur(${realIndex})">
+                                <i class="bi bi-file-earmark-pdf"></i>
+                            </button>
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-warning py-0 px-1 me-1" onclick="pilihEditTransaksi(${realIndex})"><i class="bi bi-pencil-square"></i></button>
+                            <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="hapusData(${realIndex})"><i class="bi bi-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+
+        masterCustomer.forEach(c => {
+            totalPiutangGlobalHariIni += (saldoPiutangTerakhirPerUser[c.nama] || 0);
+        });
+
+        document.getElementById("kpi-total-penjualan").innerText = formatRupiah(kpiJual);
+        document.getElementById("kpi-total-diterima").innerText = formatRupiah(kpiDiterima);
+        document.getElementById("kpi-sisa-piutang").innerText = formatRupiah(totalPiutangGlobalHariIni);
+
+        prosesDanRenderGrafikHarian();
+        renderCustomerGridMenu();
+    }
+
+    function prosesDanRenderGrafikHarian() {
+        let piutangPerTanggal = {};
+
+        dataTransaksi.forEach(tx => {
+            const tgl = tx.tanggal;
+            const sisaPiutangNota = tx.tagihan - tx.payment;
+            
+            if (!piutangPerTanggal[tgl]) {
+                piutangPerTanggal[tgl] = 0;
+            }
+            piutangPerTanggal[tgl] += sisaPiutangNota;
+        });
+
+        const labelTanggalSorted = Object.keys(piutangPerTanggal).sort((a,b) => {
+            return new Date(convertDateToInput(a)) - new Date(convertDateToInput(b));
+        });
+        const nilaiPiutangSorted = labelTanggalSorted.map(tgl => piutangPerTanggal[tgl]);
+
+        updateChartEngine(labelTanggalSorted, nilaiPiutangSorted);
+    }
+
+    function updateChartEngine(labels, dataValues) {
+        const ctx = document.getElementById('receivableChart').getContext('2d');
+        if (chartInstance) { chartInstance.destroy(); }
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Piutang Gabungan Seluruh Customer (Rp)', 
+                    data: dataValues, 
+                    backgroundColor: '#A62424', 
+                    borderRadius: 6, 
+                    barThickness: 35
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { 
+                    legend: { display: true, position: 'top' } 
+                },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    function tampilkanFaktur(index) {
+        const trans = dataTransaksi[index];
+        const sisaPiutangAkhir = trans.tagihan - trans.payment;
+        const container = document.getElementById("invoice-content");
+
+        const namaClean = trans.pelanggan.replace(/\s+/g, '_');
+        const tglClean = trans.tanggal.replace(/\//g, '-');
+        namaFileGlobal = `Faktur_${namaClean}_${tglClean}`;
+
+        let itemRowsHtml = "";
+        trans.items.forEach(i => {
+            let labelBarang = i.nama;
+            let qtyLabel = `${i.qty} kg`;
+            
+            if (i.ekor > 0) {
+                let rataRata = (i.qty / i.ekor).toFixed(2);
+                labelBarang += `<br><span style="font-size:11px; color:#666; font-weight:normal;">Rata-rata: ${rataRata} kg/ekor (${i.ekor} ekor)</span>`;
+            }
+
+            itemRowsHtml += `
+                <tr>
+                    <td><b>${labelBarang}</b></td>
+                    <td>${qtyLabel}</td>
+                    <td>${formatRupiah(i.harga)}</td>
+                    <td>${formatRupiah(i.qty * i.harga)}</td>
+                </tr>
+            `;
+        });
+
+        container.innerHTML = `
+            <div class="row align-items-start mb-4">
+                <div class="col-7">
+                    <div class="invoice-title">FAKTUR</div>
+                    <div class="invoice-title" style="font-size:24px; opacity:0.9;">PENJUALAN</div>
+                    <div class="mt-3">
+                        <div class="invoice-header-label">KEPADA :</div>
+                        <div class="fw-bold text-dark" style="font-size: 14px;">${trans.pelanggan}</div>
+                        <div class="text-muted small">Pelanggan Setia Ayam Potong</div>
+                    </div>
+                </div>
+                <div class="col-5 text-end pt-2">
+                    <div class="small text-dark"><b>No. Faktur:</b> #${index + 101}</div>
+                    <div class="small text-muted"><b>Tanggal:</b> ${trans.tanggal}</div>
+                </div>
+            </div>
+
+            <table class="table-invoice-maroon">
+                <thead>
+                    <tr>
+                        <th>Deskripsi Barang</th>
+                        <th>Jumlah</th>
+                        <th>Harga</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>${itemRowsHtml}</tbody>
+            </table>
+
+            <div class="mt-3">
+                <div class="invoice-summary-row">
+                    <div class="invoice-summary-label">Subtotal Hari Ini</div>
+                    <div class="invoice-summary-value">${formatRupiah(trans.totalBelanja)}</div>
+                </div>
+                <div class="invoice-summary-row">
+                    <div class="invoice-summary-label">Sisa Piutang Lama</div>
+                    <div class="invoice-summary-value">${formatRupiah(trans.hutangAwal)}</div>
+                </div>
+                <div class="invoice-total-badge">
+                    <div class="invoice-total-container">
+                        <span>TOTAL TAGIHAN</span>
+                        <span>${formatRupiah(trans.tagihan)}</span>
+                    </div>
+                </div>
+                <div class="invoice-summary-row" style="margin-top: 10px;">
+                    <div class="invoice-summary-label text-success">Pelunasan / DP</div>
+                    <div class="invoice-summary-value text-success" style="border-bottom: 1px solid #ddd; padding-bottom:4px;">-${formatRupiah(trans.payment)}</div>
+                </div>
+                <div class="invoice-summary-row mt-2" style="font-size: 14px;">
+                    <div class="invoice-summary-label text-danger" style="font-size:14px;">SISA PIUTANG BARU</div>
+                    <div class="invoice-summary-value text-danger" style="font-size:14px; font-weight:800;">${formatRupiah(sisaPiutangAkhir)}</div>
+                </div>
+            </div>
+
+            <div class="invoice-footer-info">
+                <div class="row">
+                    <div class="col-7">
+                        <b style="color:var(--maroon-theme);">INFORMASI PEMBAYARAN</b><br>
+                        by transfer 9017-6605-7787<br>
+                        Seabank a.n Khairul Akbar
+                    </div>
+                    <div class="col-5 text-end text-uppercase" style="font-weight: 700; color: #444; padding-top: 2px;">
+                        BERITA ACARA<br>Faktur Sah Digital
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    document.getElementById("btn-download-faktur").addEventListener("click", function() {
+        const targetElement = document.getElementById("invoice-download-wrapper");
+        html2canvas(targetElement, { scale: 2, useCORS: true, backgroundColor: "#f1f5f9" }).then(canvas => {
+            const linkDownload = document.createElement("a");
+            linkDownload.download = `${namaFileGlobal}.png`;
+            linkDownload.href = canvas.toDataURL("image/png");
+            linkDownload.click();
+        });
+    });
+
+    function renderKelolaCustomer() {
+        const tbody = document.getElementById("list-customer-table");
+        tbody.innerHTML = "";
+        masterCustomer.forEach((cust, idx) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td class="fw-bold text-start">${cust.nama}</td>
+                    <td><span class="badge ${cust.kategori === 'Customer Tetap' ? 'bg-primary' : 'bg-secondary'}">${cust.kategori}</span></td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-warning py-0 px-2 me-1" onclick="pilihEditCustomer(${idx})"><i class="bi bi-pencil-square"></i></button>
+                        <button type="button" class="btn btn-sm btn-danger py-0 px-2" onclick="hapusCustomer(${idx})"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    document.getElementById("customer-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const index = parseInt(document.getElementById("edit-customer-index").value);
+        const nama = document.getElementById("cust-nama").value.trim();
+        const kategori = document.getElementById("cust-kategori").value;
+
+        if (index === -1) {
+            masterCustomer.push({ nama, kategori });
+        } else {
+            const namaLama = masterCustomer[index].nama;
+            dataTransaksi.forEach(t => { if(t.pelanggan === namaLama) t.pelanggan = nama; });
+            masterCustomer[index] = { nama, kategori };
+        }
+        document.getElementById("customer-form").reset();
+        document.getElementById("edit-customer-index").value = "-1";
+        document.getElementById("btn-simpan-customer").innerText = "Tambah Baru";
+        
+        simpanKeLocalStorage(); // <-- AUTO SAVE KETIKA EDIT CUSTOMER
+        renderUiControls();
+        renderKelolaCustomer();
+        renderDashboard();
+    });
+
+    function pilihEditCustomer(idx) {
+        const cust = masterCustomer[idx];
+        document.getElementById("edit-customer-index").value = idx;
+        document.getElementById("cust-nama").value = cust.nama;
+        document.getElementById("cust-kategori").value = cust.kategori;
+        document.getElementById("btn-simpan-customer").innerText = "Simpan Perubahan";
+    }
+
+    function hapusCustomer(idx) {
+        if (confirm(`Hapus customer "${masterCustomer[idx].nama}"?`)) {
+            masterCustomer.splice(idx, 1);
+            simpanKeLocalStorage(); // <-- AUTO SAVE
+            renderUiControls();
+            renderKelolaCustomer();
+            renderDashboard();
+        }
+    }
+
+    function pilihEditTransaksi(idx) {
+        const trans = dataTransaksi[idx];
+        document.getElementById("edit-transaksi-index").value = idx;
+        document.getElementById("input-tanggal").value = convertDateToInput(trans.tanggal);
+        document.getElementById("input-pelanggan").value = trans.pelanggan;
+        document.getElementById("sub-piutang-lama").value = trans.hutangAwal;
+        document.getElementById("input-pelunasan").value = trans.payment;
+
+        keranjangSementara = [...trans.items];
+        renderKeranjang();
+        hitungUlangPiutangForm();
+
+        document.getElementById("form-title").innerHTML = `<i class="bi bi-pencil-square text-warning"></i> Ubah Transaksi Data No. ${idx + 1}`;
+        document.getElementById("btn-submit-transaksi").innerText = "Simpan Perubahan Transaksi";
+        document.getElementById("btn-submit-transaksi").className = "btn btn-warning w-100 fw-bold py-2 shadow";
+        document.getElementById("btn-batal-edit").classList.remove("d-none");
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function batalEditTransaksi() {
+        document.getElementById("edit-transaksi-index").value = "-1";
+        document.getElementById("receivable-form").reset();
+        document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
+        keranjangSementara = [];
+        renderKeranjang();
+        document.getElementById("form-title").innerHTML = `<i class="bi bi-plus-circle-fill text-primary"></i> Input Transaksi Multi-Item`;
+        document.getElementById("btn-submit-transaksi").innerText = "Simpan Catatan & Buat Faktur";
+        document.getElementById("btn-submit-transaksi").className = "btn btn-primary w-100 fw-bold py-2 shadow";
+        document.getElementById("btn-batal-edit").classList.add("d-none");
+    }
+
+    document.getElementById("receivable-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        if(keranjangSementara.length === 0) { alert("Masukkan minimal 1 jenis produk!"); return; }
+
+        const idxTransaksi = parseInt(document.getElementById("edit-transaksi-index").value);
+        const tanggal = convertDateToDisplay(document.getElementById("input-tanggal").value);
+        const pelanggan = document.getElementById("input-pelanggan").value;
+        const tagihan = parseInt(document.getElementById("input-piutang-total").value) || 0;
+        const payment = parseInt(document.getElementById("input-pelunasan").value) || 0;
+        const hutangAwal = parseInt(document.getElementById("sub-piutang-lama").value) || 0;
+
+        const payload = { 
+            tanggal, pelanggan, items: [...keranjangSementara], totalBelanja: totalBelanjaHariIni, tagihan, payment, hutangAwal 
+        };
+
+        if (idxTransaksi === -1) {
+            dataTransaksi.push(payload);
+        } else {
+            dataTransaksi[idxTransaksi] = payload;
+            batalEditTransaksi();
+        }
+
+        simpanKeLocalStorage(); // <-- AUTO SAVE SETELAH SUBMIT TRANSAKSI BARU / EDITAN
+        keranjangSementara = [];
+        document.getElementById("receivable-form").reset();
+        document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
+        renderKeranjang();
+        renderDashboard();
+    });
+
+    function hapusData(index) { 
+        if(confirm("Hapus transaksi ini secara permanen?")) { 
+            dataTransaksi.splice(index, 1); 
+            simpanKeLocalStorage(); // <-- AUTO SAVE KETIKA HAPUS TRANSAKSI
+            renderDashboard(); 
+        } 
+    }
+
+    document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
+    document.getElementById("current-date").innerText = "Hari Ini: " + new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    renderUiControls();
+    renderDashboard();
+</script>
+</body>
+</html>
