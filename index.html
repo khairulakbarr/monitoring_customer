@@ -392,6 +392,12 @@
     let namaFileGlobal = "Faktur";
 
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka); }
+    function parseTanggal(str) {
+    if (!str) return new Date(0);
+    const parts = str.split('/');
+    // Format: YYYY, MM-1, DD
+    return new Date(parts[2], parts[1] - 1, parts[0]);
+}
     function convertDateToDisplay(dateStr) { if(dateStr.includes("/")) return dateStr; const d = dateStr.split("-"); return `${d[2]}/${d[1]}/${d[0]}`; }
     function convertDateToInput(dateStr) { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
 
@@ -528,10 +534,18 @@
     const tbody = document.getElementById("table-body");
     tbody.innerHTML = "";
     let kj = 0, kd = 0, kp = 0;
+    
+    // 1. Buat salinan data transaksi yang sudah dilengkapi index aslinya agar fitur edit/hapus tidak salah sasaran
+    let transaksiMapped = dataTransaksi.map((tx, idx) => ({ ...tx, originalIdx: idx }));
+    
+    // 2. Urutkan dari tanggal tertua ke terbaru
+    transaksiMapped.sort((a, b) => parseTanggal(a.tanggal) - parseTanggal(b.tanggal));
+
     let saldoTerakhir = {};
     masterCustomer.forEach(c => saldoTerakhir[c.nama] = 0);
 
-    dataTransaksi.forEach((tx, realIdx) => {
+    // 3. Render ke tabel utama
+    transaksiMapped.forEach((tx, viewIdx) => {
         const meta = masterCustomer.find(c => c.nama === tx.pelanggan) || {kategori: "Customer Umum"};
         const sisa = Math.round(tx.tagihan - tx.payment);
         saldoTerakhir[tx.pelanggan] = sisa;
@@ -541,12 +555,18 @@
             let itemsStr = tx.items.map(i => `${i.nama}(${i.qty}kg)`).join(", ");
             tbody.innerHTML += `
                 <tr>
-                    <td>${realIdx+1}</td><td>${tx.tanggal}</td><td class="fw-bold">${tx.pelanggan}</td><td class="small">${itemsStr}</td>
-                    <td>${formatRupiah(Math.round(tx.totalBelanja))}</td><td>${formatRupiah(Math.round(tx.tagihan))}</td><td>${formatRupiah(Math.round(tx.payment))}</td><td class="text-danger fw-bold">${formatRupiah(sisa)}</td>
-                    <td><button class="btn btn-sm btn-danger py-0" data-bs-toggle="modal" data-bs-target="#invoiceModal" onclick="tampilkanFaktur(${realIdx})"><i class="bi bi-file-earmark-pdf"></i></button></td>
+                    <td>${viewIdx + 1}</td>
+                    <td>${tx.tanggal}</td>
+                    <td class="fw-bold">${tx.pelanggan}</td>
+                    <td class="small">${itemsStr}</td>
+                    <td>${formatRupiah(Math.round(tx.totalBelanja))}</td>
+                    <td>${formatRupiah(Math.round(tx.tagihan))}</td>
+                    <td>${formatRupiah(Math.round(tx.payment))}</td>
+                    <td class="text-danger fw-bold">${formatRupiah(sisa)}</td>
+                    <td><button class="btn btn-sm btn-danger py-0" data-bs-toggle="modal" data-bs-target="#invoiceModal" onclick="tampilkanFaktur(${tx.originalIdx})"><i class="bi bi-file-earmark-pdf"></i></button></td>
                     <td>
-                        <i class="bi bi-pencil-square text-warning me-2" onclick="pilihEditTransaksi(${realIdx})"></i>
-                        <i class="bi bi-trash text-danger" onclick="hapusData(${realIdx})"></i>
+                        <i class="bi bi-pencil-square text-warning me-2" onclick="pilihEditTransaksi(${tx.originalIdx})"></i>
+                        <i class="bi bi-trash text-danger" onclick="hapusData(${tx.originalIdx})"></i>
                     </td>
                 </tr>`;
         }
