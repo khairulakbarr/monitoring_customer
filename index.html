@@ -654,28 +654,23 @@
         setTimeout(() => { tampilkanFaktur(idx); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
     }
 
-    let rows = trans.items.map(i => {
-            let totalItem = 0;
-            let kolomQty = "";
+    function tampilkanFaktur(idx) {
+        const trans = dataTransaksi[idx];
+        const sisa = Math.round(trans.tagihan - trans.payment);
+        namaFileGlobal = `Faktur_${trans.pelanggan}_${trans.tanggal.replace(/\//g,'-')}`;
+        
+        let rows = trans.items.map(i => {
             let rataRataStr = "";
-            
-            if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                totalItem = Math.round(i.ekor * i.harga);
-                kolomQty = `${i.ekor} ekor`;
-            } else {
-                totalItem = Math.round(i.qty * i.harga);
-                kolomQty = `${i.qty} kg`;
-                if (i.ekor > 0 && i.qty > 0) {
-                    let avg = (i.qty / i.ekor).toFixed(2);
-                    rataRataStr = `<br><small class="text-muted">Rt-rt: ${avg} kg/ekor</small>`;
-                }
+            if (i.ekor > 0 && i.qty > 0) {
+                let avg = (i.qty / i.ekor).toFixed(2);
+                rataRataStr = `<br><small class="text-muted">ABW: ${avg} kg/ekor</small>`;
             }
             
             return `<tr>
-                <td><b>${i.nama}</b>${i.nama !== "Ayam Merah" && i.nama !== "Ayam Penyet" && i.ekor > 0 ? '<br><small>('+i.ekor+' ekor)</small>':''}${rataRataStr}</td>
-                <td>${kolomQty}</td>
+                <td><b>${i.nama}</b>${i.ekor > 0 ? '<br><small>('+i.ekor+' ekor)</small>':''}${rataRataStr}</td>
+                <td>${i.qty} kg</td>
                 <td>${formatRupiah(i.harga)}</td>
-                <td>${formatRupiah(totalItem)}</td>
+                <td>${formatRupiah(Math.round(i.qty*i.harga))}</td>
             </tr>`;
         }).join("");
         document.getElementById("invoice-content").innerHTML = `
