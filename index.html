@@ -524,43 +524,42 @@
         renderDashboard();
     }
 
-    function renderDashboard() {
-        const tbody = document.getElementById("table-body");
-        tbody.innerHTML = "";
-        let kj = 0, kd = 0, kp = 0;
-        let saldoTerakhir = {};
-        masterCustomer.forEach(c => saldoTerakhir[c.nama] = 0);
+   function renderDashboard() {
+    const tbody = document.getElementById("table-body");
+    tbody.innerHTML = "";
+    let kj = 0, kd = 0, kp = 0;
+    let saldoTerakhir = {};
+    masterCustomer.forEach(c => saldoTerakhir[c.nama] = 0);
 
-        dataTransaksi.forEach((tx, realIdx) => {
-            const meta = masterCustomer.find(c => c.nama === tx.pelanggan) || {kategori: "Customer Umum"};
-            const sisa = tx.tagihan - tx.payment;
-            saldoTerakhir[tx.pelanggan] = sisa;
+    dataTransaksi.forEach((tx, realIdx) => {
+        const meta = masterCustomer.find(c => c.nama === tx.pelanggan) || {kategori: "Customer Umum"};
+        const sisa = Math.round(tx.tagihan - tx.payment);
+        saldoTerakhir[tx.pelanggan] = sisa;
 
-            if(currentFilter === "Semua" || currentFilter === meta.kategori) {
-                kj += tx.totalBelanja; kd += tx.payment;
-                let itemsStr = tx.items.map(i => `${i.nama}(${i.qty}kg)`).join(", ");
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${realIdx+1}</td><td>${tx.tanggal}</td><td class="fw-bold">${tx.pelanggan}</td><td class="small">${itemsStr}</td>
-                        <td>${formatRupiah(tx.totalBelanja)}</td><td>${formatRupiah(tx.tagihan)}</td><td>${formatRupiah(tx.payment)}</td><td class="text-danger fw-bold">${formatRupiah(sisa)}</td>
-                        <td><button class="btn btn-sm btn-danger py-0" data-bs-toggle="modal" data-bs-target="#invoiceModal" onclick="tampilkanFaktur(${realIdx})"><i class="bi bi-file-earmark-pdf"></i></button></td>
-                        <td>
-                            <i class="bi bi-pencil-square text-warning me-2" onclick="pilihEditTransaksi(${realIdx})"></i>
-                            <i class="bi bi-trash text-danger" onclick="hapusData(${realIdx})"></i>
-                        </td>
-                    </tr>`;
-            }
-        });
+        if(currentFilter === "Semua" || currentFilter === meta.kategori) {
+            kj += tx.totalBelanja; kd += tx.payment;
+            let itemsStr = tx.items.map(i => `${i.nama}(${i.qty}kg)`).join(", ");
+            tbody.innerHTML += `
+                <tr>
+                    <td>${realIdx+1}</td><td>${tx.tanggal}</td><td class="fw-bold">${tx.pelanggan}</td><td class="small">${itemsStr}</td>
+                    <td>${formatRupiah(Math.round(tx.totalBelanja))}</td><td>${formatRupiah(Math.round(tx.tagihan))}</td><td>${formatRupiah(Math.round(tx.payment))}</td><td class="text-danger fw-bold">${formatRupiah(sisa)}</td>
+                    <td><button class="btn btn-sm btn-danger py-0" data-bs-toggle="modal" data-bs-target="#invoiceModal" onclick="tampilkanFaktur(${realIdx})"><i class="bi bi-file-earmark-pdf"></i></button></td>
+                    <td>
+                        <i class="bi bi-pencil-square text-warning me-2" onclick="pilihEditTransaksi(${realIdx})"></i>
+                        <i class="bi bi-trash text-danger" onclick="hapusData(${realIdx})"></i>
+                    </td>
+                </tr>`;
+        }
+    });
 
-        masterCustomer.forEach(c => kp += (saldoTerakhir[c.nama] || 0));
-        document.getElementById("kpi-total-penjualan").innerText = formatRupiah(kj);
-        document.getElementById("kpi-total-diterima").innerText = formatRupiah(kd);
-        document.getElementById("kpi-sisa-piutang").innerText = formatRupiah(kp);
+    masterCustomer.forEach(c => kp += (saldoTerakhir[c.nama] || 0));
+    document.getElementById("kpi-total-penjualan").innerText = formatRupiah(Math.round(kj));
+    document.getElementById("kpi-total-diterima").innerText = formatRupiah(Math.round(kd));
+    document.getElementById("kpi-sisa-piutang").innerText = formatRupiah(Math.round(kp));
 
-        renderCustomerGridMenu();
-        renderChartEngine();
-    }
-
+    renderCustomerGridMenu();
+    renderChartEngine();
+}
     function renderChartEngine() {
         let pts = {};
         dataTransaksi.forEach(t => { pts[t.tanggal] = (pts[t.tanggal] || 0) + (t.tagihan - t.payment); });
@@ -599,27 +598,41 @@
     }
 
     function tampilkanFaktur(idx) {
-        const trans = dataTransaksi[idx];
-        const sisa = trans.tagihan - trans.payment;
-        namaFileGlobal = `Faktur_${trans.pelanggan}_${trans.tanggal.replace(/\//g,'-')}`;
+    const trans = dataTransaksi[idx];
+    const sisa = Math.round(trans.tagihan - trans.payment);
+    namaFileGlobal = `Faktur_${trans.pelanggan}_${trans.tanggal.replace(/\//g,'-')}`;
+    
+    let rows = trans.items.map(i => {
+        // Hitung bobot rata-rata jika ada data ekor dan kg
+        let rataRataStr = "";
+        if (i.ekor > 0 && i.qty > 0) {
+            let avg = (i.qty / i.ekor).toFixed(2);
+            rataRataStr = `<br><small class="text-muted">Rt-rt: ${avg} kg/ekor</small>`;
+        }
         
-        let rows = trans.items.map(i => `<tr><td><b>${i.nama}</b>${i.ekor > 0 ? '<br><small>('+i.ekor+' ekor)</small>':''}</td><td>${i.qty} kg</td><td>${formatRupiah(i.harga)}</td><td>${formatRupiah(i.qty*i.harga)}</td></tr>`).join("");
+        return `<tr>
+            <td><b>${i.nama}</b>${i.ekor > 0 ? '<br><small>('+i.ekor+' ekor)</small>':''}${rataRataStr}</td>
+            <td>${i.qty} kg</td>
+            <td>${formatRupiah(i.harga)}</td>
+            <td>${formatRupiah(Math.round(i.qty*i.harga))}</td>
+        </tr>`;
+    }).join("");
 
-        document.getElementById("invoice-content").innerHTML = `
-            <div class="d-flex justify-content-between mb-3">
-                <div><div class="invoice-title">FAKTUR</div><div class="small">KEPADA: <b>${trans.pelanggan}</b></div></div>
-                <div class="text-end small"><b>No:</b> #${idx+101}<br><b>Tgl:</b> ${trans.tanggal}</div>
-            </div>
-            <table class="table-invoice-maroon"><thead><tr><th>Barang</th><th>Qty</th><th>Harga</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
-            <div class="mt-3 text-end" style="font-size:13px;">
-                <div class="invoice-summary-row"><div class="invoice-summary-label">Subtotal</div><div class="invoice-summary-value">${formatRupiah(trans.totalBelanja)}</div></div>
-                <div class="invoice-summary-row"><div class="invoice-summary-label">Piutang Lama</div><div class="invoice-summary-value">${formatRupiah(trans.hutangAwal)}</div></div>
-                <div class="invoice-total-badge"><div class="invoice-total-container"><span>TOTAL</span><span>${formatRupiah(trans.tagihan)}</span></div></div>
-                <div class="invoice-summary-row mt-2 text-success"><div class="invoice-summary-label">Bayar/DP</div><div class="invoice-summary-value">-${formatRupiah(trans.payment)}</div></div>
-                <div class="invoice-summary-row text-danger fw-bold"><div class="invoice-summary-label">SISA PIUTANG</div><div class="invoice-summary-value">${formatRupiah(sisa)}</div></div>
-            </div>
-            <div class="invoice-footer-info"><b>INFO:</b> Transfer SeaBank 9017-6605-7787 a.n Khairul Akbar</div>`;
-    }
+    document.getElementById("invoice-content").innerHTML = `
+        <div class="d-flex justify-content-between mb-3">
+            <div><div class="invoice-title">FAKTUR</div><div class="small">Kepada: <b>${trans.pelanggan}</b></div></div>
+            <div class="text-end small"><b>No:</b> #${idx+101}<br><b>Tgl:</b> ${trans.tanggal}</div>
+        </div>
+        <table class="table-invoice-maroon"><thead><tr><th>Barang</th><th>Qty</th><th>Harga</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="mt-3 text-end" style="font-size:13px;">
+            <div class="invoice-summary-row"><div class="invoice-summary-label">Subtotal</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.totalBelanja))}</div></div>
+            <div class="invoice-summary-row"><div class="invoice-summary-label">Piutang Lama</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.hutangAwal))}</div></div>
+            <div class="invoice-total-badge"><div class="invoice-total-container"><span>TOTAL</span><span>${formatRupiah(Math.round(trans.tagihan))}</span></div></div>
+            <div class="invoice-summary-row mt-2 text-success"><div class="invoice-summary-label">Bayar/DP</div><div class="invoice-summary-value">-${formatRupiah(Math.round(trans.payment))}</div></div>
+            <div class="invoice-summary-row text-danger fw-bold"><div class="invoice-summary-label">SISA PIUTANG</div><div class="invoice-summary-value">${formatRupiah(sisa)}</div></div>
+        </div>
+        <div class="invoice-footer-info"><b>INFO:</b> Transfer SeaBank 9017-6605-7787 a.n Khairul Akbar</div>`;
+}
 
     document.getElementById("btn-download-faktur").addEventListener("click", function() {
         html2canvas(document.getElementById("invoice-download-wrapper"), { scale: 2 }).then(canvas => {
