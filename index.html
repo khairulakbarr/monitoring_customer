@@ -620,7 +620,7 @@
         const tbody = document.getElementById("cust-modal-table-body");
         tbody.innerHTML = "";
         
-        let tj = 0, td = 0, ts = 0; // ts sekarang akan menampung akumulasi total sisa piutang
+        let tj = 0, td = 0, ts = 0;
 
         // 1. Filter transaksi berdasarkan nama customer
         let txCustomer = dataTransaksi.filter(t => t.pelanggan === nama);
@@ -628,21 +628,20 @@
         // 2. Urutkan dari TANGGAL TERKINI ke TERLAMA
         txCustomer.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
 
-        // 3. Render ke tabel modal & akumulasikan nilainya dengan benar
+        // 3. Render ke tabel modal & hitung total penjualan & total diterima
         txCustomer.forEach(tx => {
-            let sisaBaris = Math.round(tx.tagihan - tx.payment);
+            tj += tx.totalBelanja; // Total Seluruh Belanja
+            td += tx.payment;      // Total Seluruh Pelunasan
             
-            tj += tx.totalBelanja; 
-            td += tx.payment; 
-            ts += sisaBaris; // DI SINI PERBAIKANNYA: Nilai dijumlahkan kumulatif ke atas, bukan ditimpa
-
+            let sisaBaris = Math.round(tx.tagihan - tx.payment);
             let iStr = tx.items.map(i => {
-    if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-        return `${i.nama}(${i.ekor}ekor)`;
-    } else {
-        return `${i.nama}(${i.qty}kg)`;
-    }
-}).join(", ");
+                if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
+                    return `${i.nama}(${i.ekor}ekor)`;
+                } else {
+                    return `${i.nama}(${i.qty}kg)`;
+                }
+            }).join(", ");
+
             tbody.innerHTML += `<tr>
                 <td>${tx.tanggal}</td>
                 <td class="text-start">${iStr}</td>
@@ -654,10 +653,13 @@
             </tr>`;
         });
         
+        // RUMUS BARU: Total Penjualan dikurangi Total Diterima
+        ts = tj - td; 
+
         // Menampilkan hasil kalkulasi yang sudah benar ke kotak atas modal
         document.getElementById("cust-modal-jual").innerText = formatRupiah(tj);
         document.getElementById("cust-modal-terima").innerText = formatRupiah(td);
-        document.getElementById("cust-modal-piutang").innerText = formatRupiah(ts); // Sekarang hasilnya pasti Rp 1.011.000
+        document.getElementById("cust-modal-piutang").innerText = formatRupiah(ts); // Hasilnya pasti Rp 237.500
         
         new bootstrap.Modal(document.getElementById('customerDashboardModal')).show();
     }
