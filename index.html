@@ -450,10 +450,21 @@
         const qty = parseFloat(document.getElementById("input-jumlah").value) || 0;
         const ekor = parseInt(document.getElementById("input-ekor").value) || 0;
         const harga = parseInt(document.getElementById("input-harga").value) || 0;
-        if (qty <= 0 || harga <= 0) return;
+        
+        // Validasi berdasarkan jenis produk
+        if (produk === "Ayam Merah" || produk === "Ayam Penyet") {
+            if (ekor <= 0 || harga <= 0) return; // Wajib isi ekor & harga
+        } else {
+            if (qty <= 0 || harga <= 0) return; // Wajib isi Kg & harga
+        }
+        
         keranjangSementara.push({ nama: produk, qty, ekor, harga });
+        
+        // Reset input setelah dimasukkan
         document.getElementById("input-jumlah").value = "";
         document.getElementById("input-ekor").value = "";
+        document.getElementById("input-harga").value = "";
+        
         renderKeranjang();
         hitungUlangPiutangForm();
     }
@@ -468,15 +479,30 @@
         const tbody = document.getElementById("cart-table-body");
         tbody.innerHTML = "";
         totalBelanjaHariIni = 0;
+        
         if(keranjangSementara.length === 0) {
             tbody.innerHTML = `<tr><td class="text-center text-muted small py-2">Nota Kosong</td></tr>`;
             document.getElementById("display-belanja-hari-ini").innerText = "Rp 0";
             return;
         }
+        
         keranjangSementara.forEach((item, idx) => {
-            totalBelanjaHariIni += (item.qty * item.harga);
-            tbody.innerHTML += `<tr><td><b>${item.nama}</b> (${item.qty}kg)</td><td class="text-end text-danger"><i class="bi bi-x-circle" onclick="hapusItemKeranjang(${idx})"></i></td></tr>`;
+            let totalItem = 0;
+            let ketSatuan = "";
+            
+            // Rumus Kriteria Baru
+            if (item.nama === "Ayam Merah" || item.nama === "Ayam Penyet") {
+                totalItem = item.ekor * item.harga;
+                ketSatuan = `${item.ekor} ekor`;
+            } else {
+                totalItem = item.qty * item.harga;
+                ketSatuan = `${item.qty} kg`;
+            }
+            
+            totalBelanjaHariIni += totalItem;
+            tbody.innerHTML += `<tr><td><b>${item.nama}</b> (${ketSatuan})</td><td class="text-end text-danger"><i class="bi bi-x-circle" onclick="hapusItemKeranjang(${idx})"></i></td></tr>`;
         });
+        
         document.getElementById("display-belanja-hari-ini").innerText = formatRupiah(totalBelanjaHariIni);
     }
 
@@ -628,26 +654,30 @@
         setTimeout(() => { tampilkanFaktur(idx); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
     }
 
-    function tampilkanFaktur(idx) {
-        const trans = dataTransaksi[idx];
-        const sisa = Math.round(trans.tagihan - trans.payment);
-        namaFileGlobal = `Faktur_${trans.pelanggan}_${trans.tanggal.replace(/\//g,'-')}`;
-        
-        let rows = trans.items.map(i => {
+    let rows = trans.items.map(i => {
+            let totalItem = 0;
+            let kolomQty = "";
             let rataRataStr = "";
-            if (i.ekor > 0 && i.qty > 0) {
-                let avg = (i.qty / i.ekor).toFixed(2);
-                rataRataStr = `<br><small class="text-muted">ABW: ${avg} kg/ekor</small>`;
+            
+            if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
+                totalItem = Math.round(i.ekor * i.harga);
+                kolomQty = `${i.ekor} ekor`;
+            } else {
+                totalItem = Math.round(i.qty * i.harga);
+                kolomQty = `${i.qty} kg`;
+                if (i.ekor > 0 && i.qty > 0) {
+                    let avg = (i.qty / i.ekor).toFixed(2);
+                    rataRataStr = `<br><small class="text-muted">Rt-rt: ${avg} kg/ekor</small>`;
+                }
             }
             
             return `<tr>
-                <td><b>${i.nama}</b>${i.ekor > 0 ? '<br><small>('+i.ekor+' ekor)</small>':''}${rataRataStr}</td>
-                <td>${i.qty} kg</td>
+                <td><b>${i.nama}</b>${i.nama !== "Ayam Merah" && i.nama !== "Ayam Penyet" && i.ekor > 0 ? '<br><small>('+i.ekor+' ekor)</small>':''}${rataRataStr}</td>
+                <td>${kolomQty}</td>
                 <td>${formatRupiah(i.harga)}</td>
-                <td>${formatRupiah(Math.round(i.qty*i.harga))}</td>
+                <td>${formatRupiah(totalItem)}</td>
             </tr>`;
         }).join("");
-
         document.getElementById("invoice-content").innerHTML = `
             <div class="d-flex justify-content-between mb-3">
                 <div><div class="invoice-title">FAKTUR</div><div class="small">Kepada: <b>${trans.pelanggan}</b></div></div>
