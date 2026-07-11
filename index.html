@@ -12,6 +12,57 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Html2Canvas Library untuk Fitur Download Gambar Otomatis -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    /* Perbaikan Khusus Tampilan Faktur di Layar HP */
+@media (max-width: 576px) {
+    .invoice-box-premium {
+        padding: 15px !important;
+    }
+    .table-invoice-maroon thead {
+        display: none; /* Sembunyikan header tabel yang kaku di HP */
+    }
+    .table-invoice-maroon tr {
+        display: block;
+        border-bottom: 2px solid var(--maroon-theme);
+        padding: 10px 0;
+        position: relative;
+    }
+    .table-invoice-maroon td {
+        display: block;
+        width: 100% !important;
+        text-align: left !important;
+        padding: 2px 0 !important;
+        border: none !important;
+    }
+    /* Mengatur urutan dan posisi rincian harga di HP */
+    .table-invoice-maroon td:nth-child(1) {
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+    .table-invoice-maroon td:nth-child(2)::before {
+        content: "Qty: ";
+        color: #777;
+    }
+    .table-invoice-maroon td:nth-child(3)::before {
+        content: "Harga: ";
+        color: #777;
+    }
+    .table-invoice-maroon td:last-child {
+        text-align: right !important;
+        font-weight: 700;
+        color: var(--maroon-theme);
+        margin-top: -20px; /* Menarik total harga ke atas sejajar dengan Qty */
+        font-size: 14px;
+    }
+    .invoice-summary-label {
+        width: 60% !important;
+    }
+    .invoice-summary-value {
+        width: 40% !important;
+    }
+    .invoice-total-container {
+        width: 100% !important;
+    }
+}
     <style>
         :root {
             --bg-main: #f8f9fa;
