@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Monitoring Utang Supplier</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-main: #f8f9fa;
+            --primary-maroon: #8B0000;
+            --secondary-maroon: #FDE8E8;
+            --text-dark: #2D3748;
+            --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.03);
+        }
+        body { 
+            background-color: var(--bg-main); 
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            color: var(--text-dark);
+        }
+        .bg-gradient-maroon { 
+            background: linear-gradient(135deg, #8B0000, #4A0000); 
+            color: white; 
+        }
+        .premium-card {
+            background: #ffffff;
+            border-radius: 16px;
+            border: none;
+            box-shadow: var(--card-shadow);
+            padding: 24px;
+            height: 100%;
+        }
+        .kpi-icon-wrapper {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--secondary-maroon);
+            color: var(--primary-maroon);
+        }
+        .custom-tabs .nav-link {
+            border: none;
+            color: #718096;
+            font-weight: 700;
+            padding: 12px 20px;
+            font-size: 15px;
+            position: relative;
+        }
+        .custom-tabs .nav-link.active {
+            color: var(--primary-maroon);
+            background: transparent;
+        }
+        .custom-tabs .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 20px;
+            right: 20px;
+            height: 3px;
+            background-color: var(--primary-maroon);
+            border-radius: 3px;
+        }
+        .table-premium th {
+            background-color: #f8f9fa;
+            color: #718096;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            padding: 14px;
+            border-bottom: 2px solid #edf2f7;
+        }
+        .table-premium td {
+            padding: 14px;
+            vertical-align: middle;
+            border-bottom: 1px solid #edf2f7;
+        }
+        .block-kuning {
+            background-color: #FFF9E6 !important;
+            border-left: 4px solid #FFCC00;
+        }
+        .supplier-badge-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .supplier-badge-card:hover {
+            border-color: var(--primary-maroon);
+            box-shadow: 0 4px 12px rgba(139, 0, 0, 0.1);
+        }
+        .invoice-box-premium {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            color: #333333;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .invoice-title {
+            color: var(--primary-maroon);
+            font-weight: 900;
+            font-size: 26px;
+            text-transform: uppercase;
+        }
+        .table-invoice-maroon {
+            width: 100%;
+            margin-top: 15px;
+            border-collapse: collapse;
+        }
+        .table-invoice-maroon th {
+            background-color: var(--primary-maroon);
+            color: #ffffff;
+            font-size: 12px;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .table-invoice-maroon th:last-child, .table-invoice-maroon td:last-child {
+            text-align: right;
+        }
+        .table-invoice-maroon td {
+            padding: 10px 12px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--primary-maroon);
+        }
+        .invoice-summary-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+        .invoice-summary-label { width: 160px; text-align: right; font-weight: 600; color: var(--primary-maroon); padding-right: 15px; }
+        .invoice-summary-value { width: 120px; text-align: right; font-weight: 600; }
+        .invoice-total-container {
+            background-color: var(--primary-maroon); color: white; padding: 8px 15px; border-radius: 6px;
+            display: flex; width: 280px; justify-content: space-between; font-weight: 700; font-size: 14px;
+        }
+        .invoice-footer-info { margin-top: 35px; border-top: 1px dashed #dddddd; padding-top: 15px; font-size: 11px; color: #666; }
+
+        @media (max-width: 576px) {
+            .invoice-box-premium { padding: 15px !important; }
+            .table-invoice-maroon thead { display: none !important; }
+            .table-invoice-maroon tr { display: block; border-bottom: 2px solid var(--primary-maroon); padding: 10px 0; position: relative; }
+            .table-invoice-maroon td { display: block; width: 100% !important; text-align: left !important; padding: 3px 0 !important; border: none !important; }
+            .table-invoice-maroon td:nth-child(2)::before { content: "Jumlah: "; color: #777; font-weight: 600; }
+            .table-invoice-maroon td:nth-child(3)::before { content: "Harga: "; color: #777; font-weight: 600; }
+            .table-invoice-maroon td:last-child { text-align: right !important; font-weight: 700; color: var(--primary-maroon); margin-top: -24px; font-size: 14px; }
+            .invoice-summary-label { width: 55% !important; }
+            .invoice-summary-value { width: 45% !important; }
+            .invoice-total-badge { display: flex; justify-content: flex-end; }
+            .invoice-total-container { width: 100% !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container py-4">
+    <!-- CLOUD SYNC INDICATOR BAR -->
+    <div class="d-flex justify-content-between align-items-center mb-3 px-3 py-2 bg-white rounded-3 border">
+        <div id="sync-status" class="small fw-bold text-muted">
+            <i class="bi bi-cloud-arrow-down-fill text-danger"></i> Menghubungkan ke Cloud Supplier...
+        </div>
+        <button class="btn btn-sm btn-danger fw-bold" onclick="muatDataDariSheets()">
+            <i class="bi bi-arrow-clockwise"></i> Tarik Data Terbaru
+        </button>
+    </div>
+
+    <!-- HEADER -->
+    <div class="p-4 bg-gradient-maroon rounded-4 shadow-sm mb-4">
+        <h2 class="mb-0 fs-4 fw-bold d-flex align-items-center gap-2">
+            <i class="bi bi-truck"></i> MONITORING UTANG SUPPLIER (KULAKAN)
+        </h2>
+        <p class="mb-0 small opacity-75 mt-1" id="current-date"></p>
+    </div>
+
+    <!-- TABS -->
+    <div class="premium-card p-2 mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <ul class="nav nav-tabs custom-tabs border-0" id="categoryTabs">
+                <li class="nav-item"><button class="nav-link active" onclick="filterKategori('Semua')">Semua Supplier</button></li>
+                <li class="nav-item"><button class="nav-link" onclick="filterKategori('Supplier Utama')">Supplier Utama</button></li>
+                <li class="nav-item"><button class="nav-link" id="label-tetap" onclick="filterKategori('Supplier Alternatif')">Supplier Alternatif</button></li>
+            </ul>
+            <button class="btn btn-sm btn-dark fw-bold px-3 py-2 rounded-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#supplierModal" onclick="renderKelolaSupplier()">
+                <i class="bi bi-people-fill me-1"></i> Kelola Supplier
+            </button>
+        </div>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="premium-card d-flex align-items-center justify-content-between">
+                <div><span class="small text-muted d-block fw-bold">TOTAL BELANJA/KULAKAN</span><h2 class="fw-bold mt-2 mb-0" id="kpi-total-pembelian">Rp 0</h2></div>
+                <div class="kpi-icon-wrapper"><i class="bi bi-box-seam fs-4"></i></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="premium-card d-flex align-items-center justify-content-between">
+                <div><span class="small text-muted d-block fw-bold">TOTAL DIBAYARKAN (CASH/DP)</span><h2 class="fw-bold text-success mt-2 mb-0" id="kpi-total-dibayar">Rp 0</h2></div>
+                <div class="kpi-icon-wrapper" style="background-color: #E6F4EA; color: #137333;"><i class="bi bi-cash-stack fs-4"></i></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="premium-card d-flex align-items-center justify-content-between">
+                <div><span class="small text-muted d-block fw-bold">SISA UTANG AKTIF KITA</span><h2 class="fw-bold text-danger mt-2 mb-0" id="kpi-sisa-utang">Rp 0</h2></div>
+                <div class="kpi-icon-wrapper" style="background-color: #FCE8E6; color: #C5221F;"><i class="bi bi-exclamation-octagon fs-4"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUPPLIER GRID -->
+    <div class="premium-card mb-4 bg-light border">
+        <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-journal-bookmark-fill text-danger"></i> Klik Nama Supplier Untuk Histori Buku Utang:</h6>
+        <div class="row g-2" id="supplier-grid-container"></div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- FORM -->
+        <div class="col-lg-5">
+            <div class="premium-card">
+                <h5 class="fw-bold mb-3 text-dark" id="form-title"><i class="bi bi-plus-circle-fill text-danger"></i> Input Transaksi Masuk (Kulakan)</h5>
+                <form id="payable-form">
+                    <input type="hidden" id="edit-transaksi-index" value="-1">
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-muted mb-1">Tanggal</label>
+                            <input type="date" class="form-control form-control-sm" id="input-tanggal" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-muted mb-1">Supplier</label>
+                            <select class="form-select form-select-sm" id="input-supplier" required></select>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 mb-3 border">
+                        <label class="form-label small fw-bold text-dark mb-1">Tambah Barang Masuk:</label>
+                        <select class="form-select form-select-sm mb-2" id="input-produk">
+                            <option value="Ayam Potong">Ayam Potong</option>
+                            <option value="Ayam Merah">Ayam Merah</option>
+                            <option value="Ayam Penyet">Ayam Penyet</option>
+                        </select>
+                        <div class="row g-2 mb-2">
+                            <div class="col-4"><input type="number" step="0.1" class="form-control form-control-sm" id="input-jumlah" placeholder="Kg"></div>
+                            <div class="col-4"><input type="number" class="form-control form-control-sm" id="input-ekor" placeholder="Ekor"></div>
+                            <div class="col-4"><input type="number" class="form-control form-control-sm" id="input-harga" placeholder="Harga"></div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger w-100 fw-bold" onclick="tambahKeKeranjang()">Masukkan Nota</button>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="border rounded p-2 bg-white" style="max-height: 120px; overflow-y:auto; font-size: 13px;">
+                            <table class="table table-sm m-0"><tbody id="cart-table-body"></tbody></table>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-2 p-2 rounded bg-gradient-maroon text-center">
+                        <span class="small opacity-75 d-block" style="font-size:11px;">TOTAL BELANJA KULAKAN HARI INI</span>
+                        <h4 class="fw-bold m-0" id="display-belanja-hari-ini">Rp 0</h4>
+                    </div>
+
+                    <div class="mb-3 p-3 rounded-3 block-kuning">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="text-muted small fw-bold">Sisa Utang Lalu</label>
+                                <input type="number" class="form-control form-control-sm" id="sub-sisa-utang" value="0">
+                            </div>
+                            <div class="col-6">
+                                <label class="text-muted small fw-bold">Total Akumulasi Utang</label>
+                                <input type="number" class="form-control form-control-sm fw-bold text-danger bg-white" id="input-utang-total" readonly value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-success mb-1">Jumlah Uang yang Dibayar (DP/Cicil)</label>
+                        <input type="number" class="form-control border-success text-success fw-bold" id="input-pembayaran" value="0" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-danger w-100 fw-bold py-2 shadow" id="btn-submit-transaksi">Simpan & Sinkron Cloud Supplier</button>
+                    <button type="button" class="btn btn-secondary w-100 fw-bold mt-2 d-none" id="btn-batal-edit" onclick="batalEditTransaksi()">Batal</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- CHART -->
+        <div class="col-lg-7">
+            <div class="premium-card">
+                <h5 class="fw-bold mb-4 text-dark">📊 Grafik Saldo Utang Dagang Berjalan</h5>
+                <div style="position: relative; height:320px;"><canvas id="payableChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="premium-card">
+        <h5 class="fw-bold mb-3 text-dark">📄 Buku Arus Rincian Transaksi Supplier</h5>
+        <div class="table-responsive">
+            <table class="table table-premium align-middle table-hover">
+                <thead>
+                    <tr>
+                        <th>No</th><th>Tanggal</th><th>Supplier</th><th>Item Rincian</th><th>Total Kulakan</th><th>Total Utang</th><th>Kita Bayar</th><th>Sisa Utang</th><th>Nota</th><th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- POPUPS/MODALS -->
+<!-- 1. Jendela Dasbor Supplier -->
+<div class="modal fade" id="supplierDashboardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px;">
+            <div class="modal-header bg-dark text-white"><h5 class="modal-title fw-bold" id="supp-modal-title">Dasbor Supplier</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body p-4">
+                <div class="row g-3 mb-4">
+                    <div class="col-4"><div class="p-3 bg-white rounded shadow-sm border-start border-primary border-4"><span class="small text-muted d-block fw-bold">TOTAL KULAKAN</span><h4 class="fw-bold text-primary mt-1 mb-0" id="supp-modal-jual">Rp 0</h4></div></div>
+                    <div class="col-4"><div class="p-3 bg-white rounded shadow-sm border-start border-success border-4"><span class="small text-muted d-block fw-bold">TOTAL DIBAYAR</span><h4 class="fw-bold text-success mt-1 mb-0" id="supp-modal-terima">Rp 0</h4></div></div>
+                    <div class="col-4"><div class="p-3 bg-white rounded shadow-sm border-start border-danger border-4"><span class="small text-muted d-block fw-bold">SISA UTANG KITA</span><h4 class="fw-bold text-danger mt-1 mb-0" id="supp-modal-utang">Rp 0</h4></div></div>
+                </div>
+                <div class="bg-white p-3 rounded shadow-sm">
+                    <div class="table-responsive"><table class="table table-bordered table-sm align-middle text-center" style="font-size:13px;"><thead class="table-dark"><tr><th>Tanggal</th><th>Rincian Item</th><th>Nilai Kulakan</th><th>Total Utang</th><th>Kita Bayar</th><th>Sisa Utang</th><th>Nota</th></tr></thead><tbody id="supp-modal-table-body"></tbody></table></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Modal Nota Pembelian -->
+<div class="modal fade" id="invoiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content" style="background-color: #f1f5f9;">
+            <div class="modal-header bg-white shadow-sm border-0">
+                <h5 class="modal-title fw-bold text-dark">Pratinjau Nota Beli</h5>
+                <button type="button" class="btn btn-sm btn-success fw-bold px-3 ms-auto me-2" id="btn-download-faktur"><i class="bi bi-download"></i> Unduh PNG</button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div id="invoice-download-wrapper" style="background-color: #f1f5f9; padding: 10px; border-radius: 8px;">
+                    <div class="invoice-box-premium" id="invoice-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Modal Kelola Supplier -->
+<div class="modal fade" id="supplierModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white"><h5>Master Data Supplier</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body p-4">
+                <form id="supplier-form" class="bg-light p-3 rounded border mb-3">
+                    <input type="hidden" id="edit-supplier-index" value="-1">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-5"><label class="form-label small fw-bold">Nama Supplier</label><input type="text" class="form-control form-control-sm" id="supp-nama" required></div>
+                        <div class="col-md-4"><label class="form-label small fw-bold">Kategori</label><select class="form-select form-select-sm" id="supp-kategori"><option value="Supplier Utama">Supplier Utama</option><option value="Supplier Alternatif">Supplier Alternatif</option></select></div>
+                        <div class="col-md-3"><button type="submit" class="btn btn-sm btn-danger w-100 fw-bold" id="btn-simpan-supplier">Tambah</button></div>
+                    </div>
+                </form>
+                <div class="table-responsive" style="max-height: 250px;"><table class="table table-sm table-bordered align-middle text-center" style="font-size: 13px;"><thead class="table-dark"><tr><th>No</th><th>Nama Supplier</th><th>Kategori</th><th>Aksi</th></tr></thead><tbody id="list-supplier-table"></tbody></table></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // PENTING: Ganti URL di bawah ini dengan URL Web App Google Script baru khusus data Supplier Anda!
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrTdDHv2kjNttq0l4tVq3J6rq4KcOhB1CbvV08hgxcVDXabMfiyRw65WdHh-y8HROn/exec"; 
+
+    let masterSupplier = [];
+    let dataTransaksi = [];
+    let keranjangSementara = [];
+    let totalBelanjaHariIni = 0;
+    let currentFilter = "Semua";
+    let chartInstance = null;
+    let namaFileGlobal = "Nota_Supplier";
+
+    function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka); }
+    
+    function parseTanggal(str) {
+        if (!str) return new Date(0);
+        if (str.includes('T') || str.includes('-')) return new Date(str);
+        if (str.includes('/')) {
+            const parts = str.split('/');
+            if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+        const parsed = Date.parse(str);
+        return isNaN(parsed) ? new Date(0) : new Date(parsed);
+    }
+
+    function formatTampilanTanggal(stringTanggal) {
+        if (!stringTanggal) return "-";
+        if (stringTanggal.includes('T')) {
+            const d = new Date(stringTanggal);
+            if (!isNaN(d.getTime())) {
+                const hari = String(d.getDate()).padStart(2, '0');
+                const bulan = String(d.getMonth() + 1).padStart(2, '0');
+                const tahun = d.getFullYear();
+                return `${hari}/${bulan}/${tahun}`;
+            }
+        }
+        return stringTanggal;
+    }
+
+    function convertDateToDisplay(dateStr) { if(dateStr.includes("/")) return dateStr; const d = dateStr.split("-"); return `${d[2]}/${d[1]}/${d[0]}`; }
+    function convertDateToInput(dateStr) { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
+
+    async function muatDataDariSheets() {
+        showSyncStatus("loading", "Menarik data terbaru dari Cloud Supplier...");
+        if(GOOGLE_SCRIPT_URL === "https://script.google.com/macros/s/AKfycbwrTdDHv2kjNttq0l4tVq3J6rq4KcOhB1CbvV08hgxcVDXabMfiyRw65WdHh-y8HROn/exec" || GOOGLE_SCRIPT_URL === "") {
+            showSyncStatus("error", "URL Google Script Supplier belum diisi!");
+            return;
+        }
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "getData" })
+            });
+            const res = await response.json();
+            if(res.status === "success") {
+                masterSupplier = res.customers; // Menyesuaikan nama key dari skema Google Script
+                dataTransaksi = res.transaksis;
+                renderUiControls();
+                renderDashboard();
+                showSyncStatus("success", "Sistem Sinkron Online (Data Supplier)");
+            } else {
+                showSyncStatus("error", "Gagal load data: " + res.message);
+            }
+        } catch(e) {
+            showSyncStatus("error", "Gagal koneksi cloud internet.");
+        }
+    }
+
+    async function pushDataKeSheets() {
+        showSyncStatus("loading", "Menyimpan data utang ke Cloud...");
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "saveAll", customers: masterSupplier, transaksis: dataTransaksi })
+            });
+            const res = await response.json();
+            if(res.status === "success") {
+                showSyncStatus("success", "Semua Uang Pembelian & Utang Sinkron ke Sheets!");
+            } else {
+                showSyncStatus("error", "Gagal kirim: " + res.message);
+            }
+        } catch(e) {
+            showSyncStatus("error", "Koneksi terputus, antrean disimpan di lokal.");
+        }
+    }
+
+    function showSyncStatus(type, msg) {
+        const bar = document.getElementById("sync-status");
+        if(type === "loading") bar.innerHTML = `<span class="text-warning"><div class="spinner-border spinner-border-sm me-1"></div> ${msg}</span>`;
+        if(type === "success") bar.innerHTML = `<span class="text-success"><i class="bi bi-cloud-check-fill"></i> ${msg}</span>`;
+        if(type === "error") bar.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> ${msg}</span>`;
+    }
+
+    function tambahKeKeranjang() {
+        const produk = document.getElementById("input-produk").value;
+        const qty = parseFloat(document.getElementById("input-jumlah").value) || 0;
+        const ekor = parseInt(document.getElementById("input-ekor").value) || 0;
+        const harga = parseInt(document.getElementById("input-harga").value) || 0;
+        
+        if (produk === "Ayam Merah" || produk === "Ayam Penyet") {
+            if (ekor <= 0 || harga <= 0) return; 
+        } else {
+            if (qty <= 0 || harga <= 0) return; 
+        }
+        
+        keranjangSementara.push({ nama: produk, qty, ekor, harga });
+        document.getElementById("input-jumlah").value = "";
+        document.getElementById("input-ekor").value = "";
+        document.getElementById("input-harga").value = "";
+        
+        renderKeranjang();
+        hitungUlangUtangForm();
+    }
+
+    function hapusItemKeranjang(index) {
+        keranjangSementara.splice(index, 1);
+        renderKeranjang();
+        hitungUlangUtangForm();
+    }
+
+    function renderKeranjang() {
+        const tbody = document.getElementById("cart-table-body");
+        tbody.innerHTML = "";
+        totalBelanjaHariIni = 0;
+        
+        if(keranjangSementara.length === 0) {
+            tbody.innerHTML = `<tr><td class="text-center text-muted small py-2">Nota Masuk Kosong</td></tr>`;
+            document.getElementById("display-belanja-hari-ini").innerText = "Rp 0";
+            return;
+        }
+        
+        keranjangSementara.forEach((item, idx) => {
+            let totalItem = 0;
+            let ketSatuan = "";
+            
+            if (item.nama === "Ayam Merah" || item.nama === "Ayam Penyet") {
+                totalItem = item.ekor * item.harga;
+                ketSatuan = `${item.ekor} ekor`;
+            } else {
+                totalItem = item.qty * item.harga;
+                ketSatuan = `${item.qty} kg`;
+            }
+            
+            totalBelanjaHariIni += totalItem;
+            tbody.innerHTML += `<tr><td><b>${item.nama}</b> (${ketSatuan})</td><td class="text-end text-danger"><i class="bi bi-x-circle" onclick="hapusItemKeranjang(${idx})"></i></td></tr>`;
+        });
+        
+        document.getElementById("display-belanja-hari-ini").innerText = formatRupiah(totalBelanjaHariIni);
+    }
+
+    function hitungUlangUtangForm() {
+        const utangLama = parseInt(document.getElementById("sub-sisa-utang").value) || 0;
+        document.getElementById("input-utang-total").value = utangLama + totalBelanjaHariIni;
+    }
+    document.getElementById("sub-sisa-utang").addEventListener("input", hitungUlangUtangForm);
+
+    function renderSupplierGridMenu() {
+        const container = document.getElementById("supplier-grid-container");
+        container.innerHTML = "";
+        let filterList = masterSupplier.sort((a,b) => a.nama.localeCompare(b.nama));
+        if(currentFilter !== "Semua") filterList = filterList.filter(s => s.kategori === currentFilter);
+        
+        filterList.forEach(s => {
+            const txSupplier = dataTransaksi.filter(t => t.pelanggan === s.nama);
+            let totalBelanjaSupp = 0;
+            let totalDibayarSupp = 0;
+            
+            txSupplier.forEach(tx => {
+                totalBelanjaSupp += tx.totalBelanja;
+                totalDibayarSupp += tx.payment;
+            });
+            
+            let sisaUtangAktif = totalBelanjaSupp - totalDibayarSupp;
+            
+            container.innerHTML += `
+                <div class="col-md-3 col-6">
+                    <div class="p-2 supplier-badge-card text-center" onclick="bukaJendelaDasborSupplier('${s.nama}')">
+                        <div class="fw-bold text-truncate" style="font-size:13px;">${s.nama}</div>
+                        <div style="font-size:11px;" class="${sisaUtangAktif > 0 ? 'text-danger fw-bold' : 'text-muted'}">${sisaUtangAktif > 0 ? formatRupiah(sisaUtangAktif) : 'Lunas'}</div>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function renderUiControls() {
+        const sel = document.getElementById("input-supplier");
+        sel.innerHTML = masterSupplier.map(s => `<option value="${s.nama}">${s.nama}</option>`).join("");
+        document.getElementById("label-tetap").innerText = `Supplier Alternatif (${masterSupplier.filter(s=>s.kategori==="Supplier Alternatif").length})`;
+        renderSupplierGridMenu();
+    }
+
+    function filterKategori(kat) {
+        currentFilter = kat;
+        document.querySelectorAll("#categoryTabs .nav-link").forEach(b => {
+            if(b.innerText.includes(kat)) b.classList.add("active"); else b.classList.remove("active");
+        });
+        renderDashboard();
+    }
+
+    function renderDashboard() {
+        const tbody = document.getElementById("table-body");
+        tbody.innerHTML = "";
+        let kb = 0, kd = 0, ku = 0;
+        
+        let transaksiMapped = dataTransaksi.map((tx, idx) => ({ ...tx, originalIdx: idx }));
+        transaksiMapped.sort((a, b) => parseTanggal(a.tanggal) - parseTanggal(b.tanggal));
+
+        transaksiMapped.forEach((tx, viewIdx) => {
+            const meta = masterSupplier.find(s => s.nama === tx.pelanggan) || {kategori: "Supplier Utama"};
+            const sisa = Math.round(tx.tagihan - tx.payment);
+            
+            if(currentFilter === "Semua" || currentFilter === meta.kategori) {
+                kb += tx.totalBelanja; 
+                kd += tx.payment;
+                
+                let itemsStr = tx.items.map(i => {
+                    return i.nama + (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet" ? ` (${i.ekor}ekor)` : ` (${i.qty}kg)`);
+                }).join(", ");
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${viewIdx + 1}</td>
+                        <td>${formatTampilanTanggal(tx.tanggal)}</td>
+                        <td class="fw-bold text-danger" style="cursor:pointer;" onclick="bukaJendelaDasborSupplier('${tx.pelanggan}')">${tx.pelanggan}</td>
+                        <td class="small">${itemsStr || "Titip Pembayaran Utang"}</td>
+                        <td>${formatRupiah(Math.round(tx.totalBelanja))}</td>
+                        <td>${formatRupiah(Math.round(tx.tagihan))}</td>
+                        <td>${formatRupiah(Math.round(tx.payment))}</td>
+                        <td class="text-danger fw-bold">${formatRupiah(sisa)}</td>
+                        <td><button class="btn btn-sm btn-dark py-0" data-bs-toggle="modal" data-bs-target="#invoiceModal" onclick="tampilkanFaktur(${tx.originalIdx})"><i class="bi bi-receipt"></i></button></td>
+                        <td>
+                            <i class="bi bi-pencil-square text-warning me-2" onclick="pilihEditTransaksi(${tx.originalIdx})"></i>
+                            <i class="bi bi-trash text-danger" onclick="hapusData(${tx.originalIdx})"></i>
+                        </td>
+                    </tr>`;
+            }
+        });
+
+        let globalBelanja = 0;
+        let globalDibayar = 0;
+        dataTransaksi.forEach(t => {
+            const meta = masterSupplier.find(s => s.nama === t.pelanggan) || {kategori: "Supplier Utama"};
+            if(currentFilter === "Semua" || currentFilter === meta.kategori) {
+                globalBelanja += t.totalBelanja;
+                globalDibayar += t.payment;
+            }
+        });
+        ku = globalBelanja - globalDibayar;
+
+        document.getElementById("kpi-total-pembelian").innerText = formatRupiah(Math.round(kb));
+        document.getElementById("kpi-total-dibayar").innerText = formatRupiah(Math.round(kd));
+        document.getElementById("kpi-sisa-utang").innerText = formatRupiah(Math.round(ku));
+
+        renderSupplierGridMenu();
+        renderChartEngine();
+    }
+
+    function renderChartEngine() {
+        let pts = {};
+        dataTransaksi.forEach(t => { 
+            let tglFormatted = formatTampilanTanggal(t.tanggal);
+            pts[tglFormatted] = (pts[tglFormatted] || 0) + (t.tagihan - t.payment); 
+        });
+        const labels = Object.keys(pts).sort((a,b) => parseTanggal(a) - parseTanggal(b));
+        const vals = labels.map(l => pts[l]);
+
+        const ctx = document.getElementById('payableChart').getContext('2d');
+        if(chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'Utang Dagang Berjalan (Rp)', data: vals, backgroundColor: '#8B0000' }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    function bukaJendelaDasborSupplier(nama) {
+        document.getElementById("supp-modal-title").innerText = "Riwayat Akun Supplier: " + nama;
+        const tbody = document.getElementById("supp-modal-table-body");
+        tbody.innerHTML = "";
+        
+        let tk = 0, td = 0, tu = 0;
+        let txSupplier = dataTransaksi.filter(t => t.pelanggan === nama);
+        txSupplier.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
+
+        txSupplier.forEach(tx => {
+            tk += tx.totalBelanja;
+            td += tx.payment;
+            
+            let sisaBaris = Math.round(tx.tagihan - tx.payment);
+            let iStr = tx.items.map(i => i.nama + (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet" ? ` (${i.ekor}ekor)` : ` (${i.qty}kg)`)).join(", ");
+
+            tbody.innerHTML += `<tr>
+                <td>${formatTampilanTanggal(tx.tanggal)}</td>
+                <td class="text-start">${iStr || "Titip Pembayaran Utang"}</td>
+                <td>${formatRupiah(tx.totalBelanja)}</td>
+                <td>${formatRupiah(tx.tagihan)}</td>
+                <td>${formatRupiah(tx.payment)}</td>
+                <td class="text-danger fw-bold">${formatRupiah(sisaBaris)}</td>
+                <td><button class="btn btn-sm btn-danger py-0" onclick="tutupDasborDanBukaFaktur(${dataTransaksi.indexOf(tx)})"><i class="bi bi-receipt"></i></button></td>
+            </tr>`;
+        });
+        
+        tu = tk - td; 
+
+        document.getElementById("supp-modal-jual").innerText = formatRupiah(tk);
+        document.getElementById("supp-modal-terima").innerText = formatRupiah(td);
+        document.getElementById("supp-modal-utang").innerText = formatRupiah(tu); 
+        
+        new bootstrap.Modal(document.getElementById('supplierDashboardModal')).show();
+    }
+
+    function tutupDasborDanBukaFaktur(idx) {
+        bootstrap.Modal.getInstance(document.getElementById('supplierDashboardModal')).hide();
+        setTimeout(() => { tampilkanFaktur(idx); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
+    }
+
+    function tampilkanFaktur(idx) {
+        const trans = dataTransaksi[idx];
+        const sisa = Math.round(trans.tagihan - trans.payment);
+        let tglClean = formatTampilanTanggal(trans.tanggal).replace(/\//g,'-');
+        namaFileGlobal = `Nota_Beli_${trans.pelanggan}_${tglClean}`;
+        
+        let rows = trans.items.map(i => {
+            let totalItem = Math.round((i.nama === "Ayam Merah" || i.nama === "Ayam Penyet" ? i.ekor : i.qty) * i.harga);
+            let kolomQty = (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet" ? `${i.ekor} ekor` : `${i.qty} kg`);
+            let rataRataStr = "";
+            if (i.nama !== "Ayam Merah" && i.nama !== "Ayam Penyet" && i.ekor > 0 && i.qty > 0) {
+                rataRataStr = `<br><small class="text-muted">ABW: ${(i.qty / i.ekor).toFixed(2)} kg/ekor</small>`;
+            }
+            return `<tr>
+                <td><b>${i.nama}</b>${i.nama !== "Ayam Merah" && i.nama !== "Ayam Penyet" && i.ekor > 0 ? '<br><small>('+i.ekor+' ekor)</small>':''}${rataRataStr}</td>
+                <td>${kolomQty}</td><td>${formatRupiah(i.harga)}</td><td>${formatRupiah(totalItem)}</td>
+            </tr>`;
+        }).join("");
+
+        document.getElementById("invoice-content").innerHTML = `
+            <div class="d-flex justify-content-between mb-3">
+                <div><div class="invoice-title">NOTA BELI</div><div class="small">Supplier: <b>${trans.pelanggan}</b></div></div>
+                <div class="text-end small"><b>No Doc:</b> #SP-${idx+101}<br><b>Tgl:</b> ${formatTampilanTanggal(trans.tanggal)}</div>
+            </div>
+            <table class="table-invoice-maroon"><thead><tr><th>Barang Masuk</th><th>Qty</th><th>Harga</th><th>Total</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="text-center text-muted">Hanya Transaksi Pembayaran Utang</td></tr>'}</tbody></table>
+            <div class="mt-3 text-end" style="font-size:13px;">
+                <div class="invoice-summary-row"><div class="invoice-summary-label">Subtotal Masuk</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.totalBelanja))}</div></div>
+                <div class="invoice-summary-row"><div class="invoice-summary-label">Sisa Utang Lalu</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.hutangAwal))}</div></div>
+                <div class="invoice-total-badge"><div class="invoice-total-container"><span>TOTAL UTANG</span><span>${formatRupiah(Math.round(trans.tagihan))}</span></div></div>
+                <div class="invoice-summary-row mt-2 text-success"><div class="invoice-summary-label">Kita Bayarkan</div><div class="invoice-summary-value">-${formatRupiah(Math.round(trans.payment))}</div></div>
+                <div class="invoice-summary-row text-danger fw-bold"><div class="invoice-summary-label">Sisa Sisa Utang</div><div class="invoice-summary-value">${formatRupiah(sisa)}</div></div>
+            </div>`;
+    }
+
+    document.getElementById("btn-download-faktur").addEventListener("click", function() {
+        html2canvas(document.getElementById("invoice-download-wrapper"), { scale: 2 }).then(canvas => {
+            const a = document.createElement("a"); a.download = `${namaFileGlobal}.png`; a.href = canvas.toDataURL(); a.click();
+        });
+    });
+
+    document.getElementById("payable-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const pembayaran = parseInt(document.getElementById("input-pembayaran").value) || 0;
+        
+        if (keranjangSementara.length === 0 && pembayaran <= 0) {
+            alert("Transaksi ditolak! Masukkan barang masuk kulakan ATAU isi nominal pembayaran utang.");
+            return;
+        }
+        
+        const idx = parseInt(document.getElementById("edit-transaksi-index").value);
+        const payload = {
+            id: idx === -1 ? "TX_SUP_" + new Date().getTime() : dataTransaksi[idx].id,
+            tanggal: convertDateToDisplay(document.getElementById("input-tanggal").value),
+            pelanggan: document.getElementById("input-supplier").value, 
+            totalBelanja: totalBelanjaHariIni, 
+            hutangAwal: parseInt(document.getElementById("sub-sisa-utang").value) || 0,
+            tagihan: parseInt(document.getElementById("input-utang-total").value) || 0,
+            payment: pembayaran,
+            items: [...keranjangSementara]
+        };
+
+        if(idx === -1) dataTransaksi.push(payload); else { dataTransaksi[idx] = payload; batalEditTransaksi(); }
+        
+        keranjangSementara = [];
+        renderKeranjang();
+        document.getElementById("payable-form").reset();
+        document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
+        renderDashboard();
+        pushDataKeSheets();
+    });
+
+    function pilihEditTransaksi(idx) {
+        const tx = dataTransaksi[idx];
+        document.getElementById("edit-transaksi-index").value = idx;
+        document.getElementById("input-tanggal").value = convertDateToInput(tx.tanggal);
+        document.getElementById("input-supplier").value = tx.pelanggan;
+        document.getElementById("sub-sisa-utang").value = tx.hutangAwal;
+        document.getElementById("input-pembayaran").value = tx.payment;
+        keranjangSementara = [...tx.items];
+        renderKeranjang();
+        hitungUlangUtangForm();
+        document.getElementById("btn-batal-edit").classList.remove("d-none");
+    }
+
+    function batalEditTransaksi() {
+        document.getElementById("edit-transaksi-index").value = "-1";
+        document.getElementById("payable-form").reset();
+        keranjangSementara = []; renderKeranjang();
+        document.getElementById("btn-batal-edit").classList.add("d-none");
+    }
+
+    function hapusData(idx) { if(confirm("Hapus catatan transaksi supplier ini?")) { dataTransaksi.splice(idx,1); renderDashboard(); pushDataKeSheets(); } }
+
+    function renderKelolaSupplier() {
+        document.getElementById("list-supplier-table").innerHTML = masterSupplier.map((s,i) => `<tr><td>${i+1}</td><td>${s.nama}</td><td>${s.kategori}</td><td><i class="bi bi-trash text-danger" onclick="hapusSupplier(${i})"></i></td></tr>`).join("");
+    }
+    document.getElementById("supplier-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        masterSupplier.push({ nama: document.getElementById("supp-nama").value, kategori: document.getElementById("supp-kategori").value });
+        document.getElementById("supplier-form").reset();
+        renderUiControls(); renderKelolaSupplier(); renderDashboard(); pushDataKeSheets();
+    });
+    function hapusSupplier(i) { masterSupplier.splice(i,1); renderUiControls(); renderKelolaSupplier(); renderDashboard(); pushDataKeSheets(); }
+
+    document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
+    document.getElementById("current-date").innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    
+    muatDataDariSheets();
+</script>
+</body>
+</html>
