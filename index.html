@@ -778,25 +778,40 @@
         });
     });
 
+    // ==========================================
+    // PERBAIKAN LOGIKA: DI SINI PROSES PENYIMPANAN DIUBAH
+    // ==========================================
     document.getElementById("receivable-form").addEventListener("submit", function(e) {
         e.preventDefault();
-        if(keranjangSementara.length === 0) return;
+        
+        const pembayaran = parseInt(document.getElementById("input-pelunasan").value) || 0;
+        
+        // REVOLUSI VALIDASI BARU:
+        // Tolak simpan JIKA keranjang kosong DAN nilai pembayaran juga kosong (0)
+        if (keranjangSementara.length === 0 && pembayaran <= 0) {
+            alert("Transaksi tidak bisa disimpan! Isi barang belanjaan ATAU isi nominal Pembayaran/DP.");
+            return;
+        }
+        
         const idx = parseInt(document.getElementById("edit-transaksi-index").value);
         
         const payload = {
             id: idx === -1 ? "TX_" + new Date().getTime() : dataTransaksi[idx].id,
             tanggal: convertDateToDisplay(document.getElementById("input-tanggal").value),
             pelanggan: document.getElementById("input-pelanggan").value,
-            totalBelanja: totalBelanjaHariIni,
+            totalBelanja: totalBelanjaHariIni, // Otomatis Rp 0 jika keranjang kosong
             hutangAwal: parseInt(document.getElementById("sub-sisa-tagihan").value) || 0,
             tagihan: parseInt(document.getElementById("input-tagihan-total").value) || 0,
-            payment: parseInt(document.getElementById("input-pelunasan").value) || 0,
-            items: [...keranjangSementara]
+            payment: pembayaran,
+            items: [...keranjangSementara] // Berupa array kosong [] jika hanya titip DP/bayar bon
         };
 
         if(idx === -1) dataTransaksi.push(payload); else { dataTransaksi[idx] = payload; batalEditTransaksi(); }
         
+        // Reset state keranjang
+        keranjangSementara = [];
         renderKeranjang();
+        
         document.getElementById("receivable-form").reset();
         document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
         renderDashboard();
