@@ -386,11 +386,46 @@
     let namaFileGlobal = "Faktur";
 
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka); }
+    
+    // PERBAIKAN: Fungsi Pembaca Tanggal Universal Anti-Acak-Acakan saat Commit
     function parseTanggal(str) {
         if (!str) return new Date(0);
-        const parts = str.split('/');
-        return new Date(parts[2], parts[1] - 1, parts[0]);
+        
+        // Jika data dari database berupa ISO String (contoh: 2026-07-06T17:00:00.000Z atau 2026-07-06)
+        if (str.includes('T') || str.includes('-')) {
+            return new Date(str);
+        }
+        
+        // Jika format teks biasa dengan garis miring (contoh: 06/07/2026)
+        if (str.includes('/')) {
+            const parts = str.split('/');
+            if (parts.length === 3) {
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+        }
+        
+        const parsed = Date.parse(str);
+        return isNaN(parsed) ? new Date(0) : new Date(parsed);
     }
+
+    // PERBAIKAN: Fungsi Penyeragam Tampilan Tanggal Layar
+    function formatTampilanTanggal(stringTanggal) {
+        if (!stringTanggal) return "-";
+        
+        // Paksa format ISO panjang dari database menjadi format bersih DD/MM/YYYY
+        if (stringTanggal.includes('T')) {
+            const d = new Date(stringTanggal);
+            if (!isNaN(d.getTime())) {
+                const hari = String(d.getDate()).padStart(2, '0');
+                const bulan = String(d.getMonth() + 1).padStart(2, '0');
+                const tahun = d.getFullYear();
+                return `${hari}/${bulan}/${tahun}`;
+            }
+        }
+        
+        return stringTanggal;
+    }
+
     function convertDateToDisplay(dateStr) { if(dateStr.includes("/")) return dateStr; const d = dateStr.split("-"); return `${d[2]}/${d[1]}/${d[0]}`; }
     function convertDateToInput(dateStr) { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
 
@@ -451,16 +486,14 @@
         const ekor = parseInt(document.getElementById("input-ekor").value) || 0;
         const harga = parseInt(document.getElementById("input-harga").value) || 0;
         
-        // Validasi berdasarkan jenis produk
         if (produk === "Ayam Merah" || produk === "Ayam Penyet") {
-            if (ekor <= 0 || harga <= 0) return; // Wajib isi ekor & harga
+            if (ekor <= 0 || harga <= 0) return; 
         } else {
-            if (qty <= 0 || harga <= 0) return; // Wajib isi Kg & harga
+            if (qty <= 0 || harga <= 0) return; 
         }
         
         keranjangSementara.push({ nama: produk, qty, ekor, harga });
         
-        // Reset input setelah dimasukkan
         document.getElementById("input-jumlah").value = "";
         document.getElementById("input-ekor").value = "";
         document.getElementById("input-harga").value = "";
@@ -490,7 +523,6 @@
             let totalItem = 0;
             let ketSatuan = "";
             
-            // Rumus Kriteria Baru
             if (item.nama === "Ayam Merah" || item.nama === "Ayam Penyet") {
                 totalItem = item.ekor * item.harga;
                 ketSatuan = `${item.ekor} ekor`;
@@ -512,6 +544,7 @@
     }
     document.getElementById("sub-sisa-tagihan").addEventListener("input", hitungUlangPiutangForm);
 
+    // PERBAIKAN: Fungsi Grid Menu Customer Memakai Hitungan Akumulatif Riil
     function renderCustomerGridMenu() {
         const container = document.getElementById("customer-grid-container");
         container.innerHTML = "";
@@ -519,14 +552,22 @@
         if(currentFilter !== "Semua") filterList = filterList.filter(c => c.kategori === currentFilter);
         
         filterList.forEach(c => {
-            const tx = dataTransaksi.filter(t => t.pelanggan === c.nama);
-            let sisa = 0;
-            if(tx.length > 0) sisa = tx[tx.length-1].tagihan - tx[tx.length-1].payment;
+            const txCustomer = dataTransaksi.filter(t => t.pelanggan === c.nama);
+            
+            let totalBelanjaCust = 0;
+            let totalDiterimaCust = 0;
+            txCustomer.forEach(tx => {
+                totalBelanjaCust += tx.totalBelanja;
+                totalDiterimaCust += tx.payment;
+            });
+            
+            let sisaPiutangAktif = totalBelanjaCust - totalDiterimaCust;
+            
             container.innerHTML += `
                 <div class="col-md-3 col-6">
                     <div class="p-2 customer-badge-card text-center" onclick="bukaJendelaDasborCustomer('${c.nama}')">
                         <div class="fw-bold text-truncate" style="font-size:13px;">${c.nama}</div>
-                        <div style="font-size:11px;" class="${sisa > 0 ? 'text-danger fw-bold' : 'text-muted'}">${sisa > 0 ? formatRupiah(sisa) : 'Lunas'}</div>
+                        <div style="font-size:11px;" class="${sisaPiutangAktif > 0 ? 'text-danger fw-bold' : 'text-muted'}">${sisaPiutangAktif > 0 ? formatRupiah(sisaPiutangAktif) : 'Lunas'}</div>
                     </div>
                 </div>`;
         });
@@ -547,6 +588,7 @@
         renderDashboard();
     }
 
+    // PERBAIKAN: Pembungkusan Tanggal Tabel Utama Dengan formatTampilanTanggal()
     function renderDashboard() {
         const tbody = document.getElementById("table-body");
         tbody.innerHTML = "";
@@ -561,22 +603,25 @@
         transaksiMapped.forEach((tx, viewIdx) => {
             const meta = masterCustomer.find(c => c.nama === tx.pelanggan) || {kategori: "Customer Umum"};
             const sisa = Math.round(tx.tagihan - tx.payment);
-            saldoTerakhir[tx.pelanggan] = sisa;
-
+            
+            // Hitung akumulasi piutang riil untuk KPI ringkasan
             if(currentFilter === "Semua" || currentFilter === meta.kategori) {
-                kj += tx.totalBelanja; kd += tx.payment;
+                kj += tx.totalBelanja; 
+                kd += tx.payment;
+                
                 let itemsStr = tx.items.map(i => {
-    if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-        return `${i.nama}(${i.ekor}ekor)`;
-    } else {
-        return `${i.nama}(${i.qty}kg)`;
-    }
-}).join(", ");
+                    if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
+                        return `${i.nama}(${i.ekor}ekor)`;
+                    } else {
+                        return `${i.nama}(${i.qty}kg)`;
+                    }
+                }).join(", ");
+                
                 tbody.innerHTML += `
                     <tr>
                         <td>${viewIdx + 1}</td>
-                        <td>${tx.tanggal}</td>
-                        <td class="fw-bold">${tx.pelanggan}</td>
+                        <td>${formatTampilanTanggal(tx.tanggal)}</td>
+                        <td class="fw-bold text-primary" style="cursor:pointer;" onclick="bukaJendelaDasborCustomer('${tx.pelanggan}')">${tx.pelanggan}</td>
                         <td class="small">${itemsStr}</td>
                         <td>${formatRupiah(Math.round(tx.totalBelanja))}</td>
                         <td>${formatRupiah(Math.round(tx.tagihan))}</td>
@@ -591,7 +636,18 @@
             }
         });
 
-        masterCustomer.forEach(c => kp += (saldoTerakhir[c.nama] || 0));
+        // Hitung KPI Sisa Piutang Aktif Global (Total Semua Belanja - Total Semua Diterima)
+        let globalBelanja = 0;
+        let globalDiterima = 0;
+        dataTransaksi.forEach(t => {
+            const meta = masterCustomer.find(c => c.nama === t.pelanggan) || {kategori: "Customer Umum"};
+            if(currentFilter === "Semua" || currentFilter === meta.kategori) {
+                globalBelanja += t.totalBelanja;
+                globalDiterima += t.payment;
+            }
+        });
+        kp = globalBelanja - globalDiterima;
+
         document.getElementById("kpi-total-penjualan").innerText = formatRupiah(Math.round(kj));
         document.getElementById("kpi-total-diterima").innerText = formatRupiah(Math.round(kd));
         document.getElementById("kpi-sisa-piutang").innerText = formatRupiah(Math.round(kp));
@@ -602,8 +658,11 @@
 
     function renderChartEngine() {
         let pts = {};
-        dataTransaksi.forEach(t => { pts[t.tanggal] = (pts[t.tanggal] || 0) + (t.tagihan - t.payment); });
-        const labels = Object.keys(pts).sort();
+        dataTransaksi.forEach(t => { 
+            let tglFormatted = formatTampilanTanggal(t.tanggal);
+            pts[tglFormatted] = (pts[tglFormatted] || 0) + (t.tagihan - t.payment); 
+        });
+        const labels = Object.keys(pts).sort((a,b) => parseTanggal(a) - parseTanggal(b));
         const vals = labels.map(l => pts[l]);
 
         const ctx = document.getElementById('receivableChart').getContext('2d');
@@ -615,6 +674,7 @@
         });
     }
 
+    // PERBAIKAN UTAMA: Modal Riwayat Dengan Rumus Akuntansi Riil & Format Tanggal Aman
     function bukaJendelaDasborCustomer(nama) {
         document.getElementById("cust-modal-title").innerText = "Riwayat Buku: " + nama;
         const tbody = document.getElementById("cust-modal-table-body");
@@ -622,16 +682,14 @@
         
         let tj = 0, td = 0, ts = 0;
 
-        // 1. Filter transaksi berdasarkan nama customer
         let txCustomer = dataTransaksi.filter(t => t.pelanggan === nama);
 
-        // 2. Urutkan dari TANGGAL TERKINI ke TERLAMA
+        // Urutkan Tanggal Terkini (Atas) ke Terlama (Bawah)
         txCustomer.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
 
-        // 3. Render ke tabel modal & hitung total penjualan & total diterima
         txCustomer.forEach(tx => {
-            tj += tx.totalBelanja; // Total Seluruh Belanja
-            td += tx.payment;      // Total Seluruh Pelunasan
+            tj += tx.totalBelanja; // Akumulasi total belanja riil
+            td += tx.payment;      // Akumulasi total uang diterima riil
             
             let sisaBaris = Math.round(tx.tagihan - tx.payment);
             let iStr = tx.items.map(i => {
@@ -643,7 +701,7 @@
             }).join(", ");
 
             tbody.innerHTML += `<tr>
-                <td>${tx.tanggal}</td>
+                <td>${formatTampilanTanggal(tx.tanggal)}</td>
                 <td class="text-start">${iStr}</td>
                 <td>${formatRupiah(tx.totalBelanja)}</td>
                 <td>${formatRupiah(tx.tagihan)}</td>
@@ -653,16 +711,16 @@
             </tr>`;
         });
         
-        // RUMUS BARU: Total Penjualan dikurangi Total Diterima
+        // RUMUS BARU SINKRON AKUNTANSI: Total Penjualan dikurangi Total Diterima
         ts = tj - td; 
 
-        // Menampilkan hasil kalkulasi yang sudah benar ke kotak atas modal
         document.getElementById("cust-modal-jual").innerText = formatRupiah(tj);
         document.getElementById("cust-modal-terima").innerText = formatRupiah(td);
-        document.getElementById("cust-modal-piutang").innerText = formatRupiah(ts); // Hasilnya pasti Rp 237.500
+        document.getElementById("cust-modal-piutang").innerText = formatRupiah(ts); 
         
         new bootstrap.Modal(document.getElementById('customerDashboardModal')).show();
     }
+
     function tutupDasborDanBukaFaktur(idx) {
         bootstrap.Modal.getInstance(document.getElementById('customerDashboardModal')).hide();
         setTimeout(() => { tampilkanFaktur(idx); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
@@ -671,7 +729,8 @@
     function tampilkanFaktur(idx) {
         const trans = dataTransaksi[idx];
         const sisa = Math.round(trans.tagihan - trans.payment);
-        namaFileGlobal = `Faktur_${trans.pelanggan}_${trans.tanggal.replace(/\//g,'-')}`;
+        let tglClean = formatTampilanTanggal(trans.tanggal).replace(/\//g,'-');
+        namaFileGlobal = `Faktur_${trans.pelanggan}_${tglClean}`;
         
         let rows = trans.items.map(i => {
             let totalItem = 0;
@@ -700,7 +759,7 @@
         document.getElementById("invoice-content").innerHTML = `
             <div class="d-flex justify-content-between mb-3">
                 <div><div class="invoice-title">FAKTUR</div><div class="small">Kepada: <b>${trans.pelanggan}</b></div></div>
-                <div class="text-end small"><b>No:</b> #${idx+101}<br><b>Tgl:</b> ${trans.tanggal}</div>
+                <div class="text-end small"><b>No:</b> #${idx+101}<br><b>Tgl:</b> ${formatTampilanTanggal(trans.tanggal)}</div>
             </div>
             <table class="table-invoice-maroon"><thead><tr><th>Barang</th><th>Qty</th><th>Harga</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
             <div class="mt-3 text-end" style="font-size:13px;">
