@@ -417,7 +417,8 @@
 
     async function muatDataDariSheets() {
         showSyncStatus("loading", "Menarik data terbaru dari Cloud Supplier...");
-        if(GOOGLE_SCRIPT_URL === "https://script.google.com/macros/s/AKfycbwrTdDHv2kjNttq0l4tVq3J6rq4KcOhB1CbvV08hgxcVDXabMfiyRw65WdHh-y8HROn/exec" || GOOGLE_SCRIPT_URL === "") {
+        // Cukup cek apakah kosong atau tidak
+        if(GOOGLE_SCRIPT_URL === "") {
             showSyncStatus("error", "URL Google Script Supplier belum diisi!");
             return;
         }
