@@ -240,7 +240,7 @@
             <div class="premium-card">
                 <h5 class="fw-bold mb-3 text-dark" id="form-title"><i class="bi bi-plus-circle-fill text-primary"></i> Input Transaksi Multi-Item</h5>
                 <form id="receivable-form">
-                    <input type="hidden" id="edit-transaksi-index" value="-1">
+                    <input type="hidden" id="edit-transaksi-id" value="">
                     <div class="row g-2 mb-2">
                         <div class="col-6">
                             <label class="form-label small fw-semibold text-muted mb-1">Tanggal</label>
@@ -346,7 +346,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <input type="hidden" id="edit-popup-index">
+                <input type="hidden" id="edit-popup-id">
                 
                 <div class="mb-3">
                     <label class="form-label fw-bold small text-muted">Tanggal</label>
@@ -449,7 +449,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // MASUKKAN URL GOOGLE APPS SCRIPT BERAKHIRAN /exec KAMU DI SINI
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzHGL6VPS-mEl6CrjGHefb4QxbGKYI5jD1Mk4TwdJGWNHQswBrLIfSCfmyJOkeBQOaJmQ/exec"; 
 
     let masterCustomer = [];
@@ -530,8 +529,8 @@
             });
             const res = await response.json();
             if(res.status === "success") {
-                masterCustomer = res.customers;
-                dataTransaksi = res.transaksis;
+                masterCustomer = res.customers || [];
+                dataTransaksi = res.transaksis || [];
                 renderUiControls();
                 renderDashboard();
                 updateSisaTagihanOtomatis(); 
@@ -564,14 +563,15 @@
 
     function showSyncStatus(type, msg) {
         const bar = document.getElementById("sync-status");
+        if(!bar) return;
         if(type === "loading") bar.innerHTML = `<span class="text-warning"><div class="spinner-border spinner-border-sm me-1"></div> ${msg}</span>`;
         if(type === "success") bar.innerHTML = `<span class="text-success"><i class="bi bi-cloud-check-fill"></i> ${msg}</span>`;
         if(type === "error") bar.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> ${msg}</span>`;
     }
 
     function updateSisaTagihanOtomatis() {
-        const editIdx = parseInt(document.getElementById("edit-transaksi-index").value);
-        if (editIdx !== -1) return;
+        const editId = document.getElementById("edit-transaksi-id").value;
+        if (editId !== "") return;
 
         const customerTerpilih = document.getElementById("input-pelanggan").value;
         if (!customerTerpilih) {
@@ -647,7 +647,7 @@
             }
             
             totalBelanjaHariIni += totalItem;
-            tbody.innerHTML += `<tr><td><b>${item.nama}</b> (${ketSatuan})</td><td class="text-end text-danger"><i class="bi bi-x-circle" onclick="hapusItemKeranjang(${idx})"></i></td></tr>`;
+            tbody.innerHTML += `<tr><td><b>${item.nama}</b> (${ketSatuan})</td><td class="text-end text-danger"><i class="bi bi-x-circle" style="cursor:pointer;" onclick="hapusItemKeranjang(${idx})"></i></td></tr>`;
         });
         
         document.getElementById("display-belanja-hari-ini").innerText = formatRupiah(totalBelanjaHariIni);
@@ -667,7 +667,7 @@
     function renderCustomerGridMenu() {
         const container = document.getElementById("customer-grid-container");
         container.innerHTML = "";
-        let filterList = masterCustomer.sort((a,b) => a.nama.localeCompare(b.nama));
+        let filterList = [...masterCustomer].sort((a,b) => a.nama.localeCompare(b.nama));
         if(currentFilter !== "Semua") filterList = filterList.filter(c => c.kategori === currentFilter);
         
         filterList.forEach(c => {
@@ -712,7 +712,7 @@
         tbody.innerHTML = "";
         let kj = 0, kd = 0, kp = 0;
         
-        let transaksiMapped = dataTransaksi.map((tx, idx) => ({ ...tx, originalIdx: idx }));
+        let transaksiMapped = dataTransaksi.map(tx => ({ ...tx }));
         transaksiMapped.sort((a, b) => parseTanggal(a.tanggal) - parseTanggal(b.tanggal));
 
         transaksiMapped.forEach((tx, viewIdx) => {
@@ -723,10 +723,7 @@
                 kj += tx.totalBelanja; 
                 kd += tx.payment;
                 
-                // =========================================================================
-                // PENYARINGAN TABEL UTAMA: Ringkas item duplikat dari database agar tidak merusak visual
-                // =========================================================================
-                const itemsTabelDisaring = tx.items.reduce((acc, current) => {
+                const itemsTabelDisaring = (tx.items || []).reduce((acc, current) => {
                     const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
                     if (ditemukan) {
                         let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
@@ -737,7 +734,6 @@
                     }
                     return acc;
                 }, []);
-                // =========================================================================
                 
                 let itemsStr = itemsTabelDisaring.map(i => {
                     if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
@@ -757,10 +753,10 @@
                         <td>${formatRupiah(Math.round(tx.tagihan))}</td>
                         <td>${formatRupiah(Math.round(tx.payment))}</td>
                         <td class="text-danger fw-bold">${formatRupiah(sisa)}</td>
-                        <td><button class="btn btn-sm btn-danger py-0" data-bs-toggle="modal" data-bs-target="#invoiceModal" onclick="tampilkanFaktur(${tx.originalIdx})"><i class="bi bi-file-earmark-pdf"></i></button></td>
+                        <td><button class="btn btn-sm btn-danger py-0" data-bs-toggle="modal" data-bs-target="#invoiceModal" onclick="tampilkanFaktur('${tx.id}')"><i class="bi bi-file-earmark-pdf"></i></button></td>
                         <td>
-                            <i class="bi bi-pencil-square text-warning me-2" style="cursor:pointer;" onclick="bukaModalEdit(${tx.originalIdx})"></i>
-                            <i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="hapusData(${tx.originalIdx})"></i>
+                            <i class="bi bi-pencil-square text-warning me-2" style="cursor:pointer;" onclick="bukaModalEdit('${tx.id}')"></i>
+                            <i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="hapusData('${tx.id}')"></i>
                         </td>
                     </tr>`;
             }
@@ -784,6 +780,7 @@
         renderCustomerGridMenu();
         renderChartEngine();
     }
+
     function renderChartEngine() {
         let pts = {};
         dataTransaksi.forEach(t => { 
@@ -831,7 +828,7 @@
                 <td>${formatRupiah(tx.tagihan)}</td>
                 <td>${formatRupiah(tx.payment)}</td>
                 <td class="text-danger fw-bold">${formatRupiah(sisaBaris)}</td>
-                <td><button class="btn btn-sm btn-danger py-0" onclick="tutupDasborDanBukaFaktur(${dataTransaksi.indexOf(tx)})"><i class="bi bi-receipt"></i></button></td>
+                <td><button class="btn btn-sm btn-danger py-0" onclick="tutupDasborDanBukaFaktur('${tx.id}')"><i class="bi bi-receipt"></i></button></td>
             </tr>`;
         });
         
@@ -844,24 +841,21 @@
         new bootstrap.Modal(document.getElementById('customerDashboardModal')).show();
     }
 
-    function tutupDasborDanBukaFaktur(idx) {
+    function tutupDasborDanBukaFaktur(id) {
         bootstrap.Modal.getInstance(document.getElementById('customerDashboardModal')).hide();
-        setTimeout(() => { tampilkanFaktur(idx); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
+        setTimeout(() => { tampilkanFaktur(id); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
     }
 
-function tampilkanFaktur(idx) {
-        // Ambil data transaksi secara mendalam (Deep Copy) menggunakan JSON parse/stringify
-        // Ini memastikan data asli di memori browser tidak akan pernah bisa diubah oleh proses manipulasi di bawahnya
-        const trans = JSON.parse(JSON.stringify(dataTransaksi[idx]));
+    function tampilkanFaktur(id) {
+        const targetTx = dataTransaksi.find(t => t.id === id);
+        if(!targetTx) return;
         
+        const trans = JSON.parse(JSON.stringify(targetTx));
         const sisa = Math.round(trans.tagihan - trans.payment);
         let tglClean = formatTampilanTanggal(trans.tanggal).replace(/\//g,'-');
         namaFileGlobal = `Faktur_${trans.pelanggan}_${tglClean}`;
         
-        // =========================================================================
-        // LOGIKA PENYARINGAN AMAN: Satukan item duplikat dari database tanpa merusak master data
-        // =========================================================================
-        const itemsDisaring = trans.items.reduce((acc, current) => {
+        const itemsDisaring = (trans.items || []).reduce((acc, current) => {
             const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
             if (ditemukan) {
                 let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
@@ -872,7 +866,6 @@ function tampilkanFaktur(idx) {
             }
             return acc;
         }, []);
-        // =========================================================================
 
         let rows = itemsDisaring.map(i => {
             let totalItem = 0;
@@ -904,7 +897,7 @@ function tampilkanFaktur(idx) {
         document.getElementById("invoice-content").innerHTML = `
             <div class="d-flex justify-content-between mb-3">
                 <div><div class="invoice-title">FAKTUR</div><div class="small">Kepada: <b>${trans.pelanggan}</b></div></div>
-                <div class="text-end small"><b>No:</b> #${idx+101}<br><b>Tgl:</b> ${formatTampilanTanggal(trans.tanggal)}</div>
+                <div class="text-end small"><b>ID:</b> ${trans.id.substring(0,8)}<br><b>Tgl:</b> ${formatTampilanTanggal(trans.tanggal)}</div>
             </div>
             <table class="table-invoice-maroon"><thead><tr><th>Barang</th><th>Qty</th><th>Harga</th><th>Total</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="text-center text-muted">Hanya Transaksi Titip Bayar Bon</td></tr>'}</tbody></table>
             <div class="mt-3 text-end" style="font-size:13px;">
@@ -916,6 +909,7 @@ function tampilkanFaktur(idx) {
             </div>
             <div class="invoice-footer-info"><b>INFO:</b> Transfer SeaBank 9017-6605-7787 a.n Khairul Akbar</div>`;
     }
+
     document.getElementById("btn-download-faktur").addEventListener("click", function() {
         html2canvas(document.getElementById("invoice-download-wrapper"), { scale: 2 }).then(canvas => {
             const a = document.createElement("a"); a.download = `${namaFileGlobal}.png`; a.href = canvas.toDataURL(); a.click();
@@ -936,10 +930,11 @@ function tampilkanFaktur(idx) {
         btnSubmit.disabled = true;
         btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...`;
         
-        const idx = parseInt(document.getElementById("edit-transaksi-index").value);
+        const currentId = document.getElementById("edit-transaksi-id").value;
         const payload = {
-            id: idx === -1 ? "TX_" + new Date().getTime() : dataTransaksi[idx].id,
+            id: currentId === "" ? "TX_" + new Date().getTime() : currentId,
             tanggal: convertDateToDisplay(document.getElementById("input-tanggal").value),
+            peloggan: document.getElementById("input-pelanggan").value, // Sesuai field database pelanggan
             pelanggan: document.getElementById("input-pelanggan").value,
             totalBelanja: totalBelanjaHariIni, 
             hutangAwal: menguraiAngka(document.getElementById("sub-sisa-tagihan").value),
@@ -948,7 +943,13 @@ function tampilkanFaktur(idx) {
             items: [...keranjangSementara] 
         };
 
-        if(idx === -1) dataTransaksi.push(payload); else { dataTransaksi[idx] = payload; batalEditTransaksi(); }
+        if(currentId === "") {
+            dataTransaksi.push(payload);
+        } else {
+            const idxReal = dataTransaksi.findIndex(t => t.id === currentId);
+            if(idxReal !== -1) dataTransaksi[idxReal] = payload;
+            batalEditTransaksi();
+        }
         
         keranjangSementara = [];
         renderKeranjang();
@@ -974,9 +975,10 @@ function tampilkanFaktur(idx) {
         }
     });
 
-    function pilihEditTransaksi(idx) {
-        const tx = dataTransaksi[idx];
-        document.getElementById("edit-transaksi-index").value = idx;
+    function pilihEditTransaksi(id) {
+        const tx = dataTransaksi.find(t => t.id === id);
+        if(!tx) return;
+        document.getElementById("edit-transaksi-id").value = id;
         document.getElementById("input-tanggal").value = convertDateToInput(tx.tanggal);
         document.getElementById("input-pelanggan").value = tx.pelanggan;
         document.getElementById("sub-sisa-tagihan").value = formatRupiah(tx.hutangAwal);
@@ -988,7 +990,7 @@ function tampilkanFaktur(idx) {
     }
 
     function batalEditTransaksi() {
-        document.getElementById("edit-transaksi-index").value = "-1";
+        document.getElementById("edit-transaksi-id").value = "";
         document.getElementById("receivable-form").reset();
         keranjangSementara = []; 
         renderKeranjang();
@@ -1002,22 +1004,35 @@ function tampilkanFaktur(idx) {
         updateSisaTagihanOtomatis();
     }
 
-    function hapusData(idx) { if(confirm("Hapus?")) { dataTransaksi.splice(idx,1); renderDashboard(); updateSisaTagihanOtomatis(); pushDataKeSheets(); } }
+    function hapusData(id) { 
+        if(confirm("Hapus transaksi ini?")) { 
+            const idxReal = dataTransaksi.findIndex(t => t.id === id);
+            if(idxReal !== -1) {
+                dataTransaksi.splice(idxReal, 1); 
+                renderDashboard(); 
+                updateSisaTagihanOtomatis(); 
+                pushDataKeSheets();
+            }
+        } 
+    }
 
     function renderKelolaCustomer() {
-        document.getElementById("list-customer-table").innerHTML = masterCustomer.map((c,i) => `<tr><td>${i+1}</td><td>${c.nama}</td><td>${c.kategori}</td><td><i class="bi bi-trash text-danger" onclick="hapusCustomer(${i})"></i></td></tr>`).join("");
+        document.getElementById("list-customer-table").innerHTML = masterCustomer.map((c,i) => `<tr><td>${i+1}</td><td>${c.nama}</td><td>${c.kategori}</td><td><i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="hapusCustomer(${i})"></i></td></tr>`).join("");
     }
+    
     document.getElementById("customer-form").addEventListener("submit", function(e) {
         e.preventDefault();
         masterCustomer.push({ nama: document.getElementById("cust-nama").value, kategori: document.getElementById("cust-kategori").value });
         document.getElementById("customer-form").reset();
         renderUiControls(); renderKelolaCustomer(); renderDashboard(); pushDataKeSheets();
     });
+    
     function hapusCustomer(i) { masterCustomer.splice(i,1); renderUiControls(); renderKelolaCustomer(); renderDashboard(); pushDataKeSheets(); }
 
-    function bukaModalEdit(idx) {
-        const tx = dataTransaksi[idx];
-        document.getElementById("edit-popup-index").value = idx;
+    function bukaModalEdit(id) {
+        const tx = dataTransaksi.find(t => t.id === id);
+        if(!tx) return;
+        document.getElementById("edit-popup-id").value = id;
         document.getElementById("edit-popup-tanggal").value = formatTampilanTanggal(tx.tanggal);
         document.getElementById("edit-popup-pelanggan").value = tx.pelanggan;
         document.getElementById("edit-popup-hutang-awal").value = formatRupiah(tx.hutangAwal);
@@ -1040,18 +1055,19 @@ function tampilkanFaktur(idx) {
     }
 
     async function simpanPerubahanTransaksiPopup() {
-        const idx = parseInt(document.getElementById("edit-popup-index").value);
-        if (isNaN(idx) || idx < 0) return;
+        const id = document.getElementById("edit-popup-id").value;
+        const idxReal = dataTransaksi.findIndex(t => t.id === id);
+        if (idxReal === -1) return;
 
         const hutangAwal = menguraiAngka(document.getElementById("edit-popup-hutang-awal").value);
         const totalBelanja = menguraiAngka(document.getElementById("edit-popup-belanja").value);
         const tagihan = menguraiAngka(document.getElementById("edit-popup-tagihan-total").value);
         const payment = menguraiAngka(document.getElementById("edit-popup-bayar").value);
 
-        dataTransaksi[idx].hutangAwal = hutangAwal;
-        dataTransaksi[idx].totalBelanja = totalBelanja;
-        dataTransaksi[idx].tagihan = tagihan;
-        dataTransaksi[idx].payment = payment;
+        dataTransaksi[idxReal].hutangAwal = hutangAwal;
+        dataTransaksi[idxReal].totalBelanja = totalBelanja;
+        dataTransaksi[idxReal].tagihan = tagihan;
+        dataTransaksi[idxReal].payment = payment;
 
         const modalEl = document.getElementById('modalEditTransaksi');
         const modalInstance = bootstrap.Modal.getInstance(modalEl);
