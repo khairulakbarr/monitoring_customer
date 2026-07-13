@@ -85,6 +85,10 @@
             background-color: #FFF9E6 !important;
             border-left: 4px solid #FFCC00;
         }
+        .block-merah-sisa {
+            background-color: #FCE8E6 !important;
+            border-left: 4px solid #C5221F;
+        }
         .customer-badge-card {
             background: #ffffff;
             border: 1px solid #e2e8f0;
@@ -187,6 +191,7 @@
             </a>
         </div>
     </div>
+    
     <!-- TABS -->
     <div class="premium-card p-2 mb-4">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -257,7 +262,7 @@
                         <div class="row g-2 mb-2">
                             <div class="col-4"><input type="number" step="0.1" class="form-control form-control-sm" id="input-jumlah" placeholder="Kg"></div>
                             <div class="col-4"><input type="number" class="form-control form-control-sm" id="input-ekor" placeholder="Ekor"></div>
-                            <div class="col-4"><input type="number" class="form-control form-control-sm" id="input-harga" placeholder="Harga"></div>
+                            <div class="col-4"><input type="text" class="form-control form-control-sm input-rupiah-direct" id="input-harga" placeholder="Harga"></div>
                         </div>
                         <button type="button" class="btn btn-sm btn-outline-primary w-100 fw-bold" onclick="tambahKeKeranjang()">Masukkan Nota</button>
                     </div>
@@ -277,18 +282,24 @@
                         <div class="row g-2">
                             <div class="col-6">
                                 <label class="text-muted small fw-bold">Sisa Tagihan Lalu</label>
-                                <input type="number" class="form-control form-control-sm" id="sub-sisa-tagihan" value="0">
+                                <input type="text" class="form-control form-control-sm input-rupiah-direct" id="sub-sisa-tagihan" value="Rp 0">
                             </div>
                             <div class="col-6">
                                 <label class="text-muted small fw-bold">Total Tagihan Baru</label>
-                                <input type="number" class="form-control form-control-sm fw-bold text-danger bg-white" id="input-tagihan-total" readonly value="0">
+                                <input type="text" class="form-control form-control-sm fw-bold text-danger bg-white" id="input-tagihan-total" readonly value="Rp 0">
                             </div>
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-success mb-1">Bayar / DP / Pelunasan</label>
-                        <input type="number" class="form-control border-success text-success fw-bold" id="input-pelunasan" value="0" required>
+                        <input type="text" class="form-control border-success text-success fw-bold input-rupiah-direct" id="input-pelunasan" value="Rp 0" required>
+                    </div>
+
+                    <!-- KOTAK HASIL AKHIR SISA BON FORM UTAMA -->
+                    <div class="mb-3 p-3 rounded-3 block-merah-sisa">
+                        <label class="text-danger small fw-bold d-block mb-1">SISA BON AKHIR (PIUTANG)</label>
+                        <h4 class="fw-bold text-danger m-0" id="display-sisa-bon-akhir">Rp 0</h4>
                     </div>
                     
                     <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow" id="btn-submit-transaksi">Simpan Catatan & Sinkron Cloud</button>
@@ -324,7 +335,7 @@
 
 <!-- POPUPS/MODALS -->
 
-<!-- MODAL EDIT POP-UP INSTAN (NEW) -->
+<!-- MODAL EDIT POP-UP INSTAN -->
 <div class="modal fade" id="modalEditTransaksi" tabindex="-1" aria-labelledby="modalEditTransaksiLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
@@ -335,7 +346,6 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <!-- ID/Indeks Transaksi Asli Tersembunyi -->
                 <input type="hidden" id="edit-popup-index">
                 
                 <div class="mb-3">
@@ -347,20 +357,26 @@
                     <input type="text" class="form-control rounded-3" id="edit-popup-pelanggan" readonly>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-bold small text-muted">Sisa Tagihan Lalu (Hutang Awal) (Rp)</label>
-                    <input type="number" class="form-control rounded-3 fw-semibold" id="edit-popup-hutang-awal" oninput="hitungTotalTagihanPopup()">
+                    <label class="form-label fw-bold small text-muted">Sisa Tagihan Lalu (Hutang Awal)</label>
+                    <input type="text" class="form-control rounded-3 fw-semibold input-rupiah-direct" id="edit-popup-hutang-awal">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-bold small text-muted">Total Belanja Hari Ini (Rp)</label>
-                    <input type="number" class="form-control rounded-3 fw-semibold" id="edit-popup-belanja" oninput="hitungTotalTagihanPopup()">
+                    <label class="form-label fw-bold small text-muted">Total Belanja Hari Ini</label>
+                    <input type="text" class="form-control rounded-3 fw-semibold input-rupiah-direct" id="edit-popup-belanja">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-bold small text-muted">Total Tagihan Baru (Rp)</label>
-                    <input type="number" class="form-control rounded-3 fw-bold bg-light" id="edit-popup-tagihan-total" readonly>
+                    <label class="form-label fw-bold small text-muted">Total Tagihan Baru</label>
+                    <input type="text" class="form-control rounded-3 fw-bold bg-light" id="edit-popup-tagihan-total" readonly>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-bold small text-muted">Jumlah Bayar / Setoran (Rp)</label>
-                    <input type="number" class="form-control rounded-3 fw-bold text-success" id="edit-popup-bayar">
+                    <label class="form-label fw-bold small text-muted">Jumlah Bayar / Setoran</label>
+                    <input type="text" class="form-control rounded-3 fw-bold text-success input-rupiah-direct" id="edit-popup-bayar">
+                </div>
+
+                <!-- KOTAK HASIL AKHIR SISA BON MODAL EDIT -->
+                <div class="p-3 rounded-3 block-merah-sisa">
+                    <label class="text-danger small fw-bold d-block mb-1">SISA BON BARU (PIUTANG)</label>
+                    <h5 class="fw-bold text-danger m-0" id="display-popup-sisa-bon">Rp 0</h5>
                 </div>
             </div>
             <div class="modal-footer border-0 p-4 pt-0">
@@ -373,7 +389,7 @@
     </div>
 </div>
 
-<!-- 1. Jendela Dasbor Customer -->
+<!-- Jendela Dasbor Customer -->
 <div class="modal fade" id="customerDashboardModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content" style="border-radius: 16px;">
@@ -392,7 +408,7 @@
     </div>
 </div>
 
-<!-- 2. Modal Faktur -->
+<!-- Modal Faktur -->
 <div class="modal fade" id="invoiceModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content" style="background-color: #f1f5f9;">
@@ -410,7 +426,7 @@
     </div>
 </div>
 
-<!-- 3. Modal Kelola Customer -->
+<!-- Modal Kelola Customer -->
 <div class="modal fade" id="customerModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -444,7 +460,35 @@
     let namaFileGlobal = "Faktur";
 
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka); }
+    function menguraiAngka(str) { if(!str) return 0; return parseInt(str.toString().replace(/\D/g, '')) || 0; }
     
+    function inisialisasiFormatRupiahLive() {
+        document.querySelectorAll('.input-rupiah-direct').forEach(input => {
+            input.addEventListener('input', function(e) {
+                let nilaiBersih = this.value.replace(/\D/g, '');
+                if(nilaiBersih === "") {
+                    this.value = "Rp 0";
+                } else {
+                    this.value = formatRupiah(parseInt(nilaiBersih));
+                }
+                
+                // Trigger perhitungan otomatis bergantung id elemen
+                if(this.id === "sub-sisa-tagihan" || this.id === "input-pelunasan") {
+                    hitungUlangPiutangForm();
+                }
+                if(this.id === "edit-popup-hutang-awal" || this.id === "edit-popup-belanja" || this.id === "edit-popup-bayar") {
+                    hitungTotalTagihanPopup();
+                }
+            });
+            input.addEventListener('focus', function() {
+                if(this.value === "Rp 0") this.value = "";
+            });
+            input.addEventListener('blur', function() {
+                if(this.value === "") this.value = "Rp 0";
+            });
+        });
+    }
+
     function parseTanggal(str) {
         if (!str) return new Date(0);
         if (str.includes('T') || str.includes('-')) { return new Date(str); }
@@ -531,13 +575,12 @@
 
         const customerTerpilih = document.getElementById("input-pelanggan").value;
         if (!customerTerpilih) {
-            document.getElementById("sub-sisa-tagihan").value = 0;
+            document.getElementById("sub-sisa-tagihan").value = "Rp 0";
             hitungUlangPiutangForm();
             return;
         }
 
         let txCustomer = dataTransaksi.filter(t => t.pelanggan === customerTerpilih);
-
         let totalBelanja = 0;
         let totalDiterima = 0;
 
@@ -547,8 +590,7 @@
         });
 
         let sisaTagihanTerakhir = totalBelanja - totalDiterima;
-
-        document.getElementById("sub-sisa-tagihan").value = sisaTagihanTerakhir > 0 ? Math.round(sisaTagihanTerakhir) : 0;
+        document.getElementById("sub-sisa-tagihan").value = sisaTagihanTerakhir > 0 ? formatRupiah(Math.round(sisaTagihanTerakhir)) : "Rp 0";
         
         hitungUlangPiutangForm();
     }
@@ -557,7 +599,7 @@
         const produk = document.getElementById("input-produk").value;
         const qty = parseFloat(document.getElementById("input-jumlah").value) || 0;
         const ekor = parseInt(document.getElementById("input-ekor").value) || 0;
-        const harga = parseInt(document.getElementById("input-harga").value) || 0;
+        const harga = menguraiAngka(document.getElementById("input-harga").value);
         
         if (produk === "Ayam Merah" || produk === "Ayam Penyet") {
             if (ekor <= 0 || harga <= 0) return; 
@@ -569,7 +611,7 @@
         
         document.getElementById("input-jumlah").value = "";
         document.getElementById("input-ekor").value = "";
-        document.getElementById("input-harga").value = "";
+        document.getElementById("input-harga").value = "Rp 0";
         
         renderKeranjang();
         hitungUlangPiutangForm();
@@ -612,10 +654,16 @@
     }
 
     function hitungUlangPiutangForm() {
-        const piutangLama = parseInt(document.getElementById("sub-sisa-tagihan").value) || 0;
-        document.getElementById("input-tagihan-total").value = piutangLama + totalBelanjaHariIni;
+        const piutangLama = menguraiAngka(document.getElementById("sub-sisa-tagihan").value);
+        const totalTagihanBaru = piutangLama + totalBelanjaHariIni;
+        const pelunasan = menguraiAngka(document.getElementById("input-pelunasan").value);
+        
+        document.getElementById("input-tagihan-total").value = formatRupiah(totalTagihanBaru);
+        
+        // Update Live Kotak Hasil Akhir Sisa Bon Form Utama
+        const sisaBonAkhir = totalTagihanBaru - pelunasan;
+        document.getElementById("display-sisa-bon-akhir").innerText = formatRupiah(sisaBonAkhir);
     }
-    document.getElementById("sub-sisa-tagihan").addEventListener("input", hitungUlangPiutangForm);
 
     function renderCustomerGridMenu() {
         const container = document.getElementById("customer-grid-container");
@@ -696,7 +744,6 @@
                         <td class="text-danger fw-bold">${formatRupiah(sisa)}</td>
                         <td><button class="btn btn-sm btn-danger py-0" data-bs-toggle="modal" data-bs-target="#invoiceModal" onclick="tampilkanFaktur(${tx.originalIdx})"><i class="bi bi-file-earmark-pdf"></i></button></td>
                         <td>
-                            <!-- DIUBAH: Membuka Pop-up Edit Instan Modal -->
                             <i class="bi bi-pencil-square text-warning me-2" style="cursor:pointer;" onclick="bukaModalEdit(${tx.originalIdx})"></i>
                             <i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="hapusData(${tx.originalIdx})"></i>
                         </td>
@@ -842,7 +889,7 @@
 
     document.getElementById("receivable-form").addEventListener("submit", function(e) {
         e.preventDefault();
-        const pembayaran = parseInt(document.getElementById("input-pelunasan").value) || 0;
+        const pembayaran = menguraiAngka(document.getElementById("input-pelunasan").value);
         
         if (keranjangSementara.length === 0 && pembayaran <= 0) {
             alert("Transaksi tidak bisa disimpan! Isi barang belanjaan ATAU isi nominal Pembayaran/DP.");
@@ -855,8 +902,8 @@
             tanggal: convertDateToDisplay(document.getElementById("input-tanggal").value),
             pelanggan: document.getElementById("input-pelanggan").value,
             totalBelanja: totalBelanjaHariIni, 
-            hutangAwal: parseInt(document.getElementById("sub-sisa-tagihan").value) || 0,
-            tagihan: parseInt(document.getElementById("input-tagihan-total").value) || 0,
+            hutangAwal: menguraiAngka(document.getElementById("sub-sisa-tagihan").value),
+            tagihan: menguraiAngka(document.getElementById("input-tagihan-total").value),
             payment: pembayaran,
             items: [...keranjangSementara] 
         };
@@ -868,6 +915,13 @@
         
         document.getElementById("receivable-form").reset();
         document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
+        
+        // Reset manual teks rupiah bawaan form
+        document.getElementById("sub-sisa-tagihan").value = "Rp 0";
+        document.getElementById("input-tagihan-total").value = "Rp 0";
+        document.getElementById("input-pelunasan").value = "Rp 0";
+        document.getElementById("display-sisa-bon-akhir").innerText = "Rp 0";
+        
         renderDashboard();
         updateSisaTagihanOtomatis(); 
         pushDataKeSheets();
@@ -878,8 +932,8 @@
         document.getElementById("edit-transaksi-index").value = idx;
         document.getElementById("input-tanggal").value = convertDateToInput(tx.tanggal);
         document.getElementById("input-pelanggan").value = tx.pelanggan;
-        document.getElementById("sub-sisa-tagihan").value = tx.hutangAwal;
-        document.getElementById("input-pelunasan").value = tx.payment;
+        document.getElementById("sub-sisa-tagihan").value = formatRupiah(tx.hutangAwal);
+        document.getElementById("input-pelunasan").value = formatRupiah(tx.payment);
         keranjangSementara = [...tx.items];
         renderKeranjang();
         hitungUlangPiutangForm();
@@ -889,8 +943,15 @@
     function batalEditTransaksi() {
         document.getElementById("edit-transaksi-index").value = "-1";
         document.getElementById("receivable-form").reset();
-        keranjangSementara = []; renderKeranjang();
+        keranjangSementara = []; 
+        renderKeranjang();
         document.getElementById("btn-batal-edit").classList.add("d-none");
+        
+        document.getElementById("sub-sisa-tagihan").value = "Rp 0";
+        document.getElementById("input-tagihan-total").value = "Rp 0";
+        document.getElementById("input-pelunasan").value = "Rp 0";
+        document.getElementById("display-sisa-bon-akhir").innerText = "Rp 0";
+        
         updateSisaTagihanOtomatis();
     }
 
@@ -907,63 +968,67 @@
     });
     function hapusCustomer(i) { masterCustomer.splice(i,1); renderUiControls(); renderKelolaCustomer(); renderDashboard(); pushDataKeSheets(); }
 
-    // ==========================================
-    // FUNGSI JAVASCRIPT UNTUK MODAL POP-UP EDIT (NEW)
-    // ==========================================
+    // JAVASCRIPT UNTUK MODAL POP-UP EDIT 
     function bukaModalEdit(idx) {
         const tx = dataTransaksi[idx];
         
         document.getElementById("edit-popup-index").value = idx;
         document.getElementById("edit-popup-tanggal").value = formatTampilanTanggal(tx.tanggal);
         document.getElementById("edit-popup-pelanggan").value = tx.pelanggan;
-        document.getElementById("edit-popup-hutang-awal").value = tx.hutangAwal;
-        document.getElementById("edit-popup-belanja").value = tx.totalBelanja;
-        document.getElementById("edit-popup-tagihan-total").value = tx.tagihan;
-        document.getElementById("edit-popup-bayar").value = tx.payment;
+        document.getElementById("edit-popup-hutang-awal").value = formatRupiah(tx.hutangAwal);
+        document.getElementById("edit-popup-belanja").value = formatRupiah(tx.totalBelanja);
+        document.getElementById("edit-popup-tagihan-total").value = formatRupiah(tx.tagihan);
+        document.getElementById("edit-popup-bayar").value = formatRupiah(tx.payment);
         
-        // Membuka modal Bootstrap
+        hitungTotalTagihanPopup();
+        
         const modalEdit = new bootstrap.Modal(document.getElementById('modalEditTransaksi'));
         modalEdit.show();
     }
 
     function hitungTotalTagihanPopup() {
-        const hutangAwal = parseInt(document.getElementById("edit-popup-hutang-awal").value) || 0;
-        const belanja = parseInt(document.getElementById("edit-popup-belanja").value) || 0;
-        document.getElementById("edit-popup-tagihan-total").value = hutangAwal + belanja;
+        const hutangAwal = menguraiAngka(document.getElementById("edit-popup-hutang-awal").value);
+        const belanja = menguraiAngka(document.getElementById("edit-popup-belanja").value);
+        const totalTagihanBaru = hutangAwal + belanja;
+        const bayar = menguraiAngka(document.getElementById("edit-popup-bayar").value);
+        
+        document.getElementById("edit-popup-tagihan-total").value = formatRupiah(totalTagihanBaru);
+        
+        // Perhitungan Sisa Bon Akhir Real-time Modal Popup
+        const sisaBonBaru = totalTagihanBaru - bayar;
+        document.getElementById("display-popup-sisa-bon").innerText = formatRupiah(sisaBonBaru);
     }
 
     async function simpanPerubahanTransaksiPopup() {
         const idx = parseInt(document.getElementById("edit-popup-index").value);
         if (isNaN(idx) || idx < 0) return;
 
-        const hutangAwal = parseInt(document.getElementById("edit-popup-hutang-awal").value) || 0;
-        const totalBelanja = parseInt(document.getElementById("edit-popup-belanja").value) || 0;
-        const tagihan = parseInt(document.getElementById("edit-popup-tagihan-total").value) || 0;
-        const payment = parseInt(document.getElementById("edit-popup-bayar").value) || 0;
+        const hutangAwal = menguraiAngka(document.getElementById("edit-popup-hutang-awal").value);
+        const totalBelanja = menguraiAngka(document.getElementById("edit-popup-belanja").value);
+        const tagihan = menguraiAngka(document.getElementById("edit-popup-tagihan-total").value);
+        const payment = menguraiAngka(document.getElementById("edit-popup-bayar").value);
 
-        // Terapkan perubahan ke array data lokal
         dataTransaksi[idx].hutangAwal = hutangAwal;
         dataTransaksi[idx].totalBelanja = totalBelanja;
         dataTransaksi[idx].tagihan = tagihan;
         dataTransaksi[idx].payment = payment;
 
-        // Tutup modal
         const modalEl = document.getElementById('modalEditTransaksi');
         const modalInstance = bootstrap.Modal.getInstance(modalEl);
         if (modalInstance) modalInstance.hide();
 
-        // Render ulang tampilan lokal & kirim update ke Google Sheets
         renderDashboard();
         updateSisaTagihanOtomatis();
         await pushDataKeSheets();
     }
 
-    // Kaitkan Event Listener ke dropdown pelanggan untuk pelacakan dinamis saat diganti
     document.getElementById("input-pelanggan").addEventListener("change", updateSisaTagihanOtomatis);
 
     document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
     document.getElementById("current-date").innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
+    // Inisialisasi format Rp live pasca-load DOM
+    inisialisasiFormatRupiahLive();
     muatDataDariSheets();
 </script>
 </body>
