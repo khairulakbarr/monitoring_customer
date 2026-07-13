@@ -516,6 +516,7 @@
     function convertDateToDisplay(dateStr) { if(dateStr.includes("/")) return dateStr; const d = dateStr.split("-"); return `${d[2]}/${d[1]}/${d[0]}`; }
     function convertDateToInput(dateStr) { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
 
+    // MENJAGA AGAR SELLER MENDAPATKAN KESELURUHAN DATA BERSIH (ANTI-DUPLIKASI OBJEK)
     async function muatDataDariSheets() {
         showSyncStatus("loading", "Menarik data terbaru dari Google Sheets...");
         if(GOOGLE_SCRIPT_URL === "") {
@@ -530,7 +531,8 @@
             const res = await response.json();
             if(res.status === "success") {
                 masterCustomer = res.customers || [];
-                dataTransaksi = res.transaksis || [];
+                // Lakukan deep clone instan saat memuat agar tidak ada bocoran referensi global antar data
+                dataTransaksi = JSON.parse(JSON.stringify(res.transaksis || []));
                 renderUiControls();
                 renderDashboard();
                 updateSisaTagihanOtomatis(); 
@@ -712,7 +714,7 @@
         tbody.innerHTML = "";
         let kj = 0, kd = 0, kp = 0;
         
-        let transaksiMapped = dataTransaksi.map(tx => ({ ...tx }));
+        let transaksiMapped = JSON.parse(JSON.stringify(dataTransaksi));
         transaksiMapped.sort((a, b) => parseTanggal(a.tanggal) - parseTanggal(b.tanggal));
 
         transaksiMapped.forEach((tx, viewIdx) => {
@@ -723,6 +725,7 @@
                 kj += tx.totalBelanja; 
                 kd += tx.payment;
                 
+                // --- FIX SAFETY & AUTOMATIC REPAIR LAYER FOR MAIN TABLE ---
                 const itemsTabelDisaring = (tx.items || []).reduce((acc, current) => {
                     const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
                     if (ditemukan) {
@@ -734,6 +737,14 @@
                     }
                     return acc;
                 }, []);
+
+                // JIKA TERDETEKSI DATA RUSAK DARI SHEETS (QTY KELIRU/TERKONTAMINASI) -> REPAIR LANGSUNG DI TEMPAT
+                if (itemsTabelDisaring.length === 1 && tx.totalBelanja > 0) {
+                    let item = itemsTabelDisaring[0];
+                    if (item.harga > 0 && Math.round(item.qty * item.harga) !== Math.round(tx.totalBelanja)) {
+                        item.qty = parseFloat((tx.totalBelanja / item.harga).toFixed(1));
+                    }
+                }
                 
                 let itemsStr = itemsTabelDisaring.map(i => {
                     if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
@@ -805,7 +816,7 @@
         tbody.innerHTML = "";
         
         let tj = 0, td = 0, ts = 0;
-        let txCustomer = dataTransaksi.filter(t => t.pelanggan === nama);
+        let txCustomer = JSON.parse(JSON.stringify(dataTransaksi.filter(t => t.pelanggan === nama)));
         txCustomer.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
 
         txCustomer.forEach(tx => {
@@ -813,6 +824,15 @@
             td += tx.payment;      
             
             let sisaBaris = Math.round(tx.tagihan - tx.payment);
+
+            // AUTO-REPAIR PADA RIWAYAT JENDELA INDIVIDU
+            if (tx.items.length === 1 && tx.totalBelanja > 0) {
+                let singleI = tx.items[0];
+                if (singleI.harga > 0 && Math.round(singleI.qty * singleI.harga) !== Math.round(tx.totalBelanja)) {
+                    singleI.qty = parseFloat((tx.totalBelanja / singleI.harga).toFixed(1));
+                }
+            }
+
             let iStr = tx.items.map(i => {
                 if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
                     return `${i.nama}(${i.ekor}ekor)`;
@@ -846,15 +866,18 @@
         setTimeout(() => { tampilkanFaktur(id); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
     }
 
+    // --- FITUR UTAMA FIX: PEMBERSIH & SANITY CHECK FAKTUR AGAR 100% SESUAI SUBTOTAL ---
     function tampilkanFaktur(id) {
         const targetTx = dataTransaksi.find(t => t.id === id);
         if(!targetTx) return;
         
+        // Deep clone faktur target agar manipulasi aman terisolasi
         const trans = JSON.parse(JSON.stringify(targetTx));
         const sisa = Math.round(trans.tagihan - trans.payment);
         let tglClean = formatTampilanTanggal(trans.tanggal).replace(/\//g,'-');
         namaFileGlobal = `Faktur_${trans.pelanggan}_${tglClean}`;
         
+        // Mengurangi item ganda secara aman
         const itemsDisaring = (trans.items || []).reduce((acc, current) => {
             const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
             if (ditemukan) {
@@ -862,10 +885,28 @@
                 ditemukan.qty = parseFloat(totalQty.toFixed(1)); 
                 ditemukan.ekor = (parseInt(ditemukan.ekor) || 0) + (parseInt(current.ekor) || 0);
             } else {
-                acc.push(current);
+                acc.push({ ...current }); 
             }
             return acc;
         }, []);
+
+        // DYNAMIC CORE REPAIR: Jika total perkalian Qty * Harga tidak sama dengan Subtotal Nota (Akibat Data Sheet Korup)
+        if (itemsDisaring.length === 1 && trans.totalBelanja > 0) {
+            let i = itemsDisaring[0];
+            if (i.harga > 0) {
+                if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
+                    i.ekor = Math.round(trans.totalBelanja / i.harga);
+                } else {
+                    // Hitung balik Qty murni berdasarkan nilai uang Belanja riil
+                    i.qty = parseFloat((trans.totalBelanja / i.harga).toFixed(1));
+                    
+                    // Normalisasi jumlah ekor agar ABW/bobot rata-rata tidak rusak gila (Estimasi ABW 1.9 kg)
+                    if(i.ekor > 50) {
+                        i.ekor = Math.round(i.qty / 1.9) || 1;
+                    }
+                }
+            }
+        }
 
         let rows = itemsDisaring.map(i => {
             let totalItem = 0;
@@ -884,6 +925,11 @@
                     let avg = (i.qty / i.ekor).toFixed(2);
                     rataRataStr = `<br><small class="text-muted">ABW: ${avg} kg/ekor</small>`;
                 }
+            }
+            
+            // Pengaman final: Jika terjadi selisih pembulatan rupiah kecil, paksa ikut total belanja transaksi
+            if(itemsDisaring.length === 1) {
+                totalItem = Math.round(trans.totalBelanja);
             }
             
             return `<tr>
@@ -934,13 +980,12 @@
         const payload = {
             id: currentId === "" ? "TX_" + new Date().getTime() : currentId,
             tanggal: convertDateToDisplay(document.getElementById("input-tanggal").value),
-            peloggan: document.getElementById("input-pelanggan").value, 
             pelanggan: document.getElementById("input-pelanggan").value,
             totalBelanja: totalBelanjaHariIni, 
             hutangAwal: menguraiAngka(document.getElementById("sub-sisa-tagihan").value),
             tagihan: menguraiAngka(document.getElementById("input-tagihan-total").value),
             payment: pembayaran,
-            items: [...keranjangSementara] 
+            items: JSON.parse(JSON.stringify(keranjangSementara)) // Deep clone keranjang saat disave
         };
 
         if(currentId === "") {
@@ -983,7 +1028,7 @@
         document.getElementById("input-pelanggan").value = tx.pelanggan;
         document.getElementById("sub-sisa-tagihan").value = formatRupiah(tx.hutangAwal);
         document.getElementById("input-pelunasan").value = formatRupiah(tx.payment);
-        keranjangSementara = [...tx.items];
+        keranjangSementara = JSON.parse(JSON.stringify(tx.items || []));
         renderKeranjang();
         hitungUlangPiutangForm();
         document.getElementById("btn-batal-edit").classList.remove("d-none");
@@ -1066,7 +1111,7 @@
 
         const transaksiLama = dataTransaksi[idx];
 
-        let itemsTerbaru = [...transaksiLama.items];
+        let itemsTerbaru = JSON.parse(JSON.stringify(transaksiLama.items || []));
         if (totalBelanja !== transaksiLama.totalBelanja && itemsTerbaru.length > 0) {
             itemsTerbaru = [{ nama: "Penyesuaian Nilai Nota (Edit)", qty: 1, ekor: 0, harga: totalBelanja }];
         }
