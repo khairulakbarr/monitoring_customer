@@ -1055,29 +1055,44 @@
     }
 
     async function simpanPerubahanTransaksiPopup() {
-        const id = document.getElementById("edit-popup-id").value;
-        const idxReal = dataTransaksi.findIndex(t => t.id === id);
-        if (idxReal === -1) return;
+    const idx = parseInt(document.getElementById("edit-popup-index").value);
+    if (isNaN(idx) || idx < 0) return;
 
-        const hutangAwal = menguraiAngka(document.getElementById("edit-popup-hutang-awal").value);
-        const totalBelanja = menguraiAngka(document.getElementById("edit-popup-belanja").value);
-        const tagihan = menguraiAngka(document.getElementById("edit-popup-tagihan-total").value);
-        const payment = menguraiAngka(document.getElementById("edit-popup-bayar").value);
+    const hutangAwal = menguraiAngka(document.getElementById("edit-popup-hutang-awal").value);
+    const totalBelanja = menguraiAngka(document.getElementById("edit-popup-belanja").value);
+    const tagihan = menguraiAngka(document.getElementById("edit-popup-tagihan-total").value);
+    const payment = menguraiAngka(document.getElementById("edit-popup-bayar").value);
 
-        dataTransaksi[idxReal].hutangAwal = hutangAwal;
-        dataTransaksi[idxReal].totalBelanja = totalBelanja;
-        dataTransaksi[idxReal].tagihan = tagihan;
-        dataTransaksi[idxReal].payment = payment;
+    // [PERBAIKAN UTAMA] Ambil data lama terlebih dahulu agar properti lainnya aman
+    const transaksiLama = dataTransaksi[idx];
 
-        const modalEl = document.getElementById('modalEditTransaksi');
-        const modalInstance = bootstrap.Modal.getInstance(modalEl);
-        if (modalInstance) modalInstance.hide();
-
-        renderDashboard();
-        updateSisaTagihanOtomatis();
-        await pushDataKeSheets();
+    // Jika user mengubah nominal total belanja di pop-up secara manual tanpa menyentuh keranjang,
+    // kita bersihkan array items atau beri penanda agar tidak terjadi tabrakan cetak rincian barang (double fake)
+    let itemsTerbaru = [...transaksiLama.items];
+    if (totalBelanja !== transaksiLama.totalBelanja && itemsTerbaru.length > 0) {
+        // Jika total belanja berubah manual, rincian item disesuaikan agar manifes nota tidak bentrok
+        itemsTerbaru = [{ nama: "Penyesuaian Nilai Nota (Edit)", qty: 1, ekor: 0, harga: totalBelanja }];
     }
 
+    // Update data transaksi pada index tersebut dengan presisi
+    dataTransaksi[idx] = {
+        ...transaksiLama, // mempertahankan id, tanggal, dan pelanggan asli
+        hutangAwal: hutangAwal,
+        totalBelanja: totalBelanja,
+        tagihan: tagihan,
+        payment: payment,
+        items: itemsTerbaru
+    };
+
+    const modalEl = document.getElementById('modalEditTransaksi');
+    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+    if (modalInstance) modalInstance.hide();
+
+    // Reset dan Refresh UI secara menyeluruh
+    renderDashboard();
+    updateSisaTagihanOtomatis();
+    await pushDataKeSheets();
+}
     document.getElementById("input-pelanggan").addEventListener("change", updateSisaTagihanOtomatis);
     document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
     document.getElementById("current-date").innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
