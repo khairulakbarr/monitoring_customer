@@ -865,6 +865,10 @@
                 <td>${formatRupiah(totalItem)}</td>
             </tr>`;
         }).join("");
+
+        // PERBAIKAN: Bersihkan isi container faktur terlebih dahulu sebelum dirender ulang agar tidak double visual
+        document.getElementById("invoice-content").innerHTML = "";
+
         document.getElementById("invoice-content").innerHTML = `
             <div class="d-flex justify-content-between mb-3">
                 <div><div class="invoice-title">FAKTUR</div><div class="small">Kepada: <b>${trans.pelanggan}</b></div></div>
@@ -887,14 +891,23 @@
         });
     });
 
-    document.getElementById("receivable-form").addEventListener("submit", function(e) {
+    document.getElementById("receivable-form").addEventListener("submit", async function(e) {
         e.preventDefault();
+
+        // PERBAIKAN: Ambil elemen button submit form utama & cegah double klik/double input
+        const btnSubmit = document.getElementById("btn-submit-transaksi");
+        if (btnSubmit.disabled) return;
+
         const pembayaran = menguraiAngka(document.getElementById("input-pelunasan").value);
         
         if (keranjangSementara.length === 0 && pembayaran <= 0) {
             alert("Transaksi tidak bisa disimpan! Isi barang belanjaan ATAU isi nominal Pembayaran/DP.");
             return;
         }
+
+        // Kunci tombol seketika saat proses simpan berjalan
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...`;
         
         const idx = parseInt(document.getElementById("edit-transaksi-index").value);
         const payload = {
@@ -924,7 +937,16 @@
         
         renderDashboard();
         updateSisaTagihanOtomatis(); 
-        pushDataKeSheets();
+        
+        // Tunggu proses push ke cloud selesai baru buka kembali kunci tombolnya
+        try {
+            await pushDataKeSheets();
+        } catch(err) {
+            console.error(err);
+        } finally {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = "Simpan Catatan & Sinkron Cloud";
+        }
     });
 
     function pilihEditTransaksi(idx) {
