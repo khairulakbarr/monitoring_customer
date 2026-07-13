@@ -172,17 +172,17 @@
     </div>
 
     <!-- HEADER -->
-<div class="p-4 bg-gradient-blue rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <div>
-        <h2 class="mb-0 fs-4 fw-bold d-flex align-items-center gap-2">
-            <i class="bi bi-receipt-cutoff"></i> TAGIHAN CUSTOMER
-        </h2>
-        <p class="mb-0 small opacity-75 mt-1" id="current-date"></p>
+    <div class="p-4 bg-gradient-blue rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h2 class="mb-0 fs-4 fw-bold d-flex align-items-center gap-2">
+                <i class="bi bi-receipt-cutoff"></i> TAGIHAN CUSTOMER
+            </h2>
+            <p class="mb-0 small opacity-75 mt-1" id="current-date"></p>
+        </div>
+        <a href="supplier.html" class="btn btn-sm btn-light fw-bold text-primary px-3 py-2 rounded-3">
+            <i class="bi bi-truck me-1"></i> Buka Monitoring Supplier
+        </a>
     </div>
-    <a href="supplier.html" class="btn btn-sm btn-light fw-bold text-primary px-3 py-2 rounded-3">
-        <i class="bi bi-truck me-1"></i> Buka Monitoring Supplier
-    </a>
-</div>
 
     <!-- TABS -->
     <div class="premium-card p-2 mb-4">
@@ -273,7 +273,7 @@
                     <div class="mb-3 p-3 rounded-3 block-kuning">
                         <div class="row g-2">
                             <div class="col-6">
-                                <label class="text-muted small fw-bold">Sisa Tagihan</label>
+                                <label class="text-muted small fw-bold">Sisa Tagihan Lalu</label>
                                 <input type="number" class="form-control form-control-sm" id="sub-sisa-tagihan" value="0">
                             </div>
                             <div class="col-6">
@@ -392,32 +392,19 @@
 
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka); }
     
-    // PERBAIKAN: Fungsi Pembaca Tanggal Universal Anti-Acak-Acakan saat Commit
     function parseTanggal(str) {
         if (!str) return new Date(0);
-        
-        // Jika data dari database berupa ISO String (contoh: 2026-07-06T17:00:00.000Z atau 2026-07-06)
-        if (str.includes('T') || str.includes('-')) {
-            return new Date(str);
-        }
-        
-        // Jika format teks biasa dengan garis miring (contoh: 06/07/2026)
+        if (str.includes('T') || str.includes('-')) { return new Date(str); }
         if (str.includes('/')) {
             const parts = str.split('/');
-            if (parts.length === 3) {
-                return new Date(parts[2], parts[1] - 1, parts[0]);
-            }
+            if (parts.length === 3) { return new Date(parts[2], parts[1] - 1, parts[0]); }
         }
-        
         const parsed = Date.parse(str);
         return isNaN(parsed) ? new Date(0) : new Date(parsed);
     }
 
-    // PERBAIKAN: Fungsi Penyeragam Tampilan Tanggal Layar
     function formatTampilanTanggal(stringTanggal) {
         if (!stringTanggal) return "-";
-        
-        // Paksa format ISO panjang dari database menjadi format bersih DD/MM/YYYY
         if (stringTanggal.includes('T')) {
             const d = new Date(stringTanggal);
             if (!isNaN(d.getTime())) {
@@ -427,7 +414,6 @@
                 return `${hari}/${bulan}/${tahun}`;
             }
         }
-        
         return stringTanggal;
     }
 
@@ -451,6 +437,7 @@
                 dataTransaksi = res.transaksis;
                 renderUiControls();
                 renderDashboard();
+                updateSisaTagihanOtomatis(); // Panggil hitung otomatis setelah data ditarik
                 showSyncStatus("success", "Sistem Sinkron Online (Google Sheets)");
             } else {
                 showSyncStatus("error", "Gagal load data: " + res.message);
@@ -483,6 +470,39 @@
         if(type === "loading") bar.innerHTML = `<span class="text-warning"><div class="spinner-border spinner-border-sm me-1"></div> ${msg}</span>`;
         if(type === "success") bar.innerHTML = `<span class="text-success"><i class="bi bi-cloud-check-fill"></i> ${msg}</span>`;
         if(type === "error") bar.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> ${msg}</span>`;
+    }
+
+    // FUNGSI BARU: Mengambil otomatis total sisa piutang/tagihan customer berjalan
+    function updateSisaTagihanOtomatis() {
+        // Jika sedang mengedit data lama, batalkan kalkulasi otomatis biar tidak menimpa input manual
+        const editIdx = parseInt(document.getElementById("edit-transaksi-index").value);
+        if (editIdx !== -1) return;
+
+        const customerTerpilih = document.getElementById("input-pelanggan").value;
+        if (!customerTerpilih) {
+            document.getElementById("sub-sisa-tagihan").value = 0;
+            hitungUlangPiutangForm();
+            return;
+        }
+
+        // Kumpulkan histori transaksi khusus milik customer ini
+        let txCustomer = dataTransaksi.filter(t => t.pelanggan === customerTerpilih);
+
+        let totalBelanja = 0;
+        let totalDiterima = 0;
+
+        txCustomer.forEach(tx => {
+            totalBelanja += tx.totalBelanja;
+            totalDiterima += tx.payment;
+        });
+
+        let sisaTagihanTerakhir = totalBelanja - totalDiterima;
+
+        // Pasang hasil kalkulasi ke kolom Sisa Tagihan (Gunakan 0 jika minus/lunas)
+        document.getElementById("sub-sisa-tagihan").value = sisaTagihanTerakhir > 0 ? Math.round(sisaTagihanTerakhir) : 0;
+        
+        // Refresh Total Tagihan Baru di form
+        hitungUlangPiutangForm();
     }
 
     function tambahKeKeranjang() {
@@ -549,7 +569,6 @@
     }
     document.getElementById("sub-sisa-tagihan").addEventListener("input", hitungUlangPiutangForm);
 
-    // PERBAIKAN: Fungsi Grid Menu Customer Memakai Hitungan Akumulatif Riil
     function renderCustomerGridMenu() {
         const container = document.getElementById("customer-grid-container");
         container.innerHTML = "";
@@ -593,7 +612,6 @@
         renderDashboard();
     }
 
-    // PERBAIKAN: Pembungkusan Tanggal Tabel Utama Dengan formatTampilanTanggal()
     function renderDashboard() {
         const tbody = document.getElementById("table-body");
         tbody.innerHTML = "";
@@ -602,14 +620,10 @@
         let transaksiMapped = dataTransaksi.map((tx, idx) => ({ ...tx, originalIdx: idx }));
         transaksiMapped.sort((a, b) => parseTanggal(a.tanggal) - parseTanggal(b.tanggal));
 
-        let saldoTerakhir = {};
-        masterCustomer.forEach(c => saldoTerakhir[c.nama] = 0);
-
         transaksiMapped.forEach((tx, viewIdx) => {
             const meta = masterCustomer.find(c => c.nama === tx.pelanggan) || {kategori: "Customer Umum"};
             const sisa = Math.round(tx.tagihan - tx.payment);
             
-            // Hitung akumulasi piutang riil untuk KPI ringkasan
             if(currentFilter === "Semua" || currentFilter === meta.kategori) {
                 kj += tx.totalBelanja; 
                 kd += tx.payment;
@@ -627,7 +641,7 @@
                         <td>${viewIdx + 1}</td>
                         <td>${formatTampilanTanggal(tx.tanggal)}</td>
                         <td class="fw-bold text-primary" style="cursor:pointer;" onclick="bukaJendelaDasborCustomer('${tx.pelanggan}')">${tx.pelanggan}</td>
-                        <td class="small">${itemsStr}</td>
+                        <td class="small">${itemsStr || "Hanya Pembayaran Bon"}</td>
                         <td>${formatRupiah(Math.round(tx.totalBelanja))}</td>
                         <td>${formatRupiah(Math.round(tx.tagihan))}</td>
                         <td>${formatRupiah(Math.round(tx.payment))}</td>
@@ -641,7 +655,6 @@
             }
         });
 
-        // Hitung KPI Sisa Piutang Aktif Global (Total Semua Belanja - Total Semua Diterima)
         let globalBelanja = 0;
         let globalDiterima = 0;
         dataTransaksi.forEach(t => {
@@ -679,22 +692,18 @@
         });
     }
 
-    // PERBAIKAN UTAMA: Modal Riwayat Dengan Rumus Akuntansi Riil & Format Tanggal Aman
     function bukaJendelaDasborCustomer(nama) {
         document.getElementById("cust-modal-title").innerText = "Riwayat Buku: " + nama;
         const tbody = document.getElementById("cust-modal-table-body");
         tbody.innerHTML = "";
         
         let tj = 0, td = 0, ts = 0;
-
         let txCustomer = dataTransaksi.filter(t => t.pelanggan === nama);
-
-        // Urutkan Tanggal Terkini (Atas) ke Terlama (Bawah)
         txCustomer.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
 
         txCustomer.forEach(tx => {
-            tj += tx.totalBelanja; // Akumulasi total belanja riil
-            td += tx.payment;      // Akumulasi total uang diterima riil
+            tj += tx.totalBelanja; 
+            td += tx.payment;      
             
             let sisaBaris = Math.round(tx.tagihan - tx.payment);
             let iStr = tx.items.map(i => {
@@ -707,7 +716,7 @@
 
             tbody.innerHTML += `<tr>
                 <td>${formatTampilanTanggal(tx.tanggal)}</td>
-                <td class="text-start">${iStr}</td>
+                <td class="text-start">${iStr || "Hanya Pembayaran Bon"}</td>
                 <td>${formatRupiah(tx.totalBelanja)}</td>
                 <td>${formatRupiah(tx.tagihan)}</td>
                 <td>${formatRupiah(tx.payment)}</td>
@@ -716,7 +725,6 @@
             </tr>`;
         });
         
-        // RUMUS BARU SINKRON AKUNTANSI: Total Penjualan dikurangi Total Diterima
         ts = tj - td; 
 
         document.getElementById("cust-modal-jual").innerText = formatRupiah(tj);
@@ -766,10 +774,10 @@
                 <div><div class="invoice-title">FAKTUR</div><div class="small">Kepada: <b>${trans.pelanggan}</b></div></div>
                 <div class="text-end small"><b>No:</b> #${idx+101}<br><b>Tgl:</b> ${formatTampilanTanggal(trans.tanggal)}</div>
             </div>
-            <table class="table-invoice-maroon"><thead><tr><th>Barang</th><th>Qty</th><th>Harga</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
+            <table class="table-invoice-maroon"><thead><tr><th>Barang</th><th>Qty</th><th>Harga</th><th>Total</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="text-center text-muted">Hanya Transaksi Titip Bayar Bon</td></tr>'}</tbody></table>
             <div class="mt-3 text-end" style="font-size:13px;">
                 <div class="invoice-summary-row"><div class="invoice-summary-label">Subtotal</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.totalBelanja))}</div></div>
-                <div class="invoice-summary-row"><div class="invoice-summary-label">Sisa Tagihan</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.hutangAwal))}</div></div>
+                <div class="invoice-summary-row"><div class="invoice-summary-label">Sisa Tagihan Lalu</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.hutangAwal))}</div></div>
                 <div class="invoice-total-badge"><div class="invoice-total-container"><span>TOTAL</span><span>${formatRupiah(Math.round(trans.tagihan))}</span></div></div>
                 <div class="invoice-summary-row mt-2 text-success"><div class="invoice-summary-label">Bayar/DP</div><div class="invoice-summary-value">-${formatRupiah(Math.round(trans.payment))}</div></div>
                 <div class="invoice-summary-row text-danger fw-bold"><div class="invoice-summary-label">Sisa Bon</div><div class="invoice-summary-value">${formatRupiah(sisa)}</div></div>
@@ -783,43 +791,36 @@
         });
     });
 
-    // ==========================================
-    // PERBAIKAN LOGIKA: DI SINI PROSES PENYIMPANAN DIUBAH
-    // ==========================================
     document.getElementById("receivable-form").addEventListener("submit", function(e) {
         e.preventDefault();
-        
         const pembayaran = parseInt(document.getElementById("input-pelunasan").value) || 0;
         
-        // REVOLUSI VALIDASI BARU:
-        // Tolak simpan JIKA keranjang kosong DAN nilai pembayaran juga kosong (0)
         if (keranjangSementara.length === 0 && pembayaran <= 0) {
             alert("Transaksi tidak bisa disimpan! Isi barang belanjaan ATAU isi nominal Pembayaran/DP.");
             return;
         }
         
         const idx = parseInt(document.getElementById("edit-transaksi-index").value);
-        
         const payload = {
             id: idx === -1 ? "TX_" + new Date().getTime() : dataTransaksi[idx].id,
             tanggal: convertDateToDisplay(document.getElementById("input-tanggal").value),
             pelanggan: document.getElementById("input-pelanggan").value,
-            totalBelanja: totalBelanjaHariIni, // Otomatis Rp 0 jika keranjang kosong
+            totalBelanja: totalBelanjaHariIni, 
             hutangAwal: parseInt(document.getElementById("sub-sisa-tagihan").value) || 0,
             tagihan: parseInt(document.getElementById("input-tagihan-total").value) || 0,
             payment: pembayaran,
-            items: [...keranjangSementara] // Berupa array kosong [] jika hanya titip DP/bayar bon
+            items: [...keranjangSementara] 
         };
 
         if(idx === -1) dataTransaksi.push(payload); else { dataTransaksi[idx] = payload; batalEditTransaksi(); }
         
-        // Reset state keranjang
         keranjangSementara = [];
         renderKeranjang();
         
         document.getElementById("receivable-form").reset();
         document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
         renderDashboard();
+        updateSisaTagihanOtomatis(); // Hitung ulang sisa tagihan terupdate setelah submit
         pushDataKeSheets();
     });
 
@@ -841,9 +842,10 @@
         document.getElementById("receivable-form").reset();
         keranjangSementara = []; renderKeranjang();
         document.getElementById("btn-batal-edit").classList.add("d-none");
+        updateSisaTagihanOtomatis();
     }
 
-    function hapusData(idx) { if(confirm("Hapus?")) { dataTransaksi.splice(idx,1); renderDashboard(); pushDataKeSheets(); } }
+    function hapusData(idx) { if(confirm("Hapus?")) { dataTransaksi.splice(idx,1); renderDashboard(); updateSisaTagihanOtomatis(); pushDataKeSheets(); } }
 
     function renderKelolaCustomer() {
         document.getElementById("list-customer-table").innerHTML = masterCustomer.map((c,i) => `<tr><td>${i+1}</td><td>${c.nama}</td><td>${c.kategori}</td><td><i class="bi bi-trash text-danger" onclick="hapusCustomer(${i})"></i></td></tr>`).join("");
@@ -855,6 +857,9 @@
         renderUiControls(); renderKelolaCustomer(); renderDashboard(); pushDataKeSheets();
     });
     function hapusCustomer(i) { masterCustomer.splice(i,1); renderUiControls(); renderKelolaCustomer(); renderDashboard(); pushDataKeSheets(); }
+
+    // Kaitkan Event Listener ke dropdown pelanggan untuk pelacakan dinamis saat diganti
+    document.getElementById("input-pelanggan").addEventListener("change", updateSisaTagihanOtomatis);
 
     document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
     document.getElementById("current-date").innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
