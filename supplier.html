@@ -257,7 +257,7 @@
                         <div class="row g-2 mb-2">
                             <div class="col-4"><input type="number" step="0.1" class="form-control form-control-sm" id="input-jumlah" placeholder="Kg"></div>
                             <div class="col-4"><input type="number" class="form-control form-control-sm" id="input-ekor" placeholder="Ekor"></div>
-                            <div class="col-4"><input type="number" class="form-control form-control-sm" id="input-harga" placeholder="Harga"></div>
+                            <div class="col-4"><input type="text" class="rupiah-input form-control form-control-sm text-end" id="input-harga" placeholder="Harga"></div>
                         </div>
                         <button type="button" class="btn btn-sm btn-outline-danger w-100 fw-bold" onclick="tambahKeKeranjang()">Masukkan Nota</button>
                     </div>
@@ -277,18 +277,27 @@
                         <div class="row g-2">
                             <div class="col-6">
                                 <label class="text-muted small fw-bold">Sisa Utang Lalu</label>
-                                <input type="number" class="form-control form-control-sm" id="sub-sisa-utang" value="0">
+                                <input type="text" class="rupiah-input form-control form-control-sm text-end" id="sub-sisa-utang" value="Rp 0">
                             </div>
                             <div class="col-6">
                                 <label class="text-muted small fw-bold">Total Akumulasi Utang</label>
-                                <input type="number" class="form-control form-control-sm fw-bold text-danger bg-white" id="input-utang-total" readonly value="0">
+                                <input type="text" class="rupiah-input form-control form-control-sm fw-bold text-danger bg-white text-end" id="input-utang-total" readonly value="Rp 0">
                             </div>
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-success mb-1">Jumlah Uang yang Dibayar (DP/Cicil)</label>
-                        <input type="number" class="form-control border-success text-success fw-bold" id="input-pembayaran" value="0" required>
+                        <input type="text" class="rupiah-input form-control border-success text-success fw-bold text-end" id="input-pembayaran" value="Rp 0" required>
+                    </div>
+
+                    <!-- KOTAK HASIL AKHIR: SISA BON / TAGIHAN KEDEPANNYA -->
+                    <div class="mb-3 p-3 bg-danger bg-opacity-10 border border-danger border-start-4 rounded-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="small text-danger fw-bold uppercase d-block" style="font-size:11px; tracking-width: 0.5px;">Hasil Akhir Transaksi</span>
+                            <span class="small fw-semibold text-dark">Sisa Bon / Tagihan Kedepannya:</span>
+                        </div>
+                        <h4 id="hasil-sisa-bon-utama" class="fw-bold text-danger m-0">Rp 0</h4>
                     </div>
                     
                     <button type="submit" class="btn btn-danger w-100 fw-bold py-2 shadow">Simpan & Sinkron Cloud Supplier</button>
@@ -414,7 +423,7 @@
                             </div>
                             <div class="col-md-2"><input type="number" step="0.1" class="form-control form-control-sm" id="edit-modal-jumlah" placeholder="Kg"></div>
                             <div class="col-md-2"><input type="number" class="form-control form-control-sm" id="edit-modal-ekor" placeholder="Ekor"></div>
-                            <div class="col-md-3"><input type="number" class="form-control form-control-sm" id="edit-modal-harga" placeholder="Harga"></div>
+                            <div class="col-md-3"><input type="text" class="rupiah-input form-control form-control-sm text-end" id="edit-modal-harga" placeholder="Harga"></div>
                             <div class="col-md-2"><button type="button" class="btn btn-sm btn-outline-danger w-100 fw-bold" onclick="tambahKeKeranjangEditModal()">Tambah</button></div>
                         </div>
                     </div>
@@ -446,18 +455,27 @@
                         <div class="row g-2">
                             <div class="col-6">
                                 <label class="text-muted small fw-bold">Sisa Utang Lalu</label>
-                                <input type="number" class="form-control" id="edit-modal-sub-sisa-utang" value="0">
+                                <input type="text" class="rupiah-input form-control text-end" id="edit-modal-sub-sisa-utang" value="Rp 0">
                             </div>
                             <div class="col-6">
                                 <label class="text-muted small fw-bold">Total Akumulasi Utang</label>
-                                <input type="number" class="form-control fw-bold text-danger bg-white" id="edit-modal-utang-total" readonly value="0">
+                                <input type="text" class="rupiah-input form-control fw-bold text-danger bg-white text-end" id="edit-modal-utang-total" readonly value="Rp 0">
                             </div>
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-success mb-1">Jumlah Uang yang Dibayar (DP/Cicil)</label>
-                        <input type="number" class="form-control border-success text-success fw-bold" id="edit-modal-pembayaran" value="0" required>
+                        <input type="text" class="rupiah-input form-control border-success text-success fw-bold text-end" id="edit-modal-pembayaran" value="Rp 0" required>
+                    </div>
+
+                    <!-- KOTAK HASIL AKHIR MODAL EDIT -->
+                    <div class="mb-3 p-3 bg-danger bg-opacity-10 border border-danger border-start-4 rounded-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="small text-danger fw-bold uppercase d-block" style="font-size:11px;">Hasil Akhir Transaksi (Edit Mode)</span>
+                            <span class="small fw-semibold text-dark">Sisa Bon / Tagihan Kedepannya:</span>
+                        </div>
+                        <h4 id="hasil-sisa-bon-modal" class="fw-bold text-danger m-0">Rp 0</h4>
                     </div>
                     
                     <div class="d-flex gap-2">
@@ -478,14 +496,61 @@
     let masterSupplier = [];
     let dataTransaksi = [];
     let keranjangSementara = [];
-    let keranjangEditModal = []; // Penampung keranjang temporer khusus Edit Modal
+    let keranjangEditModal = []; 
     let totalBelanjaHariIni = 0;
     let totalBelanjaEditModal = 0;
     let currentFilter = "Semua";
     let chartInstance = null;
     let namaFileGlobal = "Nota_Supplier";
 
-    function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka); }
+    // --- UTILTAS MASKING DAN UNMASKING RUPIAH ---
+    function formatRupiah(angka) { 
+        return "Rp " + new Intl.NumberFormat('id-ID').format(angka); 
+    }
+
+    function formatRupiahRaw(angka) {
+        let numberString = angka.toString().replace(/[^,\d]/g, ''),
+            split = numberString.split(','),
+            sisa = split[0].length % 3,
+            rupiah = split[0].substr(0, sisa),
+            ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+        if (ribuan) {
+            let separator = sisa ? '.' : '';
+            rupiah += separator + ribuan.join('.');
+        }
+        return rupiah ? 'Rp ' + rupiah : 'Rp 0';
+    }
+
+    function unformatRupiah(rupiahString) {
+        if (!rupiahString) return 0;
+        return parseInt(rupiahString.toString().replace(/[^0-9]/g, '')) || 0;
+    }
+
+    // --- APPLY LIVE MASKING KE SEMUA INPUT DENGAN CLASS .rupiah-input ---
+    function initRupiahMasking() {
+        document.querySelectorAll('.rupiah-input').forEach(input => {
+            // Hapus event listener lama agar tidak double bind
+            input.removeEventListener('input', handleRupiahInput);
+            input.addEventListener('input', handleRupiahInput);
+        });
+    }
+
+    function handleRupiahInput(e) {
+        let cursorPosition = this.selectionStart;
+        let originalLength = this.value.length;
+        
+        let formatted = formatRupiahRaw(this.value);
+        this.value = formatted;
+        
+        let newLength = this.value.length;
+        cursorPosition = cursorPosition + (newLength - originalLength);
+        this.setSelectionRange(cursorPosition, cursorPosition);
+
+        // Triger kalkulasi pendukung saat mengetik live
+        hitungUlangUtangForm();
+        hitungUlangUtangEditModal();
+    }
     
     function parseTanggal(str) {
         if (!str) return new Date(0);
@@ -512,8 +577,8 @@
         return stringTanggal;
     }
 
-    function convertDateToDisplay(dateStr) { if(dateStr.includes("/")) return dateStr; const d = dateStr.split("-"); return `${d[2]}/${d[1]}/${d[0]}`; }
-    function convertDateToInput(dateStr) { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
+    convertDateToDisplay = (dateStr) => { if(dateStr.includes("/")) return dateStr; const d = dateStr.split("-"); return `${d[2]}/${d[1]}/${d[0]}`; }
+    convertDateToInput = (dateStr) => { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
 
     async function muatDataDariSheets() {
         showSyncStatus("loading", "Menarik data terbaru dari Cloud Supplier...");
@@ -570,7 +635,7 @@
     function updateSisaUtangOtomatis() {
         const supplierTerpilih = document.getElementById("input-supplier").value;
         if (!supplierTerpilih) {
-            document.getElementById("sub-sisa-utang").value = 0;
+            document.getElementById("sub-sisa-utang").value = "Rp 0";
             hitungUlangUtangForm();
             return;
         }
@@ -585,7 +650,7 @@
         });
 
         let sisaUtangTerakhir = totalBelanja - totalBayar;
-        document.getElementById("sub-sisa-utang").value = sisaUtangTerakhir > 0 ? Math.round(sisaUtangTerakhir) : 0;
+        document.getElementById("sub-sisa-utang").value = formatRupiahRaw(sisaUtangTerakhir > 0 ? Math.round(sisaUtangTerakhir) : 0);
         
         hitungUlangUtangForm();
     }
@@ -595,7 +660,7 @@
         const produk = document.getElementById("input-produk").value;
         const qty = parseFloat(document.getElementById("input-jumlah").value) || 0;
         const ekor = parseInt(document.getElementById("input-ekor").value) || 0;
-        const harga = parseInt(document.getElementById("input-harga").value) || 0;
+        const harga = unformatRupiah(document.getElementById("input-harga").value);
         
         if (produk === "Ayam Merah" || produk === "Ayam Penyet") {
             if (ekor <= 0 || harga <= 0) return; 
@@ -606,7 +671,7 @@
         keranjangSementara.push({ nama: produk, qty, ekor, harga });
         document.getElementById("input-jumlah").value = "";
         document.getElementById("input-ekor").value = "";
-        document.getElementById("input-harga").value = "";
+        document.getElementById("input-harga").value = "Rp 0";
         
         renderKeranjang();
         hitungUlangUtangForm();
@@ -649,10 +714,15 @@
     }
 
     function hitungUlangUtangForm() {
-        const utangLama = parseInt(document.getElementById("sub-sisa-utang").value) || 0;
-        document.getElementById("input-utang-total").value = utangLama + totalBelanjaHariIni;
+        const utangLama = unformatRupiah(document.getElementById("sub-sisa-utang").value);
+        const akumulasiUtang = utangLama + totalBelanjaHariIni;
+        document.getElementById("input-utang-total").value = formatRupiahRaw(akumulasiUtang);
+
+        // Hitung Kotak Hasil Akhir Utama (Total Akumulasi Utang - Jumlah Uang Yang Dibayar)
+        const pembayaran = unformatRupiah(document.getElementById("input-pembayaran").value);
+        const sisaBonMendatang = akumulasiUtang - pembayaran;
+        document.getElementById("hasil-sisa-bon-utama").innerText = formatRupiahRaw(sisaBonMendatang);
     }
-    document.getElementById("sub-sisa-utang").addEventListener("input", hitungUlangUtangForm);
 
 
     // --- MANAJEMEN KERANJANG EDIT (DI POP-UP MODAL EDIT) ---
@@ -660,7 +730,7 @@
         const produk = document.getElementById("edit-modal-produk").value;
         const qty = parseFloat(document.getElementById("edit-modal-jumlah").value) || 0;
         const ekor = parseInt(document.getElementById("edit-modal-ekor").value) || 0;
-        const harga = parseInt(document.getElementById("edit-modal-harga").value) || 0;
+        const harga = unformatRupiah(document.getElementById("edit-modal-harga").value);
         
         if (produk === "Ayam Merah" || produk === "Ayam Penyet") {
             if (ekor <= 0 || harga <= 0) return; 
@@ -671,7 +741,7 @@
         keranjangEditModal.push({ nama: produk, qty, ekor, harga });
         document.getElementById("edit-modal-jumlah").value = "";
         document.getElementById("edit-modal-ekor").value = "";
-        document.getElementById("edit-modal-harga").value = "";
+        document.getElementById("edit-modal-harga").value = "Rp 0";
         
         renderKeranjangEditModal();
         hitungUlangUtangEditModal();
@@ -723,10 +793,15 @@
     }
 
     function hitungUlangUtangEditModal() {
-        const utangLama = parseInt(document.getElementById("edit-modal-sub-sisa-utang").value) || 0;
-        document.getElementById("edit-modal-utang-total").value = utangLama + totalBelanjaEditModal;
+        const utangLama = unformatRupiah(document.getElementById("edit-modal-sub-sisa-utang").value);
+        const akumulasiUtangModal = utangLama + totalBelanjaEditModal;
+        document.getElementById("edit-modal-utang-total").value = formatRupiahRaw(akumulasiUtangModal);
+
+        // Hitung Kotak Hasil Akhir Modal (Total Akumulasi Utang Modal - Pembayaran Modal)
+        const pembayaranModal = unformatRupiah(document.getElementById("edit-modal-pembayaran").value);
+        const sisaBonMendatangModal = akumulasiUtangModal - pembayaranModal;
+        document.getElementById("hasil-sisa-bon-modal").innerText = formatRupiahRaw(sisaBonMendatangModal);
     }
-    document.getElementById("edit-modal-sub-sisa-utang").addEventListener("input", hitungUlangUtangEditModal);
 
 
     // --- RENDERING & INTEGRASI UI ---
@@ -829,6 +904,7 @@
 
         renderSupplierGridMenu();
         renderChartEngine();
+        initRupiahMasking(); // Pastikan masking terpanggil kembali setelah render UI
     }
 
     function renderChartEngine() {
@@ -933,7 +1009,7 @@
     // --- FORM SIMPAN TRANSAKSI BARU ---
     document.getElementById("payable-form").addEventListener("submit", function(e) {
         e.preventDefault();
-        const pembayaran = parseInt(document.getElementById("input-pembayaran").value) || 0;
+        const pembayaran = unformatRupiah(document.getElementById("input-pembayaran").value);
         
         if (keranjangSementara.length === 0 && pembayaran <= 0) {
             alert("Transaksi ditolak! Masukkan barang masuk kulakan ATAU isi nominal pembayaran utang.");
@@ -945,8 +1021,8 @@
             tanggal: convertDateToDisplay(document.getElementById("input-tanggal").value),
             pelanggan: document.getElementById("input-supplier").value, 
             totalBelanja: totalBelanjaHariIni, 
-            hutangAwal: parseInt(document.getElementById("sub-sisa-utang").value) || 0,
-            tagihan: parseInt(document.getElementById("input-utang-total").value) || 0,
+            hutangAwal: unformatRupiah(document.getElementById("sub-sisa-utang").value),
+            tagihan: unformatRupiah(document.getElementById("input-utang-total").value),
             payment: pembayaran,
             items: [...keranjangSementara]
         };
@@ -962,33 +1038,31 @@
         pushDataKeSheets();
     });
 
-    // --- LOGIKA EDIT VIA POP-UP MODAL (BARU & AMAN) ---
+    // --- LOGIKA EDIT VIA POP-UP MODAL ---
     function pilihEditTransaksi(idx) {
         const tx = dataTransaksi[idx];
         document.getElementById("edit-modal-transaksi-index").value = idx;
         document.getElementById("edit-modal-tanggal").value = convertDateToInput(tx.tanggal);
         
-        // Load opsi supplier ke edit modal
         const sel = document.getElementById("edit-modal-supplier");
         sel.innerHTML = masterSupplier.map(s => `<option value="${s.nama}">${s.nama}</option>`).join("");
         sel.value = tx.pelanggan;
         
-        document.getElementById("edit-modal-sub-sisa-utang").value = tx.hutangAwal;
-        document.getElementById("edit-modal-pembayaran").value = tx.payment;
+        document.getElementById("edit-modal-sub-sisa-utang").value = formatRupiahRaw(tx.hutangAwal);
+        document.getElementById("edit-modal-pembayaran").value = formatRupiahRaw(tx.payment);
         
         keranjangEditModal = [...tx.items];
         renderKeranjangEditModal();
         hitungUlangUtangEditModal();
         
-        // Munculkan Modal Edit
         const modalEdit = new bootstrap.Modal(document.getElementById('editInvoiceModal'));
         modalEdit.show();
+        initRupiahMasking(); 
     }
 
-    // Submit handler form edit modal
     document.getElementById("edit-payable-form").addEventListener("submit", function(e) {
         e.preventDefault();
-        const pembayaran = parseInt(document.getElementById("edit-modal-pembayaran").value) || 0;
+        const pembayaran = unformatRupiah(document.getElementById("edit-modal-pembayaran").value);
         
         if (keranjangEditModal.length === 0 && pembayaran <= 0) {
             alert("Transaksi ditolak! Masukkan barang masuk kulakan ATAU isi nominal pembayaran utang.");
@@ -997,19 +1071,17 @@
         
         const idx = parseInt(document.getElementById("edit-modal-transaksi-index").value);
         
-        // Timpa data transaksi lama dengan payload baru di index yang sama
         dataTransaksi[idx] = {
             id: dataTransaksi[idx].id,
             tanggal: convertDateToDisplay(document.getElementById("edit-modal-tanggal").value),
             pelanggan: document.getElementById("edit-modal-supplier").value, 
             totalBelanja: totalBelanjaEditModal, 
-            hutangAwal: parseInt(document.getElementById("edit-modal-sub-sisa-utang").value) || 0,
-            tagihan: parseInt(document.getElementById("edit-modal-utang-total").value) || 0,
+            hutangAwal: unformatRupiah(document.getElementById("edit-modal-sub-sisa-utang").value),
+            tagihan: unformatRupiah(document.getElementById("edit-modal-utang-total").value),
             payment: pembayaran,
             items: [...keranjangEditModal]
         };
         
-        // Tutup modal edit
         const modalEl = document.getElementById('editInvoiceModal');
         const modalInstance = bootstrap.Modal.getInstance(modalEl);
         modalInstance.hide();
@@ -1037,6 +1109,8 @@
     document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
     document.getElementById("current-date").innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
+    // Inisialisasi awal masking rupiah
+    initRupiahMasking();
     muatDataDariSheets();
 </script>
 </body>
