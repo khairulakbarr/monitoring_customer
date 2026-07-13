@@ -723,11 +723,27 @@
                 kj += tx.totalBelanja; 
                 kd += tx.payment;
                 
-                let itemsStr = tx.items.map(i => {
+                // =========================================================================
+                // PENYARINGAN TABEL UTAMA: Ringkas item duplikat dari database agar tidak merusak visual
+                // =========================================================================
+                const itemsTabelDisaring = tx.items.reduce((acc, current) => {
+                    const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
+                    if (ditemukan) {
+                        let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
+                        ditemukan.qty = parseFloat(totalQty.toFixed(1)); 
+                        ditemukan.ekor = (parseInt(ditemukan.ekor) || 0) + (parseInt(current.ekor) || 0);
+                    } else {
+                        acc.push({ ...current });
+                    }
+                    return acc;
+                }, []);
+                // =========================================================================
+                
+                let itemsStr = itemsTabelDisaring.map(i => {
                     if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
                         return `${i.nama}(${i.ekor}ekor)`;
                     } else {
-                        return `${i.nama}(${i.qty}kg)`;
+                        return `${i.nama}(${Number(i.qty).toFixed(1)}kg)`;
                     }
                 }).join(", ");
                 
@@ -768,7 +784,6 @@
         renderCustomerGridMenu();
         renderChartEngine();
     }
-
     function renderChartEngine() {
         let pts = {};
         dataTransaksi.forEach(t => { 
