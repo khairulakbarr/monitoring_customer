@@ -834,23 +834,28 @@
         setTimeout(() => { tampilkanFaktur(idx); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
     }
 
-    function tampilkanFaktur(idx) {
+function tampilkanFaktur(idx) {
         const trans = dataTransaksi[idx];
         const sisa = Math.round(trans.tagihan - trans.payment);
         let tglClean = formatTampilanTanggal(trans.tanggal).replace(/\//g,'-');
         namaFileGlobal = `Faktur_${trans.pelanggan}_${tglClean}`;
         
-        // GABUNGKAN ITEM YANG DUPLIKAT DI SINI SEBELUM DI-RENDER
+        // =========================================================================
+        // LOGIKA PENYARINGAN: Gabungkan item yang bernama sama & harganya sama
+        // =========================================================================
         const itemsDisaring = trans.items.reduce((acc, current) => {
             const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
             if (ditemukan) {
-                ditemukan.qty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
+                // Selesaikan floating point desimal saat akumulasi berat digabungkan
+                let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
+                ditemukan.qty = parseFloat(totalQty.toFixed(1)); 
                 ditemukan.ekor = (parseInt(ditemukan.ekor) || 0) + (parseInt(current.ekor) || 0);
             } else {
                 acc.push({ ...current });
             }
             return acc;
         }, []);
+        // =========================================================================
 
         let rows = itemsDisaring.map(i => {
             let totalItem = 0;
@@ -862,8 +867,12 @@
                 kolomQty = `${i.ekor} ekor`;
             } else {
                 totalItem = Math.round(i.qty * i.harga);
-                kolomQty = `${i.qty} kg`;
+                // KG dikunci wajib 1 angka di belakang koma sesuai standar input manualmu
+                let qtyBersih = Number(i.qty).toFixed(1);
+                kolomQty = `${qtyBersih} kg`;
+                
                 if (i.ekor > 0 && i.qty > 0) {
+                    // ABW otomatis dikunci wajib 2 angka di belakang koma (misal: 1.87 atau 1.90)
                     let avg = (i.qty / i.ekor).toFixed(2);
                     rataRataStr = `<br><small class="text-muted">ABW: ${avg} kg/ekor</small>`;
                 }
