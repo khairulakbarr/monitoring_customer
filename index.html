@@ -841,16 +841,17 @@ function tampilkanFaktur(idx) {
         namaFileGlobal = `Faktur_${trans.pelanggan}_${tglClean}`;
         
         // =========================================================================
-        // LOGIKA PENYARINGAN: Gabungkan item yang bernama sama & harganya sama
+        // LOGIKA PENYARINGAN AMAN: Hanya gabungkan item di dalam nota/transaksi yang sama ini saja
         // =========================================================================
         const itemsDisaring = trans.items.reduce((acc, current) => {
+            // Dikunci berdasarkan nama dan harga di dalam array internal transaksi ini saja
             const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
             if (ditemukan) {
-                // Selesaikan floating point desimal saat akumulasi berat digabungkan
                 let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
                 ditemukan.qty = parseFloat(totalQty.toFixed(1)); 
                 ditemukan.ekor = (parseInt(ditemukan.ekor) || 0) + (parseInt(current.ekor) || 0);
             } else {
+                // Di-clone menggunakan spread operator agar tidak merubah isi database master asli
                 acc.push({ ...current });
             }
             return acc;
@@ -867,12 +868,10 @@ function tampilkanFaktur(idx) {
                 kolomQty = `${i.ekor} ekor`;
             } else {
                 totalItem = Math.round(i.qty * i.harga);
-                // KG dikunci wajib 1 angka di belakang koma sesuai standar input manualmu
                 let qtyBersih = Number(i.qty).toFixed(1);
                 kolomQty = `${qtyBersih} kg`;
                 
                 if (i.ekor > 0 && i.qty > 0) {
-                    // ABW otomatis dikunci wajib 2 angka di belakang koma (misal: 1.87 atau 1.90)
                     let avg = (i.qty / i.ekor).toFixed(2);
                     rataRataStr = `<br><small class="text-muted">ABW: ${avg} kg/ekor</small>`;
                 }
@@ -901,7 +900,6 @@ function tampilkanFaktur(idx) {
             </div>
             <div class="invoice-footer-info"><b>INFO:</b> Transfer SeaBank 9017-6605-7787 a.n Khairul Akbar</div>`;
     }
-
     document.getElementById("btn-download-faktur").addEventListener("click", function() {
         html2canvas(document.getElementById("invoice-download-wrapper"), { scale: 2 }).then(canvas => {
             const a = document.createElement("a"); a.download = `${namaFileGlobal}.png`; a.href = canvas.toDataURL(); a.click();
