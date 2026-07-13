@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Manajemen Harian Store</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-main: #f4f6f9;
+            --primary-blue: #1A73E8;
+            --success-green: #198754;
+            --danger-red: #dc3545;
+            --text-dark: #2D3748;
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+        body { 
+            background-color: var(--bg-main); 
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            color: var(--text-dark);
+        }
+        .premium-card {
+            background: #ffffff;
+            border-radius: 14px;
+            border: none;
+            box-shadow: var(--card-shadow);
+            padding: 20px;
+            height: 100%;
+            transition: transform 0.2s;
+        }
+        .premium-card:hover {
+            transform: translateY(-2px);
+        }
+        .kpi-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        .nav-card {
+            background: linear-gradient(135deg, #1A73E8, #0D47A1);
+            color: white;
+            border-radius: 14px;
+            text-decoration: none;
+            padding: 20px;
+            display: block;
+            box-shadow: var(--card-shadow);
+        }
+        .nav-card:hover {
+            color: #E8F0FE;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container py-4">
+    <!-- SYNC STATUS BAR -->
+    <div class="d-flex justify-content-between align-items-center mb-4 px-3 py-2 bg-white rounded-3 border shadow-sm">
+        <div id="sync-status" class="small fw-bold text-muted">
+            <i class="bi bi-cloud-arrow-down-fill text-primary"></i> Menghubungkan ke Cloud...
+        </div>
+        <button class="btn btn-sm btn-outline-primary fw-bold" onclick="muatDataDashboard()">
+            <i class="bi bi-arrow-clockwise"></i> Refresh Data
+        </button>
+    </div>
+
+    <!-- HEADER -->
+    <div class="row align-items-center mb-4 g-3">
+        <div class="col-md-7">
+            <h2 class="fw-bold mb-0 text-dark"><i class="bi bi-speedometer2 text-primary"></i> Ringkasan Harian Store</h2>
+            <p class="text-muted mb-0 small" id="live-date"></p>
+        </div>
+        <div class="col-md-5 d-flex gap-2 justify-content-md-end">
+            <a href="index.html" class="btn btn-primary fw-bold btn-sm px-3 py-2 rounded-3">
+                <i class="bi bi-receipt-cutoff"></i> Buku Piutang
+            </a>
+            <a href="supplier.html" class="btn btn-dark fw-bold btn-sm px-3 py-2 rounded-3">
+                <i class="bi bi-truck"></i> Buku Supplier
+            </a>
+        </div>
+    </div>
+
+    <!-- MAIN KPI CARDS -->
+    <div class="row g-3 mb-4">
+        <!-- Omset Hari Ini -->
+        <div class="col-md-4">
+            <div class="premium-card d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="small text-muted fw-bold d-block">OMSET BELANJA HARI INI</span>
+                    <h3 class="fw-bold text-dark mt-1 mb-0" id="kpi-omset-hari-ini">Rp 0</h3>
+                    <span class="text-muted small" style="font-size: 11px;" id="count-tx-hari-ini">0 Transaksi</span>
+                </div>
+                <div class="kpi-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-cart-check-fill"></i>
+                </div>
+            </div>
+        </div>
+        <!-- Kas Masuk Hari Ini -->
+        <div class="col-md-4">
+            <div class="premium-card d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="small text-muted fw-bold d-block">TOTAL SETORAN / DP MASUK</span>
+                    <h3 class="fw-bold text-success mt-1 mb-0" id="kpi-kas-hari-ini">Rp 0</h3>
+                    <span class="text-muted small" style="font-size: 11px;">Pembayaran Terjaring</span>
+                </div>
+                <div class="kpi-icon bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+            </div>
+        </div>
+        <!-- Total Piutang Mengendap -->
+        <div class="col-md-4">
+            <div class="premium-card d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="small text-muted fw-bold d-block">SISA PIUTANG AKTIF (GLOBAL)</span>
+                    <h3 class="fw-bold text-danger mt-1 mb-0" id="kpi-piutang-global">Rp 0</h3>
+                    <span class="text-muted small" style="font-size: 11px;" id="count-piutang-macet">Semua Pelanggan</span>
+                </div>
+                <div class="kpi-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- GRAFIK TREN -->
+        <div class="col-lg-8">
+            <div class="premium-card">
+                <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-graph-up-arrow text-primary"></i> Tren Penjualan & Kas Masuk (7 Hari Terakhir)</h5>
+                <div style="position: relative; height:300px;">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOP CUSTOMER BILLS -->
+        <div class="col-lg-4">
+            <div class="premium-card">
+                <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-person-lines-fill text-danger"></i> Daftar Tanggungan Terbesar</h5>
+                <div class="list-group list-group-flush" id="top-debtors-list" style="max-height: 300px; overflow-y: auto;">
+                    <div class="text-center p-3 text-muted small">Memuat data tagihan...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER RINGKASAN PRODUK -->
+    <div class="premium-card">
+        <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-box-seam text-secondary"></i> Estimasi Volume Terjual (Semua Riwayat)</h5>
+        <div class="row g-3 text-center" id="product-summary-container">
+            <div class="col-4">
+                <div class="p-3 bg-light rounded-3">
+                    <div class="small text-muted fw-bold">AYAM POTONG</div>
+                    <h4 class="fw-bold text-dark mt-1 mb-0" id="vol-potong">0 Kg</h4>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="p-3 bg-light rounded-3">
+                    <div class="small text-muted fw-bold">AYAM MERAH</div>
+                    <h4 class="fw-bold text-dark mt-1 mb-0" id="vol-merah">0 Ekor</h4>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="p-3 bg-light rounded-3">
+                    <div class="small text-muted fw-bold">AYAM PENYET</div>
+                    <h4 class="fw-bold text-dark mt-1 mb-0" id="vol-penyet">0 Ekor</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // URL Google Apps Script yang sama dengan file index/supplier kamu
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDjUKtMnrv5pjfJJLX-jODZdvzKjaZiLlVRQK7tw2VCVD08TusJS_VLrDczr7797UT-Q/exec"; 
+
+    let masterCustomer = [];
+    let dataTransaksi = [];
+    let chartInstance = null;
+
+    function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(Math.round(angka)); }
+    
+    function getHariIniFormatted() {
+        const d = new Date();
+        const hari = String(d.getDate()).padStart(2, '0');
+        const bulan = String(d.getMonth() + 1).padStart(2, '0');
+        const tahun = d.getFullYear();
+        return `${hari}/${bulan}/${tahun}`;
+    }
+
+    async function muatDataDashboard() {
+        const bar = document.getElementById("sync-status");
+        bar.innerHTML = `<span class="text-warning"><div class="spinner-border spinner-border-sm me-1"></div> Menarik ringkasan data store harian...</span>`;
+        
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "getData" })
+            });
+            const res = await response.json();
+            if(res.status === "success") {
+                masterCustomer = res.customers;
+                dataTransaksi = res.transaksis;
+                
+                prosesDanRenderDashboard();
+                bar.innerHTML = `<span class="text-success"><i class="bi bi-cloud-check-fill"></i> Data Store Terupdate Otomatis</span>`;
+            } else {
+                bar.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Gagal memproses data cloud</span>`;
+            }
+        } catch(e) {
+            bar.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Koneksi internet bermasalah</span>`;
+        }
+    }
+
+    function prosesDanRenderDashboard() {
+        const tglHariIni = getHariIniFormatted();
+        
+        let omsetHariIni = 0;
+        let kasHariIni = 0;
+        let txCountHariIni = 0;
+        
+        // 1. Hitung KPI Harian
+        dataTransaksi.forEach(tx => {
+            if(tx.tanggal === tglHariIni) {
+                omsetHariIni += tx.totalBelanja;
+                kasHariIni += tx.payment;
+                txCountHariIni++;
+            }
+        });
+
+        // 2. Hitung Piutang Global Berjalan per Customer
+        let mapPiutangCustomer = {};
+        masterCustomer.forEach(c => { mapPiutangCustomer[c.nama] = 0; });
+        
+        dataTransaksi.forEach(tx => {
+            if(!mapPiutangCustomer[tx.pelanggan]) mapPiutangCustomer[tx.pelanggan] = 0;
+            mapPiutangCustomer[tx.pelanggan] += (tx.totalBelanja - tx.payment);
+        });
+
+        let totalPiutangGlobal = 0;
+        let listDebtors = [];
+        for (let name in mapPiutangCustomer) {
+            let saldo = mapPiutangCustomer[name];
+            totalPiutangGlobal += saldo;
+            if(saldo > 0) {
+                listDebtors.push({ nama: name, piutang: saldo });
+            }
+        }
+        
+        // Urutkan penunggak dari yang terbesar
+        listDebtors.sort((a,b) => b.piutang - a.piutang);
+
+        // Render Angka ke Dom
+        document.getElementById("kpi-omset-hari-ini").innerText = formatRupiah(omsetHariIni);
+        document.getElementById("count-tx-hari-ini").innerText = `${txCountHariIni} Transaksi Hari Ini`;
+        document.getElementById("kpi-kas-hari-ini").innerText = formatRupiah(kasHariIni);
+        document.getElementById("kpi-piutang-global").innerText = formatRupiah(totalPiutangGlobal);
+
+        // Render List Tanggungan Terbesar
+        const debtorsContainer = document.getElementById("top-debtors-list");
+        debtorsContainer.innerHTML = "";
+        if(listDebtors.length === 0) {
+            debtorsContainer.innerHTML = `<div class="text-center p-3 text-success small"><i class="bi bi-check-circle-fill"></i> Semua tagihan customer lunas!</div>`;
+        } else {
+            listDebtors.slice(0, 10).forEach(d => { // Tampilkan top 10 saja
+                debtorsContainer.innerHTML += `
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom">
+                        <span class="fw-semibold text-dark small">${d.nama}</span>
+                        <span class="badge bg-danger bg-opacity-10 text-danger fw-bold rounded-pill" style="font-size:12px;">${formatRupiah(d.piutang)}</span>
+                    </div>`;
+            });
+        }
+
+        // 3. Hitung Volume Produk
+        let volPotong = 0, volMerah = 0, volPenyet = 0;
+        dataTransaksi.forEach(tx => {
+            if(tx.items && Array.isArray(tx.items)) {
+                tx.items.forEach(i => {
+                    if(i.nama === "Ayam Potong") volPotong += i.qty;
+                    if(i.nama === "Ayam Merah") volMerah += i.ekor;
+                    if(i.nama === "Ayam Penyet") volPenyet += i.ekor;
+                });
+            }
+        });
+        document.getElementById("vol-potong").innerText = `${volPotong.toFixed(1)} Kg`;
+        document.getElementById("vol-merah").innerText = `${volMerah} Ekor`;
+        document.getElementById("vol-penyet").innerText = `${volPenyet} Ekor`;
+
+        // 4. Bangun Grafik Tren 7 Hari Terakhir
+        renderTrendChartEngine();
+    }
+
+    function renderTrendChartEngine() {
+        // Ambil list 7 tanggal terakhir
+        let labelDates = [];
+        for(let i=6; i>=0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const hari = String(d.getDate()).padStart(2, '0');
+            const bulan = String(d.getMonth() + 1).padStart(2, '0');
+            const tahun = d.getFullYear();
+            labelDates.push(`${hari}/${bulan}/${tahun}`);
+        }
+
+        let omsetData = Array(7).fill(0);
+        let kasData = Array(7).fill(0);
+
+        dataTransaksi.forEach(tx => {
+            let idx = labelDates.indexOf(tx.tanggal);
+            if(idx !== -1) {
+                omsetData[idx] += tx.totalBelanja;
+                kasData[idx] += tx.payment;
+            }
+        });
+
+        // Potong format tampilan tanggal grafik agar ringkas (hanya tgl/bln)
+        let displayLabels = labelDates.map(d => d.substring(0, 5));
+
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        if(chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: displayLabels,
+                datasets: [
+                    {
+                        label: 'Omset Belanja (Rp)',
+                        data: omsetData,
+                        borderColor: '#1A73E8',
+                        backgroundColor: 'rgba(26, 115, 232, 0.1)',
+                        fill: true,
+                        tension: 0.2
+                    },
+                    {
+                        label: 'Kas/Setoran Masuk (Rp)',
+                        data: kasData,
+                        borderColor: '#198754',
+                        backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                        fill: true,
+                        tension: 0.2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    // Init onload
+    document.getElementById("live-date").innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    muatDataDashboard();
+</script>
+</body>
+</html>
