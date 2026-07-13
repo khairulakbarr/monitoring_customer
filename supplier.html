@@ -158,21 +158,26 @@
     </style>
 </head>
 <body>
-
 <div class="container py-4">
-    <!-- CLOUD SYNC INDICATOR BAR -->
-    <div class="d-flex justify-content-between align-items-center mb-3 px-3 py-2 bg-white rounded-3 border">
+    <!-- SYNC STATUS BAR -->
+    <div class="d-flex justify-content-between align-items-center mb-4 px-3 py-2 bg-white rounded-3 border shadow-sm">
         <div id="sync-status" class="small fw-bold text-muted">
             <i class="bi bi-cloud-arrow-down-fill text-danger"></i> Menghubungkan ke Cloud Supplier...
         </div>
-        <button class="btn btn-sm btn-danger fw-bold" onclick="muatDataDariSheets()">
+        <button class="btn btn-sm btn-outline-danger fw-bold" onclick="muatDataSupplier()">
             <i class="bi bi-arrow-clockwise"></i> Tarik Data Terbaru
         </button>
     </div>
 
     <!-- HEADER -->
-    <div class="d-flex gap-2">
-            <!-- TOMBOL PINTAS KE DASHBOARD -->
+    <div class="p-4 text-white rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: linear-gradient(135deg, #8B0000, #4A0000) !important;">
+        <div>
+            <h2 class="mb-0 fs-4 fw-bold d-flex align-items-center gap-2">
+                <i class="bi bi-truck"></i> MONITORING SUPPLIER
+            </h2>
+            <p class="mb-0 small opacity-75 mt-1" id="current-date"></p>
+        </div>
+        <div class="d-flex gap-2">
             <a href="dashboard.html" class="btn btn-sm btn-warning fw-bold text-dark px-3 py-2 rounded-3">
                 <i class="bi bi-speedometer2 me-1"></i> Buka Dashboard Harian
             </a>
@@ -180,7 +185,7 @@
                 <i class="bi bi-person me-1"></i> Buka Monitoring Customer
             </a>
         </div>
-
+    </div>
     <!-- TABS -->
     <div class="premium-card p-2 mb-4">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
