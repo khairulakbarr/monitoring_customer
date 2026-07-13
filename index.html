@@ -165,7 +165,7 @@
         <div id="sync-status" class="small fw-bold text-muted">
             <i class="bi bi-cloud-arrow-down-fill text-primary"></i> Menghubungkan ke Google Sheets...
         </div>
-        <button class="btn btn-sm btn-outline-primary fw-bold" onclick="muatData()">
+        <button class="btn btn-sm btn-outline-primary fw-bold" onclick="muatDataDariSheets()">
             <i class="bi bi-arrow-clockwise"></i> Tarik Data Terbaru
         </button>
     </div>
@@ -323,6 +323,56 @@
 </div>
 
 <!-- POPUPS/MODALS -->
+
+<!-- MODAL EDIT POP-UP INSTAN (NEW) -->
+<div class="modal fade" id="modalEditTransaksi" tabindex="-1" aria-labelledby="modalEditTransaksiLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-warning text-dark rounded-top-4">
+                <h5 class="modal-title fw-bold" id="modalEditTransaksiLabel">
+                    <i class="bi bi-pencil-square"></i> Edit Transaksi Faktur
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- ID/Indeks Transaksi Asli Tersembunyi -->
+                <input type="hidden" id="edit-popup-index">
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">Tanggal</label>
+                    <input type="text" class="form-control rounded-3" id="edit-popup-tanggal" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">Nama Pelanggan</label>
+                    <input type="text" class="form-control rounded-3" id="edit-popup-pelanggan" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">Sisa Tagihan Lalu (Hutang Awal) (Rp)</label>
+                    <input type="number" class="form-control rounded-3 fw-semibold" id="edit-popup-hutang-awal" oninput="hitungTotalTagihanPopup()">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">Total Belanja Hari Ini (Rp)</label>
+                    <input type="number" class="form-control rounded-3 fw-semibold" id="edit-popup-belanja" oninput="hitungTotalTagihanPopup()">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">Total Tagihan Baru (Rp)</label>
+                    <input type="number" class="form-control rounded-3 fw-bold bg-light" id="edit-popup-tagihan-total" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">Jumlah Bayar / Setoran (Rp)</label>
+                    <input type="number" class="form-control rounded-3 fw-bold text-success" id="edit-popup-bayar">
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0">
+                <button type="button" class="btn btn-light fw-bold px-3 py-2 rounded-3" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-warning fw-bold text-dark px-4 py-2 rounded-3" onclick="simpanPerubahanTransaksiPopup()">
+                    <i class="bi bi-cloud-upload"></i> Simpan Perubahan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 1. Jendela Dasbor Customer -->
 <div class="modal fade" id="customerDashboardModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -440,7 +490,7 @@
                 dataTransaksi = res.transaksis;
                 renderUiControls();
                 renderDashboard();
-                updateSisaTagihanOtomatis(); // Panggil hitung otomatis setelah data ditarik
+                updateSisaTagihanOtomatis(); 
                 showSyncStatus("success", "Sistem Sinkron Online (Google Sheets)");
             } else {
                 showSyncStatus("error", "Gagal load data: " + res.message);
@@ -451,7 +501,7 @@
     }
 
     async function pushDataKeSheets() {
-        showSyncStatus("loading", "Mennyimpan & Mensinkronkan data ke Cloud...");
+        showSyncStatus("loading", "Menyimpan & Mensinkronkan data ke Cloud...");
         try {
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: "POST",
@@ -475,9 +525,7 @@
         if(type === "error") bar.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> ${msg}</span>`;
     }
 
-    // FUNGSI BARU: Mengambil otomatis total sisa piutang/tagihan customer berjalan
     function updateSisaTagihanOtomatis() {
-        // Jika sedang mengedit data lama, batalkan kalkulasi otomatis biar tidak menimpa input manual
         const editIdx = parseInt(document.getElementById("edit-transaksi-index").value);
         if (editIdx !== -1) return;
 
@@ -488,7 +536,6 @@
             return;
         }
 
-        // Kumpulkan histori transaksi khusus milik customer ini
         let txCustomer = dataTransaksi.filter(t => t.pelanggan === customerTerpilih);
 
         let totalBelanja = 0;
@@ -501,10 +548,8 @@
 
         let sisaTagihanTerakhir = totalBelanja - totalDiterima;
 
-        // Pasang hasil kalkulasi ke kolom Sisa Tagihan (Gunakan 0 jika minus/lunas)
         document.getElementById("sub-sisa-tagihan").value = sisaTagihanTerakhir > 0 ? Math.round(sisaTagihanTerakhir) : 0;
         
-        // Refresh Total Tagihan Baru di form
         hitungUlangPiutangForm();
     }
 
@@ -651,8 +696,9 @@
                         <td class="text-danger fw-bold">${formatRupiah(sisa)}</td>
                         <td><button class="btn btn-sm btn-danger py-0" data-bs-toggle="modal" data-bs-target="#invoiceModal" onclick="tampilkanFaktur(${tx.originalIdx})"><i class="bi bi-file-earmark-pdf"></i></button></td>
                         <td>
-                            <i class="bi bi-pencil-square text-warning me-2" onclick="pilihEditTransaksi(${tx.originalIdx})"></i>
-                            <i class="bi bi-trash text-danger" onclick="hapusData(${tx.originalIdx})"></i>
+                            <!-- DIUBAH: Membuka Pop-up Edit Instan Modal -->
+                            <i class="bi bi-pencil-square text-warning me-2" style="cursor:pointer;" onclick="bukaModalEdit(${tx.originalIdx})"></i>
+                            <i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="hapusData(${tx.originalIdx})"></i>
                         </td>
                     </tr>`;
             }
@@ -823,7 +869,7 @@
         document.getElementById("receivable-form").reset();
         document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
         renderDashboard();
-        updateSisaTagihanOtomatis(); // Hitung ulang sisa tagihan terupdate setelah submit
+        updateSisaTagihanOtomatis(); 
         pushDataKeSheets();
     });
 
@@ -860,6 +906,57 @@
         renderUiControls(); renderKelolaCustomer(); renderDashboard(); pushDataKeSheets();
     });
     function hapusCustomer(i) { masterCustomer.splice(i,1); renderUiControls(); renderKelolaCustomer(); renderDashboard(); pushDataKeSheets(); }
+
+    // ==========================================
+    // FUNGSI JAVASCRIPT UNTUK MODAL POP-UP EDIT (NEW)
+    // ==========================================
+    function bukaModalEdit(idx) {
+        const tx = dataTransaksi[idx];
+        
+        document.getElementById("edit-popup-index").value = idx;
+        document.getElementById("edit-popup-tanggal").value = formatTampilanTanggal(tx.tanggal);
+        document.getElementById("edit-popup-pelanggan").value = tx.pelanggan;
+        document.getElementById("edit-popup-hutang-awal").value = tx.hutangAwal;
+        document.getElementById("edit-popup-belanja").value = tx.totalBelanja;
+        document.getElementById("edit-popup-tagihan-total").value = tx.tagihan;
+        document.getElementById("edit-popup-bayar").value = tx.payment;
+        
+        // Membuka modal Bootstrap
+        const modalEdit = new bootstrap.Modal(document.getElementById('modalEditTransaksi'));
+        modalEdit.show();
+    }
+
+    function hitungTotalTagihanPopup() {
+        const hutangAwal = parseInt(document.getElementById("edit-popup-hutang-awal").value) || 0;
+        const belanja = parseInt(document.getElementById("edit-popup-belanja").value) || 0;
+        document.getElementById("edit-popup-tagihan-total").value = hutangAwal + belanja;
+    }
+
+    async function simpanPerubahanTransaksiPopup() {
+        const idx = parseInt(document.getElementById("edit-popup-index").value);
+        if (isNaN(idx) || idx < 0) return;
+
+        const hutangAwal = parseInt(document.getElementById("edit-popup-hutang-awal").value) || 0;
+        const totalBelanja = parseInt(document.getElementById("edit-popup-belanja").value) || 0;
+        const tagihan = parseInt(document.getElementById("edit-popup-tagihan-total").value) || 0;
+        const payment = parseInt(document.getElementById("edit-popup-bayar").value) || 0;
+
+        // Terapkan perubahan ke array data lokal
+        dataTransaksi[idx].hutangAwal = hutangAwal;
+        dataTransaksi[idx].totalBelanja = totalBelanja;
+        dataTransaksi[idx].tagihan = tagihan;
+        dataTransaksi[idx].payment = payment;
+
+        // Tutup modal
+        const modalEl = document.getElementById('modalEditTransaksi');
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
+
+        // Render ulang tampilan lokal & kirim update ke Google Sheets
+        renderDashboard();
+        updateSisaTagihanOtomatis();
+        await pushDataKeSheets();
+    }
 
     // Kaitkan Event Listener ke dropdown pelanggan untuk pelacakan dinamis saat diganti
     document.getElementById("input-pelanggan").addEventListener("change", updateSisaTagihanOtomatis);
