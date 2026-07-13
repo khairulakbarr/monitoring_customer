@@ -850,24 +850,25 @@
     }
 
 function tampilkanFaktur(idx) {
-        const trans = dataTransaksi[idx];
+        // Ambil data transaksi secara mendalam (Deep Copy) menggunakan JSON parse/stringify
+        // Ini memastikan data asli di memori browser tidak akan pernah bisa diubah oleh proses manipulasi di bawahnya
+        const trans = JSON.parse(JSON.stringify(dataTransaksi[idx]));
+        
         const sisa = Math.round(trans.tagihan - trans.payment);
         let tglClean = formatTampilanTanggal(trans.tanggal).replace(/\//g,'-');
         namaFileGlobal = `Faktur_${trans.pelanggan}_${tglClean}`;
         
         // =========================================================================
-        // LOGIKA PENYARINGAN AMAN: Hanya gabungkan item di dalam nota/transaksi yang sama ini saja
+        // LOGIKA PENYARINGAN AMAN: Satukan item duplikat dari database tanpa merusak master data
         // =========================================================================
         const itemsDisaring = trans.items.reduce((acc, current) => {
-            // Dikunci berdasarkan nama dan harga di dalam array internal transaksi ini saja
             const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
             if (ditemukan) {
                 let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
                 ditemukan.qty = parseFloat(totalQty.toFixed(1)); 
                 ditemukan.ekor = (parseInt(ditemukan.ekor) || 0) + (parseInt(current.ekor) || 0);
             } else {
-                // Di-clone menggunakan spread operator agar tidak merubah isi database master asli
-                acc.push({ ...current });
+                acc.push(current);
             }
             return acc;
         }, []);
