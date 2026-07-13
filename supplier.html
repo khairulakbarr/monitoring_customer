@@ -231,7 +231,7 @@
     </div>
 
     <div class="row g-4 mb-4">
-        <!-- FORM INPUT (Murni Hanya untuk Transaksi Baru) -->
+        <!-- FORM INPUT (Transaksi Baru) -->
         <div class="col-lg-5">
             <div class="premium-card">
                 <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-plus-circle-fill text-danger"></i> Input Transaksi Masuk (Kulakan)</h5>
@@ -257,7 +257,7 @@
                         <div class="row g-2 mb-2">
                             <div class="col-4"><input type="number" step="0.1" class="form-control form-control-sm" id="input-jumlah" placeholder="Kg"></div>
                             <div class="col-4"><input type="number" class="form-control form-control-sm" id="input-ekor" placeholder="Ekor"></div>
-                            <div class="col-4"><input type="number" class="form-control form-control-sm" id="input-harga" placeholder="Harga"></div>
+                            <div class="col-4"><input type="text" class="form-control form-control-sm rupiah-input" id="input-harga" placeholder="Harga"></div>
                         </div>
                         <button type="button" class="btn btn-sm btn-outline-danger w-100 fw-bold" onclick="tambahKeKeranjang()">Masukkan Nota</button>
                     </div>
@@ -277,18 +277,23 @@
                         <div class="row g-2">
                             <div class="col-6">
                                 <label class="text-muted small fw-bold">Sisa Utang Lalu</label>
-                                <input type="number" class="form-control form-control-sm" id="sub-sisa-utang" value="0">
+                                <input type="text" class="form-control form-control-sm rupiah-input" id="sub-sisa-utang" value="Rp 0">
                             </div>
                             <div class="col-6">
                                 <label class="text-muted small fw-bold">Total Akumulasi Utang</label>
-                                <input type="number" class="form-control form-control-sm fw-bold text-danger bg-white" id="input-utang-total" readonly value="0">
+                                <input type="text" class="form-control form-control-sm fw-bold text-danger bg-white" id="input-utang-total" readonly value="Rp 0">
                             </div>
                         </div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label small fw-bold text-success mb-1">Jumlah Uang yang Dibayar (DP/Cicil)</label>
-                        <input type="number" class="form-control border-success text-success fw-bold" id="input-pembayaran" value="0" required>
+                        <input type="text" class="form-control border-success text-success fw-bold rupiah-input" id="input-pembayaran" value="Rp 0" required>
+                    </div>
+
+                    <div class="mb-3 p-2 rounded bg-dark text-white text-center">
+                        <span class="small opacity-75 d-block" style="font-size:11px;">SISA BON / TAGIHAN KEDEPANNYA</span>
+                        <h5 class="fw-bold m-0 text-warning" id="display-sisa-bon-akhir">Rp 0</h5>
                     </div>
                     
                     <button type="submit" class="btn btn-danger w-100 fw-bold py-2 shadow">Simpan & Sinkron Cloud Supplier</button>
@@ -300,7 +305,7 @@
         <div class="col-lg-7">
             <div class="premium-card">
                 <h5 class="fw-bold mb-4 text-dark">📊 Grafik Saldo Utang Dagang Berjalan</h5>
-                <div style="position: relative; height:320px;"><canvas id="payableChart"></canvas></div>
+                <div style="position: relative; height:360px;"><canvas id="payableChart"></canvas></div>
             </div>
         </div>
     </div>
@@ -380,12 +385,12 @@
     </div>
 </div>
 
-<!-- 4. MODAL EDIT FAKTUR (FITUR BARU) -->
+<!-- 4. MODAL EDIT FAKTUR (DENGAN TAMPILAN SISA BON AKHIR) -->
 <div class="modal fade" id="editInvoiceModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content" style="border-radius: 16px;">
             <div class="modal-header bg-warning text-dark">
-                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square"></i> Edit Faktur / Transaksi Supplier</h5>
+                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square"></i> Edit Transaksi Faktur</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
@@ -397,7 +402,7 @@
                             <input type="date" class="form-control" id="edit-modal-tanggal" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold text-muted mb-1">Supplier</label>
+                            <label class="form-label small fw-semibold text-muted mb-1">Nama Supplier</label>
                             <select class="form-select" id="edit-modal-supplier" required></select>
                         </div>
                     </div>
@@ -414,22 +419,18 @@
                             </div>
                             <div class="col-md-2"><input type="number" step="0.1" class="form-control form-control-sm" id="edit-modal-jumlah" placeholder="Kg"></div>
                             <div class="col-md-2"><input type="number" class="form-control form-control-sm" id="edit-modal-ekor" placeholder="Ekor"></div>
-                            <div class="col-md-3"><input type="number" class="form-control form-control-sm" id="edit-modal-harga" placeholder="Harga"></div>
+                            <div class="col-md-3"><input type="text" class="form-control form-control-sm rupiah-input" id="edit-modal-harga" placeholder="Harga"></div>
                             <div class="col-md-2"><button type="button" class="btn btn-sm btn-outline-danger w-100 fw-bold" onclick="tambahKeKeranjangEditModal()">Tambah</button></div>
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="small fw-bold text-muted d-block mb-1">Rincian Nota Saat Ini:</label>
-                        <div class="border rounded p-2 bg-white" style="max-height: 150px; overflow-y:auto; font-size: 13px;">
+                        <div class="border rounded p-2 bg-white" style="max-height: 120px; overflow-y:auto; font-size: 13px;">
                             <table class="table table-sm m-0">
                                 <thead>
                                     <tr class="table-dark">
-                                        <th>Nama Barang</th>
-                                        <th>Qty</th>
-                                        <th>Harga</th>
-                                        <th>Total</th>
-                                        <th class="text-end">Aksi</th>
+                                        <th>Nama Barang</th><th>Qty</th><th>Harga</th><th>Total</th><th class="text-end">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="edit-modal-cart-table-body"></tbody>
@@ -438,31 +439,37 @@
                     </div>
                     
                     <div class="mb-3 p-2 rounded bg-gradient-maroon text-center text-white">
-                        <span class="small opacity-75 d-block" style="font-size:11px;">TOTAL BELANJA KULAKAN SEKARANG</span>
+                        <span class="small opacity-75 d-block" style="font-size:11px;">TOTAL BELANJA HARI INI (Rp)</span>
                         <h4 class="fw-bold m-0" id="edit-modal-display-belanja">Rp 0</h4>
                     </div>
 
                     <div class="mb-3 p-3 rounded-3 block-kuning">
                         <div class="row g-2">
                             <div class="col-6">
-                                <label class="text-muted small fw-bold">Sisa Utang Lalu</label>
-                                <input type="number" class="form-control" id="edit-modal-sub-sisa-utang" value="0">
+                                <label class="text-muted small fw-bold">Sisa Tagihan Lalu (Hutang Awal) (Rp)</label>
+                                <input type="text" class="form-control rupiah-input" id="edit-modal-sub-sisa-utang" value="Rp 0">
                             </div>
                             <div class="col-6">
-                                <label class="text-muted small fw-bold">Total Akumulasi Utang</label>
-                                <input type="number" class="form-control fw-bold text-danger bg-white" id="edit-modal-utang-total" readonly value="0">
+                                <label class="text-muted small fw-bold">Total Tagihan Baru (Rp)</label>
+                                <input type="text" class="form-control fw-bold text-danger bg-white" id="edit-modal-utang-total" readonly value="Rp 0">
                             </div>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-success mb-1">Jumlah Uang yang Dibayar (DP/Cicil)</label>
-                        <input type="number" class="form-control border-success text-success fw-bold" id="edit-modal-pembayaran" value="0" required>
+                        <label class="form-label small fw-bold text-success mb-1">Jumlah Bayar / Setoran (Rp)</label>
+                        <input type="text" class="form-control border-success text-success fw-bold rupiah-input" id="edit-modal-pembayaran" value="Rp 0" required>
+                    </div>
+
+                    <!-- REKUES KOTAK MERAH: SISA BON / TAGIHAN KEDEPANNYA -->
+                    <div class="mb-4 p-3 rounded bg-dark text-white text-center">
+                        <span class="small opacity-75 d-block" style="font-size:12px; letter-spacing: 0.5px;">SISA BON / TAGIHAN KEDEPANNYA</span>
+                        <h4 class="fw-bold m-0 text-warning" id="edit-modal-display-sisa-bon-akhir">Rp 0</h4>
                     </div>
                     
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-secondary w-50 fw-bold" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-warning w-50 fw-bold text-dark">Simpan Perubahan</button>
+                        <button type="submit" class="btn btn-warning w-50 fw-bold text-dark">✨ Simpan Perubahan</button>
                     </div>
                 </form>
             </div>
@@ -478,7 +485,7 @@
     let masterSupplier = [];
     let dataTransaksi = [];
     let keranjangSementara = [];
-    let keranjangEditModal = []; // Penampung keranjang temporer khusus Edit Modal
+    let keranjangEditModal = []; 
     let totalBelanjaHariIni = 0;
     let totalBelanjaEditModal = 0;
     let currentFilter = "Semua";
@@ -487,6 +494,22 @@
 
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka); }
     
+    // Fungsi membalikkan format Rupiah ke angka murni untuk kalkulasi internal
+    function cleanRupiahToNumber(str) {
+        if (!str) return 0;
+        let clean = str.toString().replace(/[^0-9]/g, '');
+        return parseInt(clean) || 0;
+    }
+
+    // Fungsi Pengubah Input Otomatis Saat Mengetik (Live Masking Rupiah)
+    function inputMaskRupiah(element) {
+        if (!element) return;
+        element.addEventListener("input", function(e) {
+            let value = cleanRupiahToNumber(e.target.value);
+            e.target.value = formatRupiah(value);
+        });
+    }
+
     function parseTanggal(str) {
         if (!str) return new Date(0);
         if (str.includes('T') || str.includes('-')) return new Date(str);
@@ -503,10 +526,7 @@
         if (stringTanggal.includes('T')) {
             const d = new Date(stringTanggal);
             if (!isNaN(d.getTime())) {
-                const hari = String(d.getDate()).padStart(2, '0');
-                const bulan = String(d.getMonth() + 1).padStart(2, '0');
-                const tahun = d.getFullYear();
-                return `${hari}/${bulan}/${tahun}`;
+                return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
             }
         }
         return stringTanggal;
@@ -517,15 +537,9 @@
 
     async function muatDataDariSheets() {
         showSyncStatus("loading", "Menarik data terbaru dari Cloud Supplier...");
-        if(GOOGLE_SCRIPT_URL === "") {
-            showSyncStatus("error", "URL Google Script Supplier belum diisi!");
-            return;
-        }
+        if(GOOGLE_SCRIPT_URL === "") { showSyncStatus("error", "URL Google Script Supplier belum diisi!"); return; }
         try {
-            const response = await fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "getData" })
-            });
+            const response = await fetch(GOOGLE_SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getData" }) });
             const res = await response.json();
             if(res.status === "success") {
                 masterSupplier = res.customers; 
@@ -534,30 +548,18 @@
                 renderDashboard();
                 updateSisaUtangOtomatis(); 
                 showSyncStatus("success", "Sistem Sinkron Online (Data Supplier)");
-            } else {
-                showSyncStatus("error", "Gagal load data: " + res.message);
-            }
-        } catch(e) {
-            showSyncStatus("error", "Gagal koneksi cloud internet.");
-        }
+            } else { showSyncStatus("error", "Gagal load data: " + res.message); }
+        } catch(e) { showSyncStatus("error", "Gagal koneksi cloud internet."); }
     }
 
     async function pushDataKeSheets() {
         showSyncStatus("loading", "Menyimpan data utang ke Cloud...");
         try {
-            const response = await fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "saveAll", customers: masterSupplier, transaksis: dataTransaksi })
-            });
+            const response = await fetch(GOOGLE_SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "saveAll", customers: masterSupplier, transaksis: dataTransaksi }) });
             const res = await response.json();
-            if(res.status === "success") {
-                showSyncStatus("success", "Semua Uang Pembelian & Utang Sinkron ke Sheets!");
-            } else {
-                showSyncStatus("error", "Gagal kirim: " + res.message);
-            }
-        } catch(e) {
-            showSyncStatus("error", "Koneksi terputus, antrean disimpan di lokal.");
-        }
+            if(res.status === "success") { showSyncStatus("success", "Semua Uang Pembelian & Utang Sinkron ke Sheets!"); }
+            else { showSyncStatus("error", "Gagal kirim: " + res.message); }
+        } catch(e) { showSyncStatus("error", "Koneksi terputus, antrean disimpan di lokal."); }
     }
 
     function showSyncStatus(type, msg) {
@@ -570,7 +572,7 @@
     function updateSisaUtangOtomatis() {
         const supplierTerpilih = document.getElementById("input-supplier").value;
         if (!supplierTerpilih) {
-            document.getElementById("sub-sisa-utang").value = 0;
+            document.getElementById("sub-sisa-utang").value = formatRupiah(0);
             hitungUlangUtangForm();
             return;
         }
@@ -585,23 +587,20 @@
         });
 
         let sisaUtangTerakhir = totalBelanja - totalBayar;
-        document.getElementById("sub-sisa-utang").value = sisaUtangTerakhir > 0 ? Math.round(sisaUtangTerakhir) : 0;
+        document.getElementById("sub-sisa-utang").value = formatRupiah(sisaUtangTerakhir > 0 ? Math.round(sisaUtangTerakhir) : 0);
         
         hitungUlangUtangForm();
     }
 
-    // --- MANAJEMEN KERANJANG UTAMA (SIDEBAR INPUT) ---
+    // --- KERANJANG UTAMA (SIDEBAR) ---
     function tambahKeKeranjang() {
         const produk = document.getElementById("input-produk").value;
         const qty = parseFloat(document.getElementById("input-jumlah").value) || 0;
         const ekor = parseInt(document.getElementById("input-ekor").value) || 0;
-        const harga = parseInt(document.getElementById("input-harga").value) || 0;
+        const harga = cleanRupiahToNumber(document.getElementById("input-harga").value);
         
-        if (produk === "Ayam Merah" || produk === "Ayam Penyet") {
-            if (ekor <= 0 || harga <= 0) return; 
-        } else {
-            if (qty <= 0 || harga <= 0) return; 
-        }
+        if (produk === "Ayam Merah" || produk === "Ayam Penyet") { if (ekor <= 0 || harga <= 0) return; }
+        else { if (qty <= 0 || harga <= 0) return; }
         
         keranjangSementara.push({ nama: produk, qty, ekor, harga });
         document.getElementById("input-jumlah").value = "";
@@ -630,18 +629,9 @@
         }
         
         keranjangSementara.forEach((item, idx) => {
-            let totalItem = 0;
-            let ketSatuan = "";
-            
-            if (item.nama === "Ayam Merah" || item.nama === "Ayam Penyet") {
-                totalItem = item.ekor * item.harga;
-                ketSatuan = `${item.ekor} ekor`;
-            } else {
-                totalItem = item.qty * item.harga;
-                ketSatuan = `${item.qty} kg`;
-            }
-            
+            let totalItem = (item.nama === "Ayam Merah" || item.nama === "Ayam Penyet") ? (item.ekor * item.harga) : (item.qty * item.harga);
             totalBelanjaHariIni += totalItem;
+            let ketSatuan = (item.nama === "Ayam Merah" || item.nama === "Ayam Penyet") ? `${item.ekor} ekor` : `${item.qty} kg`;
             tbody.innerHTML += `<tr><td><b>${item.nama}</b> (${ketSatuan})</td><td class="text-end text-danger"><i class="bi bi-x-circle cursor-pointer" onclick="hapusItemKeranjang(${idx})"></i></td></tr>`;
         });
         
@@ -649,24 +639,28 @@
     }
 
     function hitungUlangUtangForm() {
-        const utangLama = parseInt(document.getElementById("sub-sisa-utang").value) || 0;
-        document.getElementById("input-utang-total").value = utangLama + totalBelanjaHariIni;
+        const utangLama = cleanRupiahToNumber(document.getElementById("sub-sisa-utang").value);
+        const pembayaran = cleanRupiahToNumber(document.getElementById("input-pembayaran").value);
+        
+        let totalTagihanBaru = utangLama + totalBelanjaHariIni;
+        let sisaBonAkhir = totalTagihanBaru - pembayaran;
+
+        document.getElementById("input-utang-total").value = formatRupiah(totalTagihanBaru);
+        document.getElementById("display-sisa-bon-akhir").innerText = formatRupiah(sisaBonAkhir);
     }
     document.getElementById("sub-sisa-utang").addEventListener("input", hitungUlangUtangForm);
+    document.getElementById("input-pembayaran").addEventListener("input", hitungUlangUtangForm);
 
 
-    // --- MANAJEMEN KERANJANG EDIT (DI POP-UP MODAL EDIT) ---
+    // --- KERANJANG EDIT (MODAL POPUP) ---
     function tambahKeKeranjangEditModal() {
         const produk = document.getElementById("edit-modal-produk").value;
         const qty = parseFloat(document.getElementById("edit-modal-jumlah").value) || 0;
         const ekor = parseInt(document.getElementById("edit-modal-ekor").value) || 0;
-        const harga = parseInt(document.getElementById("edit-modal-harga").value) || 0;
+        const harga = cleanRupiahToNumber(document.getElementById("edit-modal-harga").value);
         
-        if (produk === "Ayam Merah" || produk === "Ayam Penyet") {
-            if (ekor <= 0 || harga <= 0) return; 
-        } else {
-            if (qty <= 0 || harga <= 0) return; 
-        }
+        if (produk === "Ayam Merah" || produk === "Ayam Penyet") { if (ekor <= 0 || harga <= 0) return; }
+        else { if (qty <= 0 || harga <= 0) return; }
         
         keranjangEditModal.push({ nama: produk, qty, ekor, harga });
         document.getElementById("edit-modal-jumlah").value = "";
@@ -695,17 +689,8 @@
         }
         
         keranjangEditModal.forEach((item, idx) => {
-            let totalItem = 0;
-            let ketSatuan = "";
-            
-            if (item.nama === "Ayam Merah" || item.nama === "Ayam Penyet") {
-                totalItem = item.ekor * item.harga;
-                ketSatuan = `${item.ekor} ekor`;
-            } else {
-                totalItem = item.qty * item.harga;
-                ketSatuan = `${item.qty} kg`;
-            }
-            
+            let totalItem = (item.nama === "Ayam Merah" || item.nama === "Ayam Penyet") ? (item.ekor * item.harga) : (item.qty * item.harga);
+            let ketSatuan = (item.nama === "Ayam Merah" || item.nama === "Ayam Penyet") ? `${item.ekor} ekor` : `${item.qty} kg`;
             totalBelanjaEditModal += totalItem;
             tbody.innerHTML += `
                 <tr>
@@ -713,9 +698,7 @@
                     <td>${ketSatuan}</td>
                     <td>${formatRupiah(item.harga)}</td>
                     <td>${formatRupiah(totalItem)}</td>
-                    <td class="text-end">
-                        <i class="bi bi-trash-fill text-danger cursor-pointer" onclick="hapusItemKeranjangEditModal(${idx})"></i>
-                    </td>
+                    <td class="text-end"><i class="bi bi-trash-fill text-danger cursor-pointer" onclick="hapusItemKeranjangEditModal(${idx})"></i></td>
                 </tr>`;
         });
         
@@ -723,13 +706,20 @@
     }
 
     function hitungUlangUtangEditModal() {
-        const utangLama = parseInt(document.getElementById("edit-modal-sub-sisa-utang").value) || 0;
-        document.getElementById("edit-modal-utang-total").value = utangLama + totalBelanjaEditModal;
+        const utangLama = cleanRupiahToNumber(document.getElementById("edit-modal-sub-sisa-utang").value);
+        const pembayaran = cleanRupiahToNumber(document.getElementById("edit-modal-pembayaran").value);
+        
+        let totalTagihanBaru = utangLama + totalBelanjaEditModal;
+        let sisaBonAkhir = totalTagihanBaru - pembayaran;
+
+        document.getElementById("edit-modal-utang-total").value = formatRupiah(totalTagihanBaru);
+        document.getElementById("edit-modal-display-sisa-bon-akhir").innerText = formatRupiah(sisaBonAkhir);
     }
     document.getElementById("edit-modal-sub-sisa-utang").addEventListener("input", hitungUlangUtangEditModal);
+    document.getElementById("edit-modal-pembayaran").addEventListener("input", hitungUlangUtangEditModal);
 
 
-    // --- RENDERING & INTEGRASI UI ---
+    // --- RENDERING MAIN DATA & UI UI ---
     function renderSupplierGridMenu() {
         const container = document.getElementById("supplier-grid-container");
         container.innerHTML = "";
@@ -738,14 +728,8 @@
         
         filterList.forEach(s => {
             const txSupplier = dataTransaksi.filter(t => t.pelanggan === s.nama);
-            let totalBelanjaSupp = 0;
-            let totalDibayarSupp = 0;
-            
-            txSupplier.forEach(tx => {
-                totalBelanjaSupp += tx.totalBelanja;
-                totalDibayarSupp += tx.payment;
-            });
-            
+            let totalBelanjaSupp = 0; let totalDibayarSupp = 0;
+            txSupplier.forEach(tx => { totalBelanjaSupp += tx.totalBelanja; totalDibayarSupp += tx.payment; });
             let sisaUtangAktif = totalBelanjaSupp - totalDibayarSupp;
             
             container.innerHTML += `
@@ -786,12 +770,8 @@
             const sisa = Math.round(tx.tagihan - tx.payment);
             
             if(currentFilter === "Semua" || currentFilter === meta.kategori) {
-                kb += tx.totalBelanja; 
-                kd += tx.payment;
-                
-                let itemsStr = tx.items.map(i => {
-                    return i.nama + (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet" ? ` (${i.ekor}ekor)` : ` (${i.qty}kg)`);
-                }).join(", ");
+                kb += tx.totalBelanja; kd += tx.payment;
+                let itemsStr = tx.items.map(i => i.nama + (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet" ? ` (${i.ekor}ekor)` : ` (${i.qty}kg)`)).join(", ");
                 
                 tbody.innerHTML += `
                     <tr>
@@ -812,14 +792,10 @@
             }
         });
 
-        let globalBelanja = 0;
-        let globalDibayar = 0;
+        let globalBelanja = 0; let globalDibayar = 0;
         dataTransaksi.forEach(t => {
             const meta = masterSupplier.find(s => s.nama === t.pelanggan) || {kategori: "Supplier Utama"};
-            if(currentFilter === "Semua" || currentFilter === meta.kategori) {
-                globalBelanja += t.totalBelanja;
-                globalDibayar += t.payment;
-            }
+            if(currentFilter === "Semua" || currentFilter === meta.kategori) { globalBelanja += t.totalBelanja; globalDibayar += t.payment; }
         });
         ku = globalBelanja - globalDibayar;
 
@@ -833,13 +809,9 @@
 
     function renderChartEngine() {
         let pts = {};
-        dataTransaksi.forEach(t => { 
-            let tglFormatted = formatTampilanTanggal(t.tanggal);
-            pts[tglFormatted] = (pts[tglFormatted] || 0) + (t.tagihan - t.payment); 
-        });
+        dataTransaksi.forEach(t => { let tglFormatted = formatTampilanTanggal(t.tanggal); pts[tglFormatted] = (pts[tglFormatted] || 0) + (t.tagihan - t.payment); });
         const labels = Object.keys(pts).sort((a,b) => parseTanggal(a) - parseTanggal(b));
         const vals = labels.map(l => pts[l]);
-
         const ctx = document.getElementById('payableChart').getContext('2d');
         if(chartInstance) chartInstance.destroy();
         chartInstance = new Chart(ctx, {
@@ -859,9 +831,7 @@
         txSupplier.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
 
         txSupplier.forEach(tx => {
-            tk += tx.totalBelanja;
-            td += tx.payment;
-            
+            tk += tx.totalBelanja; td += tx.payment;
             let sisaBaris = Math.round(tx.tagihan - tx.payment);
             let iStr = tx.items.map(i => i.nama + (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet" ? ` (${i.ekor}ekor)` : ` (${i.qty}kg)`)).join(", ");
 
@@ -877,11 +847,9 @@
         });
         
         tu = tk - td; 
-
         document.getElementById("supp-modal-jual").innerText = formatRupiah(tk);
         document.getElementById("supp-modal-terima").innerText = formatRupiah(td);
         document.getElementById("supp-modal-utang").innerText = formatRupiah(tu); 
-        
         new bootstrap.Modal(document.getElementById('supplierDashboardModal')).show();
     }
 
@@ -899,10 +867,7 @@
         let rows = trans.items.map(i => {
             let totalItem = Math.round((i.nama === "Ayam Merah" || i.nama === "Ayam Penyet" ? i.ekor : i.qty) * i.harga);
             let kolomQty = (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet" ? `${i.ekor} ekor` : `${i.qty} kg`);
-            let rataRataStr = "";
-            if (i.nama !== "Ayam Merah" && i.nama !== "Ayam Penyet" && i.ekor > 0 && i.qty > 0) {
-                rataRataStr = `<br><small class="text-muted">ABW: ${(i.qty / i.ekor).toFixed(2)} kg/ekor</small>`;
-            }
+            let rataRataStr = (i.nama !== "Ayam Merah" && i.nama !== "Ayam Penyet" && i.ekor > 0 && i.qty > 0) ? `<br><small class="text-muted">ABW: ${(i.qty / i.ekor).toFixed(2)} kg/ekor</small>` : "";
             return `<tr>
                 <td><b>${i.nama}</b>${i.nama !== "Ayam Merah" && i.nama !== "Ayam Penyet" && i.ekor > 0 ? '<br><small>('+i.ekor+' ekor)</small>':''}${rataRataStr}</td>
                 <td>${kolomQty}</td><td>${formatRupiah(i.harga)}</td><td>${formatRupiah(totalItem)}</td>
@@ -930,29 +895,24 @@
         });
     });
 
-    // --- FORM SIMPAN TRANSAKSI BARU ---
+    // --- SAVE NEW TRANSACTION ---
     document.getElementById("payable-form").addEventListener("submit", function(e) {
         e.preventDefault();
-        const pembayaran = parseInt(document.getElementById("input-pembayaran").value) || 0;
-        
-        if (keranjangSementara.length === 0 && pembayaran <= 0) {
-            alert("Transaksi ditolak! Masukkan barang masuk kulakan ATAU isi nominal pembayaran utang.");
-            return;
-        }
+        const pembayaran = cleanRupiahToNumber(document.getElementById("input-pembayaran").value);
+        if (keranjangSementara.length === 0 && pembayaran <= 0) { alert("Transaksi ditolak! Masukkan barang kulakan atau isi nominal pembayaran."); return; }
         
         const payload = {
             id: "TX_SUP_" + new Date().getTime(),
             tanggal: convertDateToDisplay(document.getElementById("input-tanggal").value),
             pelanggan: document.getElementById("input-supplier").value, 
             totalBelanja: totalBelanjaHariIni, 
-            hutangAwal: parseInt(document.getElementById("sub-sisa-utang").value) || 0,
-            tagihan: parseInt(document.getElementById("input-utang-total").value) || 0,
+            hutangAwal: cleanRupiahToNumber(document.getElementById("sub-sisa-utang").value),
+            tagihan: cleanRupiahToNumber(document.getElementById("input-utang-total").value),
             payment: pembayaran,
             items: [...keranjangSementara]
         };
 
         dataTransaksi.push(payload);
-        
         keranjangSementara = [];
         renderKeranjang();
         document.getElementById("payable-form").reset();
@@ -962,68 +922,53 @@
         pushDataKeSheets();
     });
 
-    // --- LOGIKA EDIT VIA POP-UP MODAL (BARU & AMAN) ---
+    // --- POPUP EDIT TRANSACTION CONTROL ---
     function pilihEditTransaksi(idx) {
         const tx = dataTransaksi[idx];
         document.getElementById("edit-modal-transaksi-index").value = idx;
         document.getElementById("edit-modal-tanggal").value = convertDateToInput(tx.tanggal);
         
-        // Load opsi supplier ke edit modal
         const sel = document.getElementById("edit-modal-supplier");
         sel.innerHTML = masterSupplier.map(s => `<option value="${s.nama}">${s.nama}</option>`).join("");
         sel.value = tx.pelanggan;
         
-        document.getElementById("edit-modal-sub-sisa-utang").value = tx.hutangAwal;
-        document.getElementById("edit-modal-pembayaran").value = tx.payment;
+        document.getElementById("edit-modal-sub-sisa-utang").value = formatRupiah(tx.hutangAwal);
+        document.getElementById("edit-modal-pembayaran").value = formatRupiah(tx.payment);
         
         keranjangEditModal = [...tx.items];
         renderKeranjangEditModal();
         hitungUlangUtangEditModal();
         
-        // Munculkan Modal Edit
-        const modalEdit = new bootstrap.Modal(document.getElementById('editInvoiceModal'));
-        modalEdit.show();
+        new bootstrap.Modal(document.getElementById('editInvoiceModal')).show();
     }
 
-    // Submit handler form edit modal
     document.getElementById("edit-payable-form").addEventListener("submit", function(e) {
         e.preventDefault();
-        const pembayaran = parseInt(document.getElementById("edit-modal-pembayaran").value) || 0;
-        
-        if (keranjangEditModal.length === 0 && pembayaran <= 0) {
-            alert("Transaksi ditolak! Masukkan barang masuk kulakan ATAU isi nominal pembayaran utang.");
-            return;
-        }
+        const pembayaran = cleanRupiahToNumber(document.getElementById("edit-modal-pembayaran").value);
+        if (keranjangEditModal.length === 0 && pembayaran <= 0) { alert("Transaksi ditolak! Rincian belanja atau pembayaran harus diisi."); return; }
         
         const idx = parseInt(document.getElementById("edit-modal-transaksi-index").value);
         
-        // Timpa data transaksi lama dengan payload baru di index yang sama
         dataTransaksi[idx] = {
             id: dataTransaksi[idx].id,
             tanggal: convertDateToDisplay(document.getElementById("edit-modal-tanggal").value),
             pelanggan: document.getElementById("edit-modal-supplier").value, 
             totalBelanja: totalBelanjaEditModal, 
-            hutangAwal: parseInt(document.getElementById("edit-modal-sub-sisa-utang").value) || 0,
-            tagihan: parseInt(document.getElementById("edit-modal-utang-total").value) || 0,
+            hutangAwal: cleanRupiahToNumber(document.getElementById("edit-modal-sub-sisa-utang").value),
+            tagihan: cleanRupiahToNumber(document.getElementById("edit-modal-utang-total").value),
             payment: pembayaran,
             items: [...keranjangEditModal]
         };
         
-        // Tutup modal edit
-        const modalEl = document.getElementById('editInvoiceModal');
-        const modalInstance = bootstrap.Modal.getInstance(modalEl);
-        modalInstance.hide();
-        
+        bootstrap.Modal.getInstance(document.getElementById('editInvoiceModal')).hide();
         renderDashboard();
         updateSisaUtangOtomatis();
         pushDataKeSheets();
     });
 
     function hapusData(idx) { if(confirm("Hapus catatan transaksi supplier ini?")) { dataTransaksi.splice(idx,1); renderDashboard(); updateSisaUtangOtomatis(); pushDataKeSheets(); } }
-
-    function renderKelolaSupplier() {
-        document.getElementById("list-supplier-table").innerHTML = masterSupplier.map((s,i) => `<tr><td>${i+1}</td><td>${s.nama}</td><td>${s.kategori}</td><td><i class="bi bi-trash text-danger cursor-pointer" onclick="hapusSupplier(${i})"></i></td></tr>`).join("");
-    }
+    function renderKelolaSupplier() { document.getElementById("list-supplier-table").innerHTML = masterSupplier.map((s,i) => `<tr><td>${i+1}</td><td>${s.nama}</td><td>${s.kategori}</td><td><i class="bi bi-trash text-danger cursor-pointer" onclick="hapusSupplier(${i})"></i></td></tr>`).join(""); }
+    
     document.getElementById("supplier-form").addEventListener("submit", function(e) {
         e.preventDefault();
         masterSupplier.push({ nama: document.getElementById("supp-nama").value, kategori: document.getElementById("supp-kategori").value });
@@ -1033,10 +978,14 @@
     function hapusSupplier(i) { masterSupplier.splice(i,1); renderUiControls(); renderKelolaSupplier(); renderDashboard(); pushDataKeSheets(); }
 
     document.getElementById("input-supplier").addEventListener("change", updateSisaUtangOtomatis);
-
     document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
     document.getElementById("current-date").innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
+    // Aktifkan Real-Time Rupiah Masking untuk semua input uang di aplikasi
+    document.querySelectorAll(".rupiah-input").forEach(input => {
+        inputMaskRupiah(input);
+    });
+
     muatDataDariSheets();
 </script>
 </body>
