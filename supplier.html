@@ -171,17 +171,17 @@
     </div>
 
     <!-- HEADER -->
-<div class="p-4 bg-gradient-maroon rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <div>
-        <h2 class="mb-0 fs-4 fw-bold d-flex align-items-center gap-2">
-            <i class="bi bi-truck"></i> MONITORING SUPPLIER
-        </h2>
-        <p class="mb-0 small opacity-75 mt-1" id="current-date"></p>
+    <div class="p-4 bg-gradient-maroon rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h2 class="mb-0 fs-4 fw-bold d-flex align-items-center gap-2">
+                <i class="bi bi-truck"></i> MONITORING SUPPLIER
+            </h2>
+            <p class="mb-0 small opacity-75 mt-1" id="current-date"></p>
+        </div>
+        <a href="index.html" class="btn btn-sm btn-light fw-bold text-danger px-3 py-2 rounded-3">
+            <i class="bi bi-people-fill me-1"></i> Buka Monitoring Customer
+        </a>
     </div>
-    <a href="index.html" class="btn btn-sm btn-light fw-bold text-danger px-3 py-2 rounded-3">
-        <i class="bi bi-people-fill me-1"></i> Buka Monitoring Customer
-    </a>
-</div>
 
     <!-- TABS -->
     <div class="premium-card p-2 mb-4">
@@ -438,6 +438,7 @@
                 dataTransaksi = res.transaksis;
                 renderUiControls();
                 renderDashboard();
+                updateSisaUtangOtomatis(); // Hitung otomatis setelah data dari sheets masuk
                 showSyncStatus("success", "Sistem Sinkron Online (Data Supplier)");
             } else {
                 showSyncStatus("error", "Gagal load data: " + res.message);
@@ -470,6 +471,39 @@
         if(type === "loading") bar.innerHTML = `<span class="text-warning"><div class="spinner-border spinner-border-sm me-1"></div> ${msg}</span>`;
         if(type === "success") bar.innerHTML = `<span class="text-success"><i class="bi bi-cloud-check-fill"></i> ${msg}</span>`;
         if(type === "error") bar.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> ${msg}</span>`;
+    }
+
+    // FUNGSI BARU: Mengambil otomatis total sisa utang supplier berjalan
+    function updateSisaUtangOtomatis() {
+        // Cek jika sedang dalam mode edit transaksi, jangan timpa input manual user
+        const editIdx = parseInt(document.getElementById("edit-transaksi-index").value);
+        if (editIdx !== -1) return;
+
+        const supplierTerpilih = document.getElementById("input-supplier").value;
+        if (!supplierTerpilih) {
+            document.getElementById("sub-sisa-utang").value = 0;
+            hitungUlangUtangForm();
+            return;
+        }
+
+        // Filter semua histori transaksi milik supplier ini
+        let txSupplier = dataTransaksi.filter(t => t.pelanggan === supplierTerpilih);
+
+        let totalBelanja = 0;
+        let totalBayar = 0;
+
+        txSupplier.forEach(tx => {
+            totalBelanja += tx.totalBelanja;
+            totalBayar += tx.payment;
+        });
+
+        let sisaUtangTerakhir = totalBelanja - totalBayar;
+
+        // Set nilai ke input (Gunakan 0 jika nilainya lunas/negatif)
+        document.getElementById("sub-sisa-utang").value = sisaUtangTerakhir > 0 ? Math.round(sisaUtangTerakhir) : 0;
+        
+        // Perbarui "Total Akumulasi Utang" pada form
+        hitungUlangUtangForm();
     }
 
     function tambahKeKeranjang() {
@@ -608,7 +642,8 @@
                         <td>${formatRupiah(Math.round(tx.tagihan))}</td>
                         <td>${formatRupiah(Math.round(tx.payment))}</td>
                         <td class="text-danger fw-bold">${formatRupiah(sisa)}</td>
-                        <td><button class="btn btn-sm btn-dark py-0" data-bs-toggle="modal" data-bs-target="#invoiceModal" onclick="tampilkanFaktur(${tx.originalIdx})"><i class="bi bi-receipt"></i></button></td>
+                        <td><button class="btn btn-sm btn-dark py-0" data-bs-toggle="modal" data-bs-target="#invoiceModal" onclick="tampilkanFaktur(
+${tx.originalIdx})"><i class="bi bi-receipt"></i></button></td>
                         <td>
                             <i class="bi bi-pencil-square text-warning me-2" onclick="pilihEditTransaksi(${tx.originalIdx})"></i>
                             <i class="bi bi-trash text-danger" onclick="hapusData(${tx.originalIdx})"></i>
@@ -763,6 +798,7 @@
         document.getElementById("payable-form").reset();
         document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
         renderDashboard();
+        updateSisaUtangOtomatis(); // Hitung ulang sisa utang setelah submit data
         pushDataKeSheets();
     });
 
@@ -784,9 +820,10 @@
         document.getElementById("payable-form").reset();
         keranjangSementara = []; renderKeranjang();
         document.getElementById("btn-batal-edit").classList.add("d-none");
+        updateSisaUtangOtomatis();
     }
 
-    function hapusData(idx) { if(confirm("Hapus catatan transaksi supplier ini?")) { dataTransaksi.splice(idx,1); renderDashboard(); pushDataKeSheets(); } }
+    function hapusData(idx) { if(confirm("Hapus catatan transaksi supplier ini?")) { dataTransaksi.splice(idx,1); renderDashboard(); updateSisaUtangOtomatis(); pushDataKeSheets(); } }
 
     function renderKelolaSupplier() {
         document.getElementById("list-supplier-table").innerHTML = masterSupplier.map((s,i) => `<tr><td>${i+1}</td><td>${s.nama}</td><td>${s.kategori}</td><td><i class="bi bi-trash text-danger" onclick="hapusSupplier(${i})"></i></td></tr>`).join("");
@@ -798,6 +835,9 @@
         renderUiControls(); renderKelolaSupplier(); renderDashboard(); pushDataKeSheets();
     });
     function hapusSupplier(i) { masterSupplier.splice(i,1); renderUiControls(); renderKelolaSupplier(); renderDashboard(); pushDataKeSheets(); }
+
+    // Pasang Event Listener ke dropdown supplier agar mendeteksi ketika nama diganti
+    document.getElementById("input-supplier").addEventListener("change", updateSisaUtangOtomatis);
 
     document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
     document.getElementById("current-date").innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
