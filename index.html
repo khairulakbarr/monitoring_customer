@@ -1160,6 +1160,51 @@
     
     inisialisasiFormatRupiahLive();
     muatDataDariSheets();
+
+    // ==========================================
+// ANTI-LAG & SAFETY TIMEOUT INPUT TRANSAKSI
+// ==========================================
+// Kode ini otomatis berjalan untuk membebaskan tombol yang stuck "Memproses..."
+// Jika database cloud lambat merespon lebih dari 4 detik.
+
+(function() {
+    // Memantau mutasi tombol simpan secara otomatis
+    const pengamatTombol = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.attributeName === 'disabled') {
+                const tombol = mutation.target;
+                
+                // Jika tombol berubah menjadi disabled atau teksnya sedang "Memproses..."
+                if (tombol.disabled && (tombol.innerText.includes("Proses") || tombol.innerHTML.includes("Proses"))) {
+                    
+                    // Set waktu tunggu aman 4 detik
+                    setTimeout(function() {
+                        if (tombol.disabled) {
+                            tombol.disabled = false;
+                            // Kembalikan ke teks normal (sesuaikan teks asli tombolmu jika bukan "Simpan Transaksi")
+                            tombol.innerHTML = 'Simpan Transaksi'; 
+                            
+                            // Paksa hilangkan status loading cloud di atas jika ada
+                            const statusCloud = document.querySelector('[id*="cloud"]') || document.querySelector('[class*="cloud"]');
+                            if (statusCloud) statusCloud.style.display = 'none';
+                            
+                            console.log("Safety Timeout: Form berhasil dibebaskan dari stuck loading cloud.");
+                        }
+                    }, 4000); // 4000 milidetik = 4 detik
+                }
+            }
+        });
+    });
+
+    // Jalankan pemantau saat halaman web siap
+    window.addEventListener('DOMContentLoaded', function() {
+        // Cari semua tombol di form transaksi (biasanya tipe submit atau class btn-primary)
+        const tombolSimpan = document.querySelector('button[type="submit"]') || document.querySelector('.btn-primary');
+        if (tombolSimpan) {
+            pengamatTombol.observe(tombolSimpan, { attributes: true });
+        }
+    });
+})();
 </script>
 </body>
 </html>
