@@ -1,4 +1,4 @@
-;<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -582,13 +582,17 @@
             return;
         }
 
-        let txCustomer = dataTransaksi.filter(t => t.pelanggan === customerTerpilih);
+        // Jalankan filter unik agar perhitungan tagihan berjalan tidak bengkak saat di-change
+        let idTercatatOtomatis = new Set();
         let totalBelanja = 0;
         let totalDiterima = 0;
 
-        txCustomer.forEach(tx => {
-            totalBelanja += tx.totalBelanja;
-            totalDiterima += tx.payment;
+        dataTransaksi.forEach(tx => {
+            if (tx.pelanggan === customerTerpilih && !idTercatatOtomatis.has(tx.id)) {
+                idTercatatOtomatis.add(tx.id);
+                totalBelanja += tx.totalBelanja;
+                totalDiterima += tx.payment;
+            }
         });
 
         let sisaTagihanTerakhir = totalBelanja - totalDiterima;
@@ -673,13 +677,16 @@
         if(currentFilter !== "Semua") filterList = filterList.filter(c => c.kategori === currentFilter);
         
         filterList.forEach(c => {
-            const txCustomer = dataTransaksi.filter(t => t.pelanggan === c.nama);
-            
+            let idTercatatGrid = new Set();
             let totalBelanjaCust = 0;
             let totalDiterimaCust = 0;
-            txCustomer.forEach(tx => {
-                totalBelanjaCust += tx.totalBelanja;
-                totalDiterimaCust += tx.payment;
+
+            dataTransaksi.forEach(tx => {
+                if (tx.pelanggan === c.nama && !idTercatatGrid.has(tx.id)) {
+                    idTercatatGrid.add(tx.id);
+                    totalBelanjaCust += tx.totalBelanja;
+                    totalDiterimaCust += tx.payment;
+                }
             });
             
             let sisaPiutangAktif = totalBelanjaCust - totalDiterimaCust;
@@ -714,7 +721,22 @@
         tbody.innerHTML = "";
         let kj = 0, kd = 0, kp = 0;
         
-        let transaksiMapped = JSON.parse(JSON.stringify(dataTransaksi));
+        // --- PROSES FILTRASI DATA ANTI-DUPLIKAT (SAPU JAGAT TINGKAT DATA DATA) ---
+        let idTercatatTabelUtama = new Set();
+        let dataTransaksiBersih = [];
+        
+        dataTransaksi.forEach(tx => {
+            if (tx && tx.id) {
+                if (!idTercatatTabelUtama.has(tx.id)) {
+                    idTercatatTabelUtama.add(tx.id);
+                    dataTransaksiBersih.push(tx);
+                }
+            } else {
+                dataTransaksiBersih.push(tx);
+            }
+        });
+        
+        let transaksiMapped = JSON.parse(JSON.stringify(dataTransaksiBersih));
         transaksiMapped.sort((a, b) => parseTanggal(a.tanggal) - parseTanggal(b.tanggal));
 
         transaksiMapped.forEach((tx, viewIdx) => {
@@ -738,7 +760,6 @@
                     return acc;
                 }, []);
 
-                // JIKA TERDETEKSI DATA RUSAK DARI SHEETS (QTY KELIRU/TERKONTAMINASI) -> REPAIR LANGSUNG DI TEMPAT
                 if (itemsTabelDisaring.length === 1 && tx.totalBelanja > 0) {
                     let item = itemsTabelDisaring[0];
                     if (item.harga > 0 && Math.round(item.qty * item.harga) !== Math.round(tx.totalBelanja)) {
@@ -775,7 +796,7 @@
 
         let globalBelanja = 0;
         let globalDiterima = 0;
-        dataTransaksi.forEach(t => {
+        dataTransaksiBersih.forEach(t => {
             const meta = masterCustomer.find(c => c.nama === t.pelanggan) || {kategori: "Customer Umum"};
             if(currentFilter === "Semua" || currentFilter === meta.kategori) {
                 globalBelanja += t.totalBelanja;
@@ -789,12 +810,13 @@
         document.getElementById("kpi-sisa-piutang").innerText = formatRupiah(Math.round(kp));
 
         renderCustomerGridMenu();
-        renderChartEngine();
+        renderChartEngine(dataTransaksiBersih);
     }
 
-    function renderChartEngine() {
+    function renderChartEngine(dataBersihGrafik) {
+        let dataBahan = dataBersihGrafik || dataTransaksi;
         let pts = {};
-        dataTransaksi.forEach(t => { 
+        dataBahan.forEach(t => { 
             let tglFormatted = formatTampilanTanggal(t.tanggal);
             pts[tglFormatted] = (pts[tglFormatted] || 0) + (t.tagihan - t.payment); 
         });
@@ -810,104 +832,93 @@
         });
     }
 
- function bukaJendelaDasborCustomer(nama) {
-    document.getElementById("cust-modal-title").innerText = "Riwayat Buku: " + nama;
-    const tbody = document.getElementById("cust-modal-table-body");
-    tbody.innerHTML = ""; // Bersihkan tabel modal
-    
-    let tj = 0, td = 0, ts = 0;
-    
-    // 1. FILTER TRANSAKSI KHUSUS CUSTOMER INI
-    let txCustomerAll = dataTransaksi.filter(t => t.pelanggan === nama);
-    
-    // 2. PROSES PEMBERSIHAN DATA DOUBLE (HANYA AMBIL ID YANG UNIK)
-    let idTercatat = new Set();
-    let txCustomer = [];
-    
-    txCustomerAll.forEach(tx => {
-        // Jika ID transaksi belum pernah dimasukkan, masukkan ke array
-        // Jika ID sudah ada, dia akan dilewati (dibuang otomatis dari tampilan)
-        if (!idTercatat.has(tx.id)) {
-            idTercatat.add(tx.id);
-            txCustomer.push(JSON.parse(JSON.stringify(tx)));
-        }
-    });
-    
-    // 3. URUTKAN BERDASARKAN TANGGAL TERBARU
-    txCustomer.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
-
-    // 4. RENDER DATA YANG SUDAH BERSIH KE TABEL
-    txCustomer.forEach(tx => {
-        tj += tx.totalBelanja; 
-        td += tx.payment;      
+    function bukaJendelaDasborCustomer(nama) {
+        document.getElementById("cust-modal-title").innerText = "Riwayat Buku: " + nama;
+        const tbody = document.getElementById("cust-modal-table-body");
+        tbody.innerHTML = ""; 
         
-        let sisaBaris = Math.round(tx.tagihan - tx.payment);
-
-        // Gabungkan item yang sama di dalam satu nota (jika ada)
-        const itemsDisaring = (tx.items || []).reduce((acc, current) => {
-            const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
-            if (ditemukan) {
-                let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
-                ditemukan.qty = parseFloat(totalQty.toFixed(1)); 
-                ditemukan.ekor = (parseInt(ditemukan.ekor) || 0) + (parseInt(current.ekor) || 0);
-            } else {
-                acc.push({ ...current });
+        let tj = 0, td = 0, ts = 0;
+        let txCustomerAll = dataTransaksi.filter(t => t.pelanggan === nama);
+        
+        let idTercatat = new Set();
+        let txCustomer = [];
+        
+        txCustomerAll.forEach(tx => {
+            if (!idTercatat.has(tx.id)) {
+                idTercatat.add(tx.id);
+                txCustomer.push(JSON.parse(JSON.stringify(tx)));
             }
-            return acc;
-        }, []);
+        });
+        
+        txCustomer.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
 
-        if (itemsDisaring.length === 1 && tx.totalBelanja > 0) {
-            let singleI = itemsDisaring[0];
-            if (singleI.harga > 0 && Math.round(singleI.qty * singleI.harga) !== Math.round(tx.totalBelanja)) {
-                singleI.qty = parseFloat((tx.totalBelanja / singleI.harga).toFixed(1));
+        txCustomer.forEach(tx => {
+            tj += tx.totalBelanja; 
+            td += tx.payment;      
+            
+            let sisaBaris = Math.round(tx.tagihan - tx.payment);
+
+            const itemsDisaring = (tx.items || []).reduce((acc, current) => {
+                const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
+                if (ditemukan) {
+                    let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
+                    ditemukan.qty = parseFloat(totalQty.toFixed(1)); 
+                    ditemukan.ekor = (parseInt(ditemukan.ekor) || 0) + (parseInt(current.ekor) || 0);
+                } else {
+                    acc.push({ ...current });
+                }
+                return acc;
+            }, []);
+
+            if (itemsDisaring.length === 1 && tx.totalBelanja > 0) {
+                let singleI = itemsDisaring[0];
+                if (singleI.harga > 0 && Math.round(singleI.qty * singleI.harga) !== Math.round(tx.totalBelanja)) {
+                    singleI.qty = parseFloat((tx.totalBelanja / singleI.harga).toFixed(1));
+                }
             }
-        }
 
-        let iStr = itemsDisaring.map(i => {
-            if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                return `${i.nama}(${i.ekor}ekor)`;
-            } else {
-                return `${i.nama}(${Number(i.qty).toFixed(1)}kg)`;
-            }
-        }).join(", ");
+            let iStr = itemsDisaring.map(i => {
+                if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
+                    return `${i.nama}(${i.ekor}ekor)`;
+                } else {
+                    return `${i.nama}(${Number(i.qty).toFixed(1)}kg)`;
+                }
+            }).join(", ");
 
-        tbody.innerHTML += `<tr>
-            <td>${formatTampilanTanggal(tx.tanggal)}</td>
-            <td class="text-start">${iStr || "Hanya Pembayaran Bon"}</td>
-            <td>${formatRupiah(tx.totalBelanja)}</td>
-            <td>${formatRupiah(tx.tagihan)}</td>
-            <td>${formatRupiah(tx.payment)}</td>
-            <td class="text-danger fw-bold">${formatRupiah(sisaBaris)}</td>
-            <td><button class="btn btn-sm btn-danger py-0" onclick="tutupDasborDanBukaFaktur('${tx.id}')"><i class="bi bi-receipt"></i></button></td>
-        </tr>`;
-    });
-    
-    // Hitung total saldo piutang akhir dari data yang sudah bersih
-    ts = tj - td; 
+            tbody.innerHTML += `<tr>
+                <td>${formatTampilanTanggal(tx.tanggal)}</td>
+                <td class="text-start">${iStr || "Hanya Pembayaran Bon"}</td>
+                <td>${formatRupiah(tx.totalBelanja)}</td>
+                <td>${formatRupiah(tx.tagihan)}</td>
+                <td>${formatRupiah(tx.payment)}</td>
+                <td class="text-danger fw-bold">${formatRupiah(sisaBaris)}</td>
+                <td><button class="btn btn-sm btn-danger py-0" onclick="tutupDasborDanBukaFaktur('${tx.id}')"><i class="bi bi-receipt"></i></button></td>
+            </tr>`;
+        });
+        
+        ts = tj - td; 
 
-    document.getElementById("cust-modal-jual").innerText = formatRupiah(tj);
-    document.getElementById("cust-modal-terima").innerText = formatRupiah(td);
-    document.getElementById("cust-modal-piutang").innerText = formatRupiah(ts); 
-    
-    new bootstrap.Modal(document.getElementById('customerDashboardModal')).show();
-}
+        document.getElementById("cust-modal-jual").innerText = formatRupiah(tj);
+        document.getElementById("cust-modal-terima").innerText = formatRupiah(td);
+        document.getElementById("cust-modal-piutang").innerText = formatRupiah(ts); 
+        
+        new bootstrap.Modal(document.getElementById('customerDashboardModal')).show();
+    }
+
     function tutupDasborDanBukaFaktur(id) {
         bootstrap.Modal.getInstance(document.getElementById('customerDashboardModal')).hide();
         setTimeout(() => { tampilkanFaktur(id); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
     }
 
-    // --- FITUR UTAMA FIX: PEMBERSIH & SANITY CHECK FAKTUR AGAR 100% SESUAI SUBTOTAL ---
     function tampilkanFaktur(id) {
         const targetTx = dataTransaksi.find(t => t.id === id);
         if(!targetTx) return;
         
-        // Deep clone faktur target agar manipulasi aman terisolasi
         const trans = JSON.parse(JSON.stringify(targetTx));
         const sisa = Math.round(trans.tagihan - trans.payment);
         let tglClean = formatTampilanTanggal(trans.tanggal).replace(/\//g,'-');
         namaFileGlobal = `Faktur_${trans.pelanggan}_${tglClean}`;
         
-        // Mengurangi item ganda secara aman
         const itemsDisaring = (trans.items || []).reduce((acc, current) => {
             const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
             if (ditemukan) {
@@ -920,17 +931,13 @@
             return acc;
         }, []);
 
-        // DYNAMIC CORE REPAIR: Jika total perkalian Qty * Harga tidak sama dengan Subtotal Nota (Akibat Data Sheet Korup)
         if (itemsDisaring.length === 1 && trans.totalBelanja > 0) {
             let i = itemsDisaring[0];
             if (i.harga > 0) {
                 if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
                     i.ekor = Math.round(trans.totalBelanja / i.harga);
                 } else {
-                    // Hitung balik Qty murni berdasarkan nilai uang Belanja riil
                     i.qty = parseFloat((trans.totalBelanja / i.harga).toFixed(1));
-                    
-                    // Normalisasi jumlah ekor agar ABW/bobot rata-rata tidak rusak gila (Estimasi ABW 1.9 kg)
                     if(i.ekor > 50) {
                         i.ekor = Math.round(i.qty / 1.9) || 1;
                     }
@@ -957,7 +964,6 @@
                 }
             }
             
-            // Pengaman final: Jika terjadi selisih pembulatan rupiah kecil, paksa ikut total belanja transaksi
             if(itemsDisaring.length === 1) {
                 totalItem = Math.round(trans.totalBelanja);
             }
@@ -1015,7 +1021,7 @@
             hutangAwal: menguraiAngka(document.getElementById("sub-sisa-tagihan").value),
             tagihan: menguraiAngka(document.getElementById("input-tagihan-total").value),
             payment: pembayaran,
-            items: JSON.parse(JSON.stringify(keranjangSementara)) // Deep clone keranjang saat disave
+            items: JSON.parse(JSON.stringify(keranjangSementara)) 
         };
 
         if(currentId === "") {
@@ -1170,67 +1176,6 @@
     
     inisialisasiFormatRupiahLive();
     muatDataDariSheets();
-// ========================================================
-// SAPU JAGAT: PEMBERSIH OTOMATIS DATA DOUBLE (DASHBOARD & ARUS PIUTANG)
-// ========================================================
-(function() {
-    function bersihkanDataGlobal() {
-        if (typeof dataTransaksi !== 'undefined' && Array.isArray(dataTransaksi) && dataTransaksi.length > 0) {
-            let idUnik = new Set();
-            let dataBersih = [];
-            let adaDuplikat = false;
-
-            dataTransaksi.forEach(tx => {
-                if (tx && tx.id) {
-                    if (!idUnik.has(tx.id)) {
-                        idUnik.add(tx.id);
-                        dataBersih.push(tx);
-                    } else {
-                        adaDuplikat = true;
-                    }
-                } else {
-                    dataBersih.push(tx); // Jaga-jaga jika ada baris kosong/header
-                }
-            });
-
-            if (adaDuplikat) {
-                dataTransaksi = dataBersih;
-                console.log("Sapu Jagat: Berhasil memotong data double di memori utama!");
-                
-                // Pemicu otomatis agar visual dashboard dan tabel arus piutang menggambar ulang data yang bersih
-                if (typeof tampilkanData !== 'function' && typeof renderTransaksi === 'function') renderTransaksi();
-                if (typeof tampilkanData === 'function') tampilkanData();
-                if (typeof updateDashboard === 'function') updateDashboard();
-                if (typeof inisialisasiAplikasi === 'function') inisialisasiAplikasi();
-            }
-        }
-    }
-
-    // Jalankan pembersihan secara berkala untuk memantau jika data baru masuk dari Sheets
-    setInterval(bersihkanDataGlobal, 1500);
-})();
-
-// ========================================================
-// SOLUSI AMAN TOMBOL STUCK (SINKRONISASI CLOUD)
-// ========================================================
-window.addEventListener('DOMContentLoaded', function() {
-    const formUtama = document.querySelector('form') || document.getElementById('form-transaksi'); 
-    if (formUtama) {
-        formUtama.addEventListener('submit', function() {
-            const tombolSimpan = formUtama.querySelector('button[type="submit"]') || document.querySelector('.btn-primary');
-            if (tombolSimpan) {
-                setTimeout(function() {
-                    if (tombolSimpan.disabled) {
-                        tombolSimpan.disabled = false;
-                        tombolSimpan.innerHTML = 'Simpan Transaksi';
-                        const statusCloud = document.querySelector('[id*="cloud"]') || document.querySelector('[class*="cloud"]');
-                        if (statusCloud) statusCloud.style.display = 'none';
-                    }
-                }, 4000);
-            }
-        });
-    }
-});
 </script>
 </body>
 </html>
