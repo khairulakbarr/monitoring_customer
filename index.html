@@ -810,56 +810,76 @@
         });
     }
 
-    function bukaJendelaDasborCustomer(nama) {
-        document.getElementById("cust-modal-title").innerText = "Riwayat Buku: " + nama;
-        const tbody = document.getElementById("cust-modal-table-body");
-        tbody.innerHTML = "";
+   function bukaJendelaDasborCustomer(nama) {
+    document.getElementById("cust-modal-title").innerText = "Riwayat Buku: " + nama;
+    const tbody = document.getElementById("cust-modal-table-body");
+    tbody.innerHTML = ""; // Mengosongkan table agar tidak menumpuk saat dibuka ulang
+    
+    let tj = 0, td = 0, ts = 0;
+    
+    // 1. FILTER DAN CLONE DATA TRANSAKSI KHUSUS CUSTOMER INI AGAR TIDAK MERUSAK DATA UTAMA
+    let txCustomer = JSON.parse(JSON.stringify(dataTransaksi.filter(t => t.pelanggan === nama)));
+    
+    // 2. URUTKAN DARI TANGGAL TERBARU
+    txCustomer.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
+
+    txCustomer.forEach(tx => {
+        tj += tx.totalBelanja; 
+        td += tx.payment;      
         
-        let tj = 0, td = 0, ts = 0;
-        let txCustomer = JSON.parse(JSON.stringify(dataTransaksi.filter(t => t.pelanggan === nama)));
-        txCustomer.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
+        let sisaBaris = Math.round(tx.tagihan - tx.payment);
 
-        txCustomer.forEach(tx => {
-            tj += tx.totalBelanja; 
-            td += tx.payment;      
-            
-            let sisaBaris = Math.round(tx.tagihan - tx.payment);
-
-            // AUTO-REPAIR PADA RIWAYAT JENDELA INDIVIDU
-            if (tx.items.length === 1 && tx.totalBelanja > 0) {
-                let singleI = tx.items[0];
-                if (singleI.harga > 0 && Math.round(singleI.qty * singleI.harga) !== Math.round(tx.totalBelanja)) {
-                    singleI.qty = parseFloat((tx.totalBelanja / singleI.harga).toFixed(1));
-                }
+        // 3. FIX DOUBLE DATA ITEM: Gabungkan item yang sama di dalam satu nota (jika ada)
+        const itemsDisaring = (tx.items || []).reduce((acc, current) => {
+            const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
+            if (ditemukan) {
+                let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
+                ditemukan.qty = parseFloat(totalQty.toFixed(1)); 
+                ditemukan.ekor = (parseInt(ditemukan.ekor) || 0) + (parseInt(current.ekor) || 0);
+            } else {
+                acc.push({ ...current });
             }
+            return acc;
+        }, []);
 
-            let iStr = tx.items.map(i => {
-                if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                    return `${i.nama}(${i.ekor}ekor)`;
-                } else {
-                    return `${i.nama}(${i.qty}kg)`;
-                }
-            }).join(", ");
+        // Auto-repair pelindung untuk bug konversi kuantitas single-item
+        if (itemsDisaring.length === 1 && tx.totalBelanja > 0) {
+            let singleI = itemsDisaring[0];
+            if (singleI.harga > 0 && Math.round(singleI.qty * singleI.harga) !== Math.round(tx.totalBelanja)) {
+                singleI.qty = parseFloat((tx.totalBelanja / singleI.harga).toFixed(1));
+            }
+        }
 
-            tbody.innerHTML += `<tr>
-                <td>${formatTampilanTanggal(tx.tanggal)}</td>
-                <td class="text-start">${iStr || "Hanya Pembayaran Bon"}</td>
-                <td>${formatRupiah(tx.totalBelanja)}</td>
-                <td>${formatRupiah(tx.tagihan)}</td>
-                <td>${formatRupiah(tx.payment)}</td>
-                <td class="text-danger fw-bold">${formatRupiah(sisaBaris)}</td>
-                <td><button class="btn btn-sm btn-danger py-0" onclick="tutupDasborDanBukaFaktur('${tx.id}')"><i class="bi bi-receipt"></i></button></td>
-            </tr>`;
-        });
-        
-        ts = tj - td; 
+        // Teks format tampilan item (kg / ekor)
+        let iStr = itemsDisaring.map(i => {
+            if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
+                return `${i.nama}(${i.ekor}ekor)`;
+            } else {
+                return `${i.nama}(${Number(i.qty).toFixed(1)}kg)`;
+            }
+        }).join(", ");
 
-        document.getElementById("cust-modal-jual").innerText = formatRupiah(tj);
-        document.getElementById("cust-modal-terima").innerText = formatRupiah(td);
-        document.getElementById("cust-modal-piutang").innerText = formatRupiah(ts); 
-        
-        new bootstrap.Modal(document.getElementById('customerDashboardModal')).show();
-    }
+        // Append baris ke tabel dasbor
+        tbody.innerHTML += `<tr>
+            <td>${formatTampilanTanggal(tx.tanggal)}</td>
+            <td class="text-start">${iStr || "Hanya Pembayaran Bon"}</td>
+            <td>${formatRupiah(tx.totalBelanja)}</td>
+            <td>${formatRupiah(tx.tagihan)}</td>
+            <td>${formatRupiah(tx.payment)}</td>
+            <td class="text-danger fw-bold">${formatRupiah(sisaBaris)}</td>
+            <td><button class="btn btn-sm btn-danger py-0" onclick="tutupDasborDanBukaFaktur('${tx.id}')"><i class="bi bi-receipt"></i></button></td>
+        </tr>`;
+    });
+    
+    // Perhitungan saldo piutang aktif yang bersih
+    ts = tj - td; 
+
+    document.getElementById("cust-modal-jual").innerText = formatRupiah(tj);
+    document.getElementById("cust-modal-terima").innerText = formatRupiah(td);
+    document.getElementById("cust-modal-piutang").innerText = formatRupiah(ts); 
+    
+    new bootstrap.Modal(document.getElementById('customerDashboardModal')).show();
+}
 
     function tutupDasborDanBukaFaktur(id) {
         bootstrap.Modal.getInstance(document.getElementById('customerDashboardModal')).hide();
