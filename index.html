@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+;<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -1170,24 +1170,59 @@
     
     inisialisasiFormatRupiahLive();
     muatDataDariSheets();
-// ==========================================
-// SOLUSI AMAN TOMBOL STUCK (TANPA GANGGU TABEL)
-// ==========================================
+// ========================================================
+// SAPU JAGAT: PEMBERSIH OTOMATIS DATA DOUBLE (DASHBOARD & ARUS PIUTANG)
+// ========================================================
+(function() {
+    function bersihkanDataGlobal() {
+        if (typeof dataTransaksi !== 'undefined' && Array.isArray(dataTransaksi) && dataTransaksi.length > 0) {
+            let idUnik = new Set();
+            let dataBersih = [];
+            let adaDuplikat = false;
+
+            dataTransaksi.forEach(tx => {
+                if (tx && tx.id) {
+                    if (!idUnik.has(tx.id)) {
+                        idUnik.add(tx.id);
+                        dataBersih.push(tx);
+                    } else {
+                        adaDuplikat = true;
+                    }
+                } else {
+                    dataBersih.push(tx); // Jaga-jaga jika ada baris kosong/header
+                }
+            });
+
+            if (adaDuplikat) {
+                dataTransaksi = dataBersih;
+                console.log("Sapu Jagat: Berhasil memotong data double di memori utama!");
+                
+                // Pemicu otomatis agar visual dashboard dan tabel arus piutang menggambar ulang data yang bersih
+                if (typeof tampilkanData !== 'function' && typeof renderTransaksi === 'function') renderTransaksi();
+                if (typeof tampilkanData === 'function') tampilkanData();
+                if (typeof updateDashboard === 'function') updateDashboard();
+                if (typeof inisialisasiAplikasi === 'function') inisialisasiAplikasi();
+            }
+        }
+    }
+
+    // Jalankan pembersihan secara berkala untuk memantau jika data baru masuk dari Sheets
+    setInterval(bersihkanDataGlobal, 1500);
+})();
+
+// ========================================================
+// SOLUSI AMAN TOMBOL STUCK (SINKRONISASI CLOUD)
+// ========================================================
 window.addEventListener('DOMContentLoaded', function() {
     const formUtama = document.querySelector('form') || document.getElementById('form-transaksi'); 
-    
     if (formUtama) {
         formUtama.addEventListener('submit', function() {
             const tombolSimpan = formUtama.querySelector('button[type="submit"]') || document.querySelector('.btn-primary');
-            
             if (tombolSimpan) {
-                // Beri batas waktu maksimal 4 detik untuk loading status
                 setTimeout(function() {
                     if (tombolSimpan.disabled) {
                         tombolSimpan.disabled = false;
                         tombolSimpan.innerHTML = 'Simpan Transaksi';
-                        
-                        // Sembunyikan status loading cloud jika ada
                         const statusCloud = document.querySelector('[id*="cloud"]') || document.querySelector('[class*="cloud"]');
                         if (statusCloud) statusCloud.style.display = 'none';
                     }
