@@ -810,26 +810,40 @@
         });
     }
 
-   function bukaJendelaDasborCustomer(nama) {
+ function bukaJendelaDasborCustomer(nama) {
     document.getElementById("cust-modal-title").innerText = "Riwayat Buku: " + nama;
     const tbody = document.getElementById("cust-modal-table-body");
-    tbody.innerHTML = ""; // Mengosongkan table agar tidak menumpuk saat dibuka ulang
+    tbody.innerHTML = ""; // Bersihkan tabel modal
     
     let tj = 0, td = 0, ts = 0;
     
-    // 1. FILTER DAN CLONE DATA TRANSAKSI KHUSUS CUSTOMER INI AGAR TIDAK MERUSAK DATA UTAMA
-    let txCustomer = JSON.parse(JSON.stringify(dataTransaksi.filter(t => t.pelanggan === nama)));
+    // 1. FILTER TRANSAKSI KHUSUS CUSTOMER INI
+    let txCustomerAll = dataTransaksi.filter(t => t.pelanggan === nama);
     
-    // 2. URUTKAN DARI TANGGAL TERBARU
+    // 2. PROSES PEMBERSIHAN DATA DOUBLE (HANYA AMBIL ID YANG UNIK)
+    let idTercatat = new Set();
+    let txCustomer = [];
+    
+    txCustomerAll.forEach(tx => {
+        // Jika ID transaksi belum pernah dimasukkan, masukkan ke array
+        // Jika ID sudah ada, dia akan dilewati (dibuang otomatis dari tampilan)
+        if (!idTercatat.has(tx.id)) {
+            idTercatat.add(tx.id);
+            txCustomer.push(JSON.parse(JSON.stringify(tx)));
+        }
+    });
+    
+    // 3. URUTKAN BERDASARKAN TANGGAL TERBARU
     txCustomer.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
 
+    // 4. RENDER DATA YANG SUDAH BERSIH KE TABEL
     txCustomer.forEach(tx => {
         tj += tx.totalBelanja; 
         td += tx.payment;      
         
         let sisaBaris = Math.round(tx.tagihan - tx.payment);
 
-        // 3. FIX DOUBLE DATA ITEM: Gabungkan item yang sama di dalam satu nota (jika ada)
+        // Gabungkan item yang sama di dalam satu nota (jika ada)
         const itemsDisaring = (tx.items || []).reduce((acc, current) => {
             const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
             if (ditemukan) {
@@ -842,7 +856,6 @@
             return acc;
         }, []);
 
-        // Auto-repair pelindung untuk bug konversi kuantitas single-item
         if (itemsDisaring.length === 1 && tx.totalBelanja > 0) {
             let singleI = itemsDisaring[0];
             if (singleI.harga > 0 && Math.round(singleI.qty * singleI.harga) !== Math.round(tx.totalBelanja)) {
@@ -850,7 +863,6 @@
             }
         }
 
-        // Teks format tampilan item (kg / ekor)
         let iStr = itemsDisaring.map(i => {
             if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
                 return `${i.nama}(${i.ekor}ekor)`;
@@ -859,7 +871,6 @@
             }
         }).join(", ");
 
-        // Append baris ke tabel dasbor
         tbody.innerHTML += `<tr>
             <td>${formatTampilanTanggal(tx.tanggal)}</td>
             <td class="text-start">${iStr || "Hanya Pembayaran Bon"}</td>
@@ -871,7 +882,7 @@
         </tr>`;
     });
     
-    // Perhitungan saldo piutang aktif yang bersih
+    // Hitung total saldo piutang akhir dari data yang sudah bersih
     ts = tj - td; 
 
     document.getElementById("cust-modal-jual").innerText = formatRupiah(tj);
@@ -880,7 +891,6 @@
     
     new bootstrap.Modal(document.getElementById('customerDashboardModal')).show();
 }
-
     function tutupDasborDanBukaFaktur(id) {
         bootstrap.Modal.getInstance(document.getElementById('customerDashboardModal')).hide();
         setTimeout(() => { tampilkanFaktur(id); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
