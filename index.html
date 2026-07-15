@@ -160,18 +160,73 @@
             .invoice-total-badge { display: flex; justify-content: flex-end; }
             .invoice-total-container { width: 100% !important; }
         }
+
+        /* TAMPILAN PEMBATAS LOGIN (LOCKSCREEN) */
+        #login-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(248, 249, 250, 0.98);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-box {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .pin-input {
+            letter-spacing: 12px;
+            font-size: 24px;
+            text-align: center;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-<div class="container py-4">
+
+<!-- OVERLAY LOGIN KEAMANAN -->
+<div id="login-overlay">
+    <div class="login-box">
+        <div class="mb-4">
+            <div class="d-inline-flex p-3 rounded-circle bg-primary bg-opacity-10 text-primary mb-3">
+                <i class="bi bi-shield-lock-fill fs-1"></i>
+            </div>
+            <h4 class="fw-bold text-dark">Sistem Pengunci Cloud</h4>
+            <p class="text-muted small">Masukkan PIN Keamanan untuk sinkronisasi database</p>
+        </div>
+        <form id="login-form" onsubmit="prosesLogin(event)">
+            <div class="mb-3">
+                <input type="password" id="input-pin" class="form-control form-control-lg pin-input rounded-3" maxlength="6" placeholder="******" required autocomplete="off">
+            </div>
+            <button type="submit" class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow-sm">
+                <i class="bi bi-unlock-fill me-1"></i> Buka Akses Sistem
+            </button>
+            <div id="login-alert" class="mt-3 text-danger small fw-bold d-none"></div>
+        </form>
+    </div>
+</div>
+
+<!-- CONTAINER UTAMA APLIKASI -->
+<div id="main-content-app" class="container py-4 d-none">
     <!-- SYNC STATUS BAR -->
     <div class="d-flex justify-content-between align-items-center mb-4 px-3 py-2 bg-white rounded-3 border shadow-sm">
         <div id="sync-status" class="small fw-bold text-muted">
             <i class="bi bi-cloud-arrow-down-fill text-primary"></i> Menghubungkan ke Google Sheets...
         </div>
-        <button class="btn btn-sm btn-outline-primary fw-bold" onclick="muatDataDariSheets()">
-            <i class="bi bi-arrow-clockwise"></i> Tarik Data Terbaru
-        </button>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-primary fw-bold" onclick="muatDataDariSheets()">
+                <i class="bi bi-arrow-clockwise"></i> Tarik Data Terbaru
+            </button>
+            <button class="btn btn-sm btn-outline-danger fw-bold" onclick="logoutSistem()">
+                <i class="bi bi-box-arrow-right"></i> Keluar
+            </button>
+        </div>
     </div>
 
     <!-- HEADER -->
@@ -458,10 +513,56 @@
     let currentFilter = "Semua";
     let chartInstance = null;
     let namaFileGlobal = "Faktur";
+    
+    // Variabel memori PIN
+    let pinSistem = "";
 
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka); }
     function menguraiAngka(str) { if(!str) return 0; return parseInt(str.toString().replace(/\D/g, '')) || 0; }
     
+    // ================= SINKRONISASI LOGIN PIN DAN MEMORI LOCALSTORAGE =================
+    
+    function cekSessionLogin() {
+        const storedPin = localStorage.getItem("pin_keamanan_piutang");
+        if(storedPin) {
+            pinSistem = storedPin;
+            sembunyikanLoginDanMulai();
+        }
+    }
+
+    function prosesLogin(e) {
+        e.preventDefault();
+        const pinInput = document.getElementById("input-pin").value;
+        const alertBox = document.getElementById("login-alert");
+        
+        if(pinInput.length < 4) {
+            alertBox.innerText = "PIN harus diisi minimal 4-6 digit angka!";
+            alertBox.classList.remove("d-none");
+            return;
+        }
+
+        pinSistem = pinInput;
+        // Simpan ke local storage agar user tidak ter-logout sendiri saat reload
+        localStorage.setItem("pin_keamanan_piutang", pinSistem);
+        sembunyikanLoginDanMulai();
+    }
+
+    function sembunyikanLoginDanMulai() {
+        document.getElementById("login-overlay").classList.add("d-none");
+        document.getElementById("main-content-app").classList.remove("d-none");
+        // Setelah login berhasil, langsung muat data dari cloud
+        muatDataDariSheets();
+    }
+
+    function logoutSistem() {
+        localStorage.removeItem("pin_keamanan_piutang");
+        pinSistem = "";
+        document.getElementById("input-pin").value = "";
+        document.getElementById("login-alert").classList.add("d-none");
+        document.getElementById("main-content-app").classList.add("d-none");
+        document.getElementById("login-overlay").classList.remove("d-none");
+    }
+
     function inisialisasiFormatRupiahLive() {
         document.querySelectorAll('.input-rupiah-direct').forEach(input => {
             input.addEventListener('input', function(e) {
@@ -516,7 +617,7 @@
     function convertDateToDisplay(dateStr) { if(dateStr.includes("/")) return dateStr; const d = dateStr.split("-"); return `${d[2]}/${d[1]}/${d[0]}`; }
     function convertDateToInput(dateStr) { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
 
-    // MENJAGA AGAR SELLER MENDAPATKAN KESELURUHAN DATA BERSIH (ANTI-DUPLIKASI OBJEK)
+    // MENJAGA AGAR SELLER MENDAPATKAN KESELURUHAN DATA BERSIH DENGAN PIN AKSES
     async function muatDataDariSheets() {
         showSyncStatus("loading", "Menarik data terbaru dari Google Sheets...");
         if(GOOGLE_SCRIPT_URL === "") {
@@ -526,7 +627,7 @@
         try {
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: "POST",
-                body: JSON.stringify({ action: "getData" })
+                body: JSON.stringify({ action: "getData", pin: pinSistem })
             });
             const res = await response.json();
             if(res.status === "success") {
@@ -539,6 +640,10 @@
                 showSyncStatus("success", "Sistem Sinkron Online (Google Sheets)");
             } else {
                 showSyncStatus("error", "Gagal load data: " + res.message);
+                if(res.message && res.message.toLowerCase().includes("pin")) {
+                    logoutSistem();
+                    alert("Akses ditolak! PIN Keamanan salah atau kedaluwarsa.");
+                }
             }
         } catch(e) {
             showSyncStatus("error", "Gagal koneksi cloud internet.");
@@ -550,13 +655,17 @@
         try {
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: "POST",
-                body: JSON.stringify({ action: "saveAll", customers: masterCustomer, transaksis: dataTransaksi })
+                body: JSON.stringify({ action: "saveAll", pin: pinSistem, customers: masterCustomer, transaksis: dataTransaksi })
             });
             const res = await response.json();
             if(res.status === "success") {
                 showSyncStatus("success", "Semua Data Tersimpan Aman di Google Sheets!");
             } else {
                 showSyncStatus("error", "Gagal kirim: " + res.message);
+                if(res.message && res.message.toLowerCase().includes("pin")) {
+                    logoutSistem();
+                    alert("Akses ditolak! PIN salah saat mencoba menyimpan data.");
+                }
             }
         } catch(e) {
             showSyncStatus("error", "Koneksi terputus, antrean tersimpan di lokal.");
@@ -1174,8 +1283,9 @@
     document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
     document.getElementById("current-date").innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
+    // Inisialisasi awal sistem
     inisialisasiFormatRupiahLive();
-    muatDataDariSheets();
+    cekSessionLogin(); // Jalankan pengecekan session login otomatis
 </script>
 </body>
 </html>
