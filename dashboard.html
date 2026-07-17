@@ -76,7 +76,7 @@
 
     <!-- MAIN KPI CARDS Row 1 -->
     <div class="row g-3 mb-3">
-        <!-- Omset Hari Ini (Pecah Dua) -->
+        <!-- Omset Hari Ini -->
         <div class="col-md-6">
             <div class="premium-card">
                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -128,8 +128,8 @@
     </div>
 
     <!-- MAIN KPI CARDS Row 2 -->
-    <div class="row g-3 mb-4">
-        <!-- Pengeluaran Harian Toko (Menu Baru) -->
+    <div class="row g-3 mb-3">
+        <!-- Pengeluaran Harian Toko -->
         <div class="col-md-6">
             <div class="premium-card d-flex flex-column justify-content-between">
                 <div class="d-flex justify-content-between align-items-center">
@@ -160,6 +160,37 @@
                 </div>
                 <div class="kpi-icon bg-danger bg-opacity-10 text-danger">
                     <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN KPI CARDS Row 3 (MENU BARU: PROFIT & TAKE HOME) -->
+    <div class="row g-3 mb-4">
+        <!-- Profit Harian -->
+        <div class="col-md-6">
+            <div class="premium-card d-flex align-items-center justify-content-between" style="border-left: 5px solid #0d6efd;">
+                <div>
+                    <span class="small text-muted fw-bold d-block">PROFIT HARIAN (OMSET - OPERASIONAL)</span>
+                    <h3 class="fw-bold text-primary mt-1 mb-0" id="kpi-profit-hari-ini">Rp 0</h3>
+                    <span class="text-muted small" style="font-size: 11px;">Total Omset dikurangi Pengeluaran</span>
+                </div>
+                <div class="kpi-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-graph-up text-primary"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Take Home Cash -->
+        <div class="col-md-6">
+            <div class="premium-card d-flex align-items-center justify-content-between" style="border-left: 5px solid #20c997;">
+                <div>
+                    <span class="small text-muted fw-bold d-block">TAKE HOME CASH (UANG FISIK MASUK KAS)</span>
+                    <h3 class="fw-bold text-info mt-1 mb-0" id="kpi-takehome-hari-ini" style="color: #0aa2c0 !important;">Rp 0</h3>
+                    <span class="text-muted small" style="font-size: 11px;">(Cash Lunas + Setoran Piutang) - Pengeluaran</span>
+                </div>
+                <div class="kpi-icon bg-info bg-opacity-10 text-info" style="color: #0aa2c0 !important;">
+                    <i class="bi bi-safe2"></i>
                 </div>
             </div>
         </div>
@@ -386,8 +417,12 @@
         // Hitung Total Pengeluaran
         let totalBiayaPengeluaran = listPengeluaranHarian.reduce((acc, curr) => acc + curr.biaya, 0);
 
-        // Render Angka Utama ke DOM
+        // LOGIKA BARU KELOLA LABA/RUGI & ARUS KAS MASUK
         let totalOmsetHariIni = manualOmsetCash + manualOmsetBon;
+        let profitHariIni = totalOmsetHariIni - totalBiayaPengeluaran;
+        let takeHomeHariIni = (manualOmsetCash + manualSetoranMurni) - totalBiayaPengeluaran;
+
+        // Render Angka Utama ke DOM
         document.getElementById("kpi-omset-hari-ini").innerText = formatRupiah(totalOmsetHariIni);
         document.getElementById("sub-omset-cash").innerText = formatRupiah(manualOmsetCash);
         document.getElementById("sub-omset-bon").innerText = formatRupiah(manualOmsetBon);
@@ -397,6 +432,10 @@
         document.getElementById("kpi-pengeluaran-hari-ini").innerText = formatRupiah(totalBiayaPengeluaran);
         document.getElementById("count-pengeluaran").innerText = `${listPengeluaranHarian.length} Item Pengeluaran`;
         document.getElementById("kpi-piutang-global").innerText = formatRupiah(totalPiutangGlobal);
+
+        // Render Nilai Komponen Baru ke DOM
+        document.getElementById("kpi-profit-hari-ini").innerText = formatRupiah(profitHariIni);
+        document.getElementById("kpi-takehome-hari-ini").innerText = formatRupiah(takeHomeHariIni);
 
         // Render List Tanggungan Terbesar (Otomatis)
         const debtorsContainer = document.getElementById("top-debtors-list");
