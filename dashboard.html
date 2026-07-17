@@ -438,7 +438,7 @@
         renderTrendChartEngine();
     }
 
-    function renderTabelRiwayatHarian(manualOmset, manualSetoran) {
+   function renderTabelRiwayatHarian(manualOmset, manualSetoran) {
         let labelDates = [];
         for(let i=6; i>=0; i--) {
             const d = new Date(); d.setDate(d.getDate() - i);
@@ -452,41 +452,53 @@
         const tbody = document.getElementById("riwayat-dashboard-body");
         tbody.innerHTML = "";
 
+        // Balik urutan agar tanggal terbaru (Hari Ini) berada di paling atas tabel
         labelDates.reverse().forEach(tgl => {
-            let omsetTgl = 0;
-            let kasTgl = 0;
+            let cashTgl = 0;
+            let bonTgl = 0;
+            let setoranTgl = 0;
+            let pengeluaranTgl = 0;
+            let profitTgl = 0;
+            let takeHomeTgl = 0;
 
             if(tgl === tglHariIni) {
-                omsetTgl = manualOmset;
-                kasTgl = manualSetoran;
+                // Tarik langsung dari state input manual hari ini yang sedang aktif
+                cashTgl = manualOmsetCash;
+                bonTgl = manualOmsetBon;
+                setoranTgl = manualSetoranMurni;
+                pengeluaranTgl = listPengeluaranHarian.reduce((acc, curr) => acc + curr.biaya, 0);
+                
+                profitTgl = (cashTgl + bonTgl) - pengeluaranTgl;
+                takeHomeTgl = (cashTgl + setoranTgl) - pengeluaranTgl;
             } else {
+                // Tarik data akumulasi otomatis dari data riwayat Cloud untuk hari-hari sebelumnya
                 dataTransaksi.forEach(tx => {
                     if(tx.tanggal === tgl) {
-                        omsetTgl += tx.totalBelanja;
-                        kasTgl += tx.payment;
+                        // Logika pembagian cash vs bon dari historical data cloud
+                        cashTgl += tx.payment; 
+                        let sisaBon = tx.totalBelanja - tx.payment;
+                        if(sisaBon > 0) {
+                            bonTgl += sisaBon;
+                        }
+                        // Catatan: Data pengeluaran historis hari lalu diasumsikan 0 jika cloud tidak menyimpannya
                     }
                 });
-            }
-
-            let selisihPiutang = omsetTgl - kasTgl;
-            let statusBadge = `<span class="badge bg-success rounded-pill">Surplus Kas</span>`;
-            if(selisihPiutang > 0) {
-                statusBadge = `<span class="badge bg-warning text-dark rounded-pill">+ Piutang</span>`;
-            } else if (omsetTgl === 0 && kasTgl === 0) {
-                statusBadge = `<span class="badge bg-secondary rounded-pill">Kosong</span>`;
+                profitTgl = (cashTgl + bonTgl) - pengeluaranTgl;
+                takeHomeTgl = (cashTgl + setoranTgl) - pengeluaranTgl;
             }
 
             tbody.innerHTML += `
                 <tr>
                     <td class="fw-semibold text-dark">${tgl === tglHariIni ? tgl + ' (Hari Ini)' : tgl}</td>
-                    <td>${formatRupiah(omsetTgl)}</td>
-                    <td>${formatRupiah(kasTgl)}</td>
-                    <td class="${selisihPiutang > 0 ? 'text-danger fw-bold' : 'text-success'}">${selisihPiutang > 0 ? formatRupiah(selisihPiutang) : 'Rp 0'}</td>
-                    <td>${statusBadge}</td>
+                    <td class="text-success">${formatRupiah(cashTgl)}</td>
+                    <td class="text-danger">${formatRupiah(bonTgl)}</td>
+                    <td class="text-primary">${formatRupiah(setoranTgl)}</td>
+                    <td class="text-warning" style="color: #b58105 !important;">${formatRupiah(pengeluaranTgl)}</td>
+                    <td class="fw-bold text-primary">${formatRupiah(profitTgl)}</td>
+                    <td class="fw-bold text-info" style="color: #0aa2c0 !important;">${formatRupiah(takeHomeTgl)}</td>
                 </tr>`;
         });
     }
-
     function renderTrendChartEngine() {
         let labelDates = [];
         for(let i=6; i>=0; i--) {
