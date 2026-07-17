@@ -664,7 +664,7 @@
                 showSyncStatus("error", "Gagal kirim: " + res.message);
                 if(res.message && res.message.toLowerCase().includes("pin")) {
                     logoutSistem();
-                    alert("Akses ditolak! PIN salah saat mencoba menyimpan data.");
+                    alert("Akses ditolak! PIN salah saat menyimpan data.");
                 }
             }
         } catch(e) {
@@ -1107,7 +1107,8 @@
         });
     });
 
-    document.getElementById("receivable-form").addEventListener("submit", async function(e) {
+    // ================= LOGIKA SUBMIT TERBARU (SAT SET OPTIMISTIC UPDATE) =================
+    document.getElementById("receivable-form").addEventListener("submit", function(e) {
         e.preventDefault();
         const btnSubmit = document.getElementById("btn-submit-transaksi");
         if (btnSubmit.disabled) return;
@@ -1118,9 +1119,6 @@
             return;
         }
 
-        btnSubmit.disabled = true;
-        btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...`;
-        
         const currentId = document.getElementById("edit-transaksi-id").value;
         const payload = {
             id: currentId === "" ? "TX_" + new Date().getTime() : currentId,
@@ -1133,6 +1131,7 @@
             items: JSON.parse(JSON.stringify(keranjangSementara)) 
         };
 
+        // 1. Simpan instan ke memori lokal
         if(currentId === "") {
             dataTransaksi.push(payload);
         } else {
@@ -1141,6 +1140,7 @@
             batalEditTransaksi();
         }
         
+        // 2. Kosongkan formulir seketika
         keranjangSementara = [];
         renderKeranjang();
         
@@ -1152,17 +1152,20 @@
         document.getElementById("input-pelunasan").value = "Rp 0";
         document.getElementById("display-sisa-bon-akhir").innerText = "Rp 0";
         
+        // 3. Render ulang layar detik itu juga biar data langsung kelihatan masuk
         renderDashboard();
         updateSisaTagihanOtomatis(); 
         
-        try {
-            await pushDataKeSheets();
-        } catch(err) {
-            console.error(err);
-        } finally {
-            btnSubmit.disabled = false;
-            btnSubmit.innerHTML = "Simpan Catatan & Sinkron Cloud";
-        }
+        // 4. Jalankan sinkronisasi awan di background (TIDAK MEMATIKAN TOMBOL UTAMA)
+        showSyncStatus("loading", "Mensinkronkan data ke Cloud...");
+        pushDataKeSheets()
+            .then(() => {
+                // Berhasil sinkron status bar otomatis diset sukses oleh pushDataKeSheets()
+            })
+            .catch(err => {
+                console.error("Gagal sinkron di background:", err);
+                showSyncStatus("error", "Koneksi terganggu. Data tersimpan aman di lokal.");
+            });
     });
 
     function pilihEditTransaksi(id) {
