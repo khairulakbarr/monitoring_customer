@@ -331,7 +331,7 @@
 
 <!-- POPUPS/MODALS -->
 
-<!-- 1. Jendela Dasbor Supplier (VERSI FIX - DIRECT SINKRON DENGAN BUKU RINCIAN) -->
+<!-- 1. Jendela Dasbor Supplier -->
 <div class="modal fade" id="supplierDashboardModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content" style="border-radius: 16px;">
@@ -343,7 +343,7 @@
                     <div class="col-4"><div class="p-3 bg-white rounded shadow-sm border-start border-danger border-4"><span class="small text-muted d-block fw-bold">SISA UTANG KITA</span><h4 class="fw-bold text-danger mt-1 mb-0" id="supp-modal-utang">Rp 0</h4></div></div>
                 </div>
                 <div class="bg-white p-3 rounded shadow-sm">
-                    <div class="table-responsive"><table class="table table-bordered table-sm align-middle text-center" style="font-size:13px;"><thead class="table-dark"><tr><th>Tanggal</th><th>Rincian Item</th><th>Nilai Kulakan</th><th>Total Utang</th><th>Kita Bayar</th><th>Sisa Utang</th><th>Nota</th></tr></thead><tbody id="supp-modal-table-body"></tbody></table></div>
+                    <div class="table-responsive"><table class="table table-bordered table-sm align-middle text-center" style="font-size:13px;"><thead class="table-dark"><tr><th>Tanggal</th><th>Rincian Item</th><th>Nilai Kulakan</th><th>Total Utang</th><th>Kita Bayar</th><th>Sisa Utang</th></tr></thead><tbody id="supp-modal-table-body"></tbody></table></div>
                 </div>
             </div>
         </div>
@@ -635,17 +635,14 @@
         }
 
         let txSupplier = dataTransaksi.filter(t => t.pelanggan === supplierTerpilih);
-        let totalBelanja = 0;
-        let totalBayar = 0;
-
-        txSupplier.forEach(tx => {
-            totalBelanja += tx.totalBelanja;
-            totalBayar += tx.payment;
-        });
-
-        let sisaUtangTerakhir = totalBelanja - totalBayar;
-        document.getElementById("sub-sisa-utang").value = formatRupiahRaw(sisaUtangTerakhir > 0 ? Math.round(sisaUtangTerakhir) : 0);
         
+        let sisaUtangTerakhir = 0;
+        if (txSupplier.length > 0) {
+            txSupplier.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
+            sisaUtangTerakhir = Math.round(txSupplier[0].tagihan - txSupplier[0].payment);
+        }
+
+        document.getElementById("sub-sisa-utang").value = formatRupiahRaw(sisaUtangTerakhir > 0 ? Math.round(sisaUtangTerakhir) : 0);
         hitungUlangUtangForm();
     }
 
@@ -792,6 +789,7 @@
         document.getElementById("hasil-sisa-bon-modal").innerText = formatRupiahRaw(sisaBonMendatangModal);
     }
 
+    // --- FIX 1: MENU UTAMA BADGE CARD SINKRON NOTA TERAKHIR ---
     function renderSupplierGridMenu() {
         const container = document.getElementById("supplier-grid-container");
         container.innerHTML = "";
@@ -799,22 +797,22 @@
         if(currentFilter !== "Semua") filterList = filterList.filter(s => s.kategori === currentFilter);
         
         filterList.forEach(s => {
-            const txSupplier = dataTransaksi.filter(t => t.pelanggan === s.nama);
-            let totalBelanjaSupp = 0;
-            let totalDibayarSupp = 0;
+            let txSupplier = dataTransaksi.filter(t => t.pelanggan === s.nama);
+            let sisaUtangAktif = 0;
             
-            txSupplier.forEach(tx => {
-                totalBelanjaSupp += tx.totalBelanja;
-                totalDibayarSupp += tx.payment;
-            });
-            
-            let sisaUtangAktif = totalBelanjaSupp - totalDibayarSupp;
+            // Urutkan untuk mengambil nota paling baru di index 0
+            if (txSupplier.length > 0) {
+                txSupplier.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
+                sisaUtangAktif = Math.round(txSupplier[0].tagihan - txSupplier[0].payment);
+            }
             
             container.innerHTML += `
                 <div class="col-md-3 col-6">
                     <div class="p-2 supplier-badge-card text-center" onclick="bukaJendelaDasborSupplier('${s.nama}')">
                         <div class="fw-bold text-truncate" style="font-size:13px;">${s.nama}</div>
-                        <div style="font-size:11px;" class="${sisaUtangAktif > 0 ? 'text-danger fw-bold' : 'text-muted'}">${sisaUtangAktif > 0 ? formatRupiah(sisaUtangAktif) : 'Lunas'}</div>
+                        <div style="font-size:11px;" class="${sisaUtangAktif > 0 ? 'text-danger fw-bold' : 'text-muted'}">
+                            ${sisaUtangAktif > 0 ? formatRupiah(sisaUtangAktif) : 'Lunas'}
+                        </div>
                     </div>
                 </div>`;
         });
@@ -835,6 +833,7 @@
         renderDashboard();
     }
 
+    // --- FIX 2: BUKU UTAMA & KPI CARD SINKRON DATA NOTA TERAKHIR ---
     function renderDashboard() {
         const tbody = document.getElementById("table-body");
         tbody.innerHTML = "";
@@ -874,16 +873,17 @@
             }
         });
 
-        let globalBelanja = 0;
-        let globalDibayar = 0;
-        dataTransaksi.forEach(t => {
-            const meta = masterSupplier.find(s => s.nama === t.pelanggan) || {kategori: "Supplier Utama"};
+        // Hitung total sisa utang aktif global berdasarkan nota paling terakhir setiap supplier
+        masterSupplier.forEach(s => {
+            const meta = masterSupplier.find(sm => sm.nama === s.nama) || {kategori: "Supplier Utama"};
             if(currentFilter === "Semua" || currentFilter === meta.kategori) {
-                globalBelanja += t.totalBelanja;
-                globalDibayar += t.payment;
+                let txSupplier = dataTransaksi.filter(t => t.pelanggan === s.nama);
+                if (txSupplier.length > 0) {
+                    txSupplier.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
+                    ku += Math.round(txSupplier[0].tagihan - txSupplier[0].payment);
+                }
             }
         });
-        ku = globalBelanja - globalDibayar;
 
         document.getElementById("kpi-total-pembelian").innerText = formatRupiah(Math.round(kb));
         document.getElementById("kpi-total-dibayar").innerText = formatRupiah(Math.round(kd));
@@ -912,7 +912,7 @@
         });
     }
 
-    // --- FUNGSI FIX: SINKRON 100% SESUAI BUKU RINCIAN UTANG UTAMA ---
+    // --- FIX 3: RIWAYAT MODAL SUPPLIER DIAMBIL DARI DATA NOTA MATANG ---
     function bukaJendelaDasborSupplier(nama) {
         document.getElementById("supp-modal-title").innerText = "Riwayat Akun Supplier: " + nama;
         const tbody = document.getElementById("supp-modal-table-body");
@@ -921,14 +921,13 @@
         let tk = 0, td = 0, tu = 0;
         let txSupplier = dataTransaksi.filter(t => t.pelanggan === nama);
         
-        // Urutkan data berdasarkan tanggal terbaru di atas agar klop secara visual
+        // Urutkan data berdasarkan tanggal terbaru di atas
         txSupplier.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
 
         txSupplier.forEach(tx => {
             tk += tx.totalBelanja;
             td += tx.payment;
             
-            // Mengambil langsung nilai riil kalkulasi dari properti data transaksi bawaan
             let sisaBaris = Math.round(tx.tagihan - tx.payment);
             let iStr = tx.items.map(i => i.nama + (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet" ? ` (${i.ekor}ekor)` : ` (${i.qty}kg)`)).join(", ");
 
@@ -939,11 +938,10 @@
                 <td>${formatRupiah(tx.tagihan)}</td>
                 <td>${formatRupiah(tx.payment)}</td>
                 <td class="text-danger fw-bold">${formatRupiah(sisaBaris)}</td>
-                <td><button class="btn btn-sm btn-danger py-0" onclick="tutupDasborDanBukaFaktur(${dataTransaksi.indexOf(tx)})"><i class="bi bi-receipt"></i></button></td>
             </tr>`;
         });
         
-        // Total sisa utang di atas modal diambil langsung dari nota berjalan paling baru (index 0)
+        // Sisa utang di atas modal diambil dari nota berjalan paling baru (index 0)
         if (txSupplier.length > 0) {
             tu = Math.round(txSupplier[0].tagihan - txSupplier[0].payment);
         } else {
@@ -955,11 +953,6 @@
         document.getElementById("supp-modal-utang").innerText = formatRupiah(tu); 
         
         new bootstrap.Modal(document.getElementById('supplierDashboardModal')).show();
-    }
-
-    function tutupDasborDanBukaFaktur(idx) {
-        bootstrap.Modal.getInstance(document.getElementById('supplierDashboardModal')).hide();
-        setTimeout(() => { tampilkanFaktur(idx); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
     }
 
     function tampilkanFaktur(idx) {
