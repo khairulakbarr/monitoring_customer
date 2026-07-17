@@ -331,7 +331,7 @@
 
 <!-- POPUPS/MODALS -->
 
-<!-- 1. Jendela Dasbor Supplier (MODAL DENGAN SALDO BERJALAN YANG SUDAH DIPERBAIKI) -->
+<!-- 1. Jendela Dasbor Supplier (VERSI FIX - DIRECT SINKRON DENGAN BUKU RINCIAN) -->
 <div class="modal fade" id="supplierDashboardModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content" style="border-radius: 16px;">
@@ -912,7 +912,7 @@
         });
     }
 
-    // --- FUNGSI REVISI DENGAN PERHITUNGAN SALDO AKUMULASI YANG SUDAH SINKRON ---
+    // --- FUNGSI FIX: SINKRON 100% SESUAI BUKU RINCIAN UTANG UTAMA ---
     function bukaJendelaDasborSupplier(nama) {
         document.getElementById("supp-modal-title").innerText = "Riwayat Akun Supplier: " + nama;
         const tbody = document.getElementById("supp-modal-table-body");
@@ -921,29 +921,15 @@
         let tk = 0, td = 0, tu = 0;
         let txSupplier = dataTransaksi.filter(t => t.pelanggan === nama);
         
-        // 1. Urutkan dari transaksi PALIING TUA untuk menghitung kalkulasi saldo berjalan
-        txSupplier.sort((a, b) => parseTanggal(a.tanggal) - parseTanggal(b.tanggal));
+        // Urutkan data berdasarkan tanggal terbaru di atas agar klop secara visual
+        txSupplier.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
 
-        // 2. Kalkulasi running balance di memori
-        let akumulasiUtangBerjalan = 0;
-        let dataRiwayatMatang = txSupplier.map(tx => {
+        txSupplier.forEach(tx => {
             tk += tx.totalBelanja;
             td += tx.payment;
             
-            // Menggunakan rumus akumulasi saldo: Saldo Sebelumnya + Belanjaan Baru - Kita Bayar
-            akumulasiUtangBerjalan += (tx.totalBelanja - tx.payment);
-            
-            return {
-                ...tx,
-                saldoBerjalanAktif: akumulasiUtangBerjalan
-            };
-        });
-
-        // 3. Balikkan urutan (reverse) agar tanggal terbaru tetap nangkring di baris paling atas tabel
-        dataRiwayatMatang.reverse();
-
-        // 4. Render ke HTML
-        dataRiwayatMatang.forEach(tx => {
+            // Mengambil langsung nilai riil kalkulasi dari properti data transaksi bawaan
+            let sisaBaris = Math.round(tx.tagihan - tx.payment);
             let iStr = tx.items.map(i => i.nama + (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet" ? ` (${i.ekor}ekor)` : ` (${i.qty}kg)`)).join(", ");
 
             tbody.innerHTML += `<tr>
@@ -952,12 +938,17 @@
                 <td>${formatRupiah(tx.totalBelanja)}</td>
                 <td>${formatRupiah(tx.tagihan)}</td>
                 <td>${formatRupiah(tx.payment)}</td>
-                <td class="text-danger fw-bold">${formatRupiah(Math.round(tx.saldoBerjalanAktif))}</td>
+                <td class="text-danger fw-bold">${formatRupiah(sisaBaris)}</td>
                 <td><button class="btn btn-sm btn-danger py-0" onclick="tutupDasborDanBukaFaktur(${dataTransaksi.indexOf(tx)})"><i class="bi bi-receipt"></i></button></td>
             </tr>`;
         });
         
-        tu = tk - td; 
+        // Total sisa utang di atas modal diambil langsung dari nota berjalan paling baru (index 0)
+        if (txSupplier.length > 0) {
+            tu = Math.round(txSupplier[0].tagihan - txSupplier[0].payment);
+        } else {
+            tu = 0;
+        }
 
         document.getElementById("supp-modal-jual").innerText = formatRupiah(tk);
         document.getElementById("supp-modal-terima").innerText = formatRupiah(td);
@@ -965,8 +956,6 @@
         
         new bootstrap.Modal(document.getElementById('supplierDashboardModal')).show();
     }
-
-    function fnIndex(tx) { return dataTransaksi.indexOf(tx); }
 
     function tutupDasborDanBukaFaktur(idx) {
         bootstrap.Modal.getInstance(document.getElementById('supplierDashboardModal')).hide();
