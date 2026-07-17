@@ -231,7 +231,7 @@
     </div>
 
     <div class="row g-4 mb-4">
-        <!-- FORM INPUT (Murni Hanya untuk Transaksi Baru) -->
+        <!-- FORM INPUT -->
         <div class="col-lg-5">
             <div class="premium-card">
                 <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-plus-circle-fill text-danger"></i> Input Transaksi Masuk (Kulakan)</h5>
@@ -277,11 +277,11 @@
                         <div class="row g-2">
                             <div class="col-6">
                                 <label class="text-muted small fw-bold">Sisa Utang Lalu</label>
-                                <input type="text" class="rupiah-input form-control form-control-sm text-end" id="sub-sisa-utang" value="Rp 0">
+                                <input type="text" class="rupiah-input form-control text-end" id="sub-sisa-utang" value="Rp 0">
                             </div>
                             <div class="col-6">
                                 <label class="text-muted small fw-bold">Total Akumulasi Utang</label>
-                                <input type="text" class="rupiah-input form-control form-control-sm fw-bold text-danger bg-white text-end" id="input-utang-total" readonly value="Rp 0">
+                                <input type="text" class="rupiah-input form-control fw-bold text-danger bg-white text-end" id="input-utang-total" readonly value="Rp 0">
                             </div>
                         </div>
                     </div>
@@ -291,10 +291,9 @@
                         <input type="text" class="rupiah-input form-control border-success text-success fw-bold text-end" id="input-pembayaran" value="Rp 0" required>
                     </div>
 
-                    <!-- KOTAK HASIL AKHIR: SISA BON / TAGIHAN KEDEPANNYA -->
                     <div class="mb-3 p-3 bg-danger bg-opacity-10 border border-danger border-start-4 rounded-3 d-flex justify-content-between align-items-center">
                         <div>
-                            <span class="small text-danger fw-bold uppercase d-block" style="font-size:11px; tracking-width: 0.5px;">Hasil Akhir Transaksi</span>
+                            <span class="small text-danger fw-bold uppercase d-block" style="font-size:11px;">Hasil Akhir Transaksi</span>
                             <span class="small fw-semibold text-dark">Sisa Bon / Tagihan Kedepannya:</span>
                         </div>
                         <h4 id="hasil-sisa-bon-utama" class="fw-bold text-danger m-0">Rp 0</h4>
@@ -332,7 +331,7 @@
 
 <!-- POPUPS/MODALS -->
 
-<!-- 1. Jendela Dasbor Supplier -->
+<!-- 1. Jendela Dasbor Supplier (MODAL DENGAN SALDO BERJALAN YANG SUDAH DIPERBAIKI) -->
 <div class="modal fade" id="supplierDashboardModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content" style="border-radius: 16px;">
@@ -389,7 +388,7 @@
     </div>
 </div>
 
-<!-- 4. MODAL EDIT FAKTUR (FITUR BARU) -->
+<!-- 4. MODAL EDIT FAKTUR -->
 <div class="modal fade" id="editInvoiceModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content" style="border-radius: 16px;">
@@ -469,7 +468,6 @@
                         <input type="text" class="rupiah-input form-control border-success text-success fw-bold text-end" id="edit-modal-pembayaran" value="Rp 0" required>
                     </div>
 
-                    <!-- KOTAK HASIL AKHIR MODAL EDIT -->
                     <div class="mb-3 p-3 bg-danger bg-opacity-10 border border-danger border-start-4 rounded-3 d-flex justify-content-between align-items-center">
                         <div>
                             <span class="small text-danger fw-bold uppercase d-block" style="font-size:11px;">Hasil Akhir Transaksi (Edit Mode)</span>
@@ -503,7 +501,6 @@
     let chartInstance = null;
     let namaFileGlobal = "Nota_Supplier";
 
-    // --- UTILTAS MASKING DAN UNMASKING RUPIAH ---
     function formatRupiah(angka) { 
         return "Rp " + new Intl.NumberFormat('id-ID').format(angka); 
     }
@@ -527,10 +524,8 @@
         return parseInt(rupiahString.toString().replace(/[^0-9]/g, '')) || 0;
     }
 
-    // --- APPLY LIVE MASKING KE SEMUA INPUT DENGAN CLASS .rupiah-input ---
     function initRupiahMasking() {
         document.querySelectorAll('.rupiah-input').forEach(input => {
-            // Hapus event listener lama agar tidak double bind
             input.removeEventListener('input', handleRupiahInput);
             input.addEventListener('input', handleRupiahInput);
         });
@@ -547,7 +542,6 @@
         cursorPosition = cursorPosition + (newLength - originalLength);
         this.setSelectionRange(cursorPosition, cursorPosition);
 
-        // Triger kalkulasi pendukung saat mengetik live
         hitungUlangUtangForm();
         hitungUlangUtangEditModal();
     }
@@ -655,7 +649,6 @@
         hitungUlangUtangForm();
     }
 
-    // --- MANAJEMEN KERANJANG UTAMA (SIDEBAR INPUT) ---
     function tambahKeKeranjang() {
         const produk = document.getElementById("input-produk").value;
         const qty = parseFloat(document.getElementById("input-jumlah").value) || 0;
@@ -718,14 +711,11 @@
         const akumulasiUtang = utangLama + totalBelanjaHariIni;
         document.getElementById("input-utang-total").value = formatRupiahRaw(akumulasiUtang);
 
-        // Hitung Kotak Hasil Akhir Utama (Total Akumulasi Utang - Jumlah Uang Yang Dibayar)
         const pembayaran = unformatRupiah(document.getElementById("input-pembayaran").value);
         const sisaBonMendatang = akumulasiUtang - pembayaran;
         document.getElementById("hasil-sisa-bon-utama").innerText = formatRupiahRaw(sisaBonMendatang);
     }
 
-
-    // --- MANAJEMEN KERANJANG EDIT (DI POP-UP MODAL EDIT) ---
     function tambahKeKeranjangEditModal() {
         const produk = document.getElementById("edit-modal-produk").value;
         const qty = parseFloat(document.getElementById("edit-modal-jumlah").value) || 0;
@@ -797,14 +787,11 @@
         const akumulasiUtangModal = utangLama + totalBelanjaEditModal;
         document.getElementById("edit-modal-utang-total").value = formatRupiahRaw(akumulasiUtangModal);
 
-        // Hitung Kotak Hasil Akhir Modal (Total Akumulasi Utang Modal - Pembayaran Modal)
         const pembayaranModal = unformatRupiah(document.getElementById("edit-modal-pembayaran").value);
         const sisaBonMendatangModal = akumulasiUtangModal - pembayaranModal;
         document.getElementById("hasil-sisa-bon-modal").innerText = formatRupiahRaw(sisaBonMendatangModal);
     }
 
-
-    // --- RENDERING & INTEGRASI UI ---
     function renderSupplierGridMenu() {
         const container = document.getElementById("supplier-grid-container");
         container.innerHTML = "";
@@ -904,7 +891,7 @@
 
         renderSupplierGridMenu();
         renderChartEngine();
-        initRupiahMasking(); // Pastikan masking terpanggil kembali setelah render UI
+        initRupiahMasking();
     }
 
     function renderChartEngine() {
@@ -925,6 +912,7 @@
         });
     }
 
+    // --- FUNGSI REVISI DENGAN PERHITUNGAN SALDO AKUMULASI YANG SUDAH SINKRON ---
     function bukaJendelaDasborSupplier(nama) {
         document.getElementById("supp-modal-title").innerText = "Riwayat Akun Supplier: " + nama;
         const tbody = document.getElementById("supp-modal-table-body");
@@ -932,13 +920,30 @@
         
         let tk = 0, td = 0, tu = 0;
         let txSupplier = dataTransaksi.filter(t => t.pelanggan === nama);
-        txSupplier.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
+        
+        // 1. Urutkan dari transaksi PALIING TUA untuk menghitung kalkulasi saldo berjalan
+        txSupplier.sort((a, b) => parseTanggal(a.tanggal) - parseTanggal(b.tanggal));
 
-        txSupplier.forEach(tx => {
+        // 2. Kalkulasi running balance di memori
+        let akumulasiUtangBerjalan = 0;
+        let dataRiwayatMatang = txSupplier.map(tx => {
             tk += tx.totalBelanja;
             td += tx.payment;
             
-            let sisaBaris = Math.round(tx.tagihan - tx.payment);
+            // Menggunakan rumus akumulasi saldo: Saldo Sebelumnya + Belanjaan Baru - Kita Bayar
+            akumulasiUtangBerjalan += (tx.totalBelanja - tx.payment);
+            
+            return {
+                ...tx,
+                saldoBerjalanAktif: akumulasiUtangBerjalan
+            };
+        });
+
+        // 3. Balikkan urutan (reverse) agar tanggal terbaru tetap nangkring di baris paling atas tabel
+        dataRiwayatMatang.reverse();
+
+        // 4. Render ke HTML
+        dataRiwayatMatang.forEach(tx => {
             let iStr = tx.items.map(i => i.nama + (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet" ? ` (${i.ekor}ekor)` : ` (${i.qty}kg)`)).join(", ");
 
             tbody.innerHTML += `<tr>
@@ -947,7 +952,7 @@
                 <td>${formatRupiah(tx.totalBelanja)}</td>
                 <td>${formatRupiah(tx.tagihan)}</td>
                 <td>${formatRupiah(tx.payment)}</td>
-                <td class="text-danger fw-bold">${formatRupiah(sisaBaris)}</td>
+                <td class="text-danger fw-bold">${formatRupiah(Math.round(tx.saldoBerjalanAktif))}</td>
                 <td><button class="btn btn-sm btn-danger py-0" onclick="tutupDasborDanBukaFaktur(${dataTransaksi.indexOf(tx)})"><i class="bi bi-receipt"></i></button></td>
             </tr>`;
         });
@@ -960,6 +965,8 @@
         
         new bootstrap.Modal(document.getElementById('supplierDashboardModal')).show();
     }
+
+    function fnIndex(tx) { return dataTransaksi.indexOf(tx); }
 
     function tutupDasborDanBukaFaktur(idx) {
         bootstrap.Modal.getInstance(document.getElementById('supplierDashboardModal')).hide();
@@ -1006,7 +1013,6 @@
         });
     });
 
-    // --- FORM SIMPAN TRANSAKSI BARU ---
     document.getElementById("payable-form").addEventListener("submit", function(e) {
         e.preventDefault();
         const pembayaran = unformatRupiah(document.getElementById("input-pembayaran").value);
@@ -1038,7 +1044,6 @@
         pushDataKeSheets();
     });
 
-    // --- LOGIKA EDIT VIA POP-UP MODAL ---
     function pilihEditTransaksi(idx) {
         const tx = dataTransaksi[idx];
         document.getElementById("edit-modal-transaksi-index").value = idx;
@@ -1109,7 +1114,6 @@
     document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
     document.getElementById("current-date").innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
-    // Inisialisasi awal masking rupiah
     initRupiahMasking();
     muatDataDariSheets();
 </script>
