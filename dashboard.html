@@ -27,7 +27,7 @@
             border-radius: 14px;
             border: none;
             box-shadow: var(--card-shadow);
-            padding: 20px;
+            padding: 16px;
             height: 100%;
             transition: transform 0.2s;
         }
@@ -35,13 +35,13 @@
             transform: translateY(-2px);
         }
         .kpi-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 12px;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 20px;
         }
     </style>
 </head>
@@ -74,172 +74,144 @@
         </div>
     </div>
 
-    <!-- MAIN KPI CARDS Row 1 -->
-    <div class="row g-3 mb-3">
-        <!-- Omset Hari Ini -->
-        <div class="col-md-6">
-            <div class="premium-card">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div>
-                        <span class="small text-muted fw-bold d-block">OMSET PENJUALAN HARI INI</span>
-                        <h3 class="fw-bold text-dark mt-1 mb-2" id="kpi-omset-hari-ini">Rp 0</h3>
-                    </div>
-                    <div class="kpi-icon bg-primary bg-opacity-10 text-primary">
-                        <i class="bi bi-cart-check-fill"></i>
-                    </div>
-                </div>
-                <div class="row g-2 pt-2 border-top">
-                    <div class="col-6 border-end">
-                        <span class="text-muted d-block" style="font-size: 11px; font-weight: 600;">CASH (LUNAS)</span>
-                        <span class="fw-bold text-success" id="sub-omset-cash">Rp 0</span>
-                    </div>
-                    <div class="col-6 ps-2">
-                        <span class="text-muted d-block" style="font-size: 11px; font-weight: 600;">BERHUTANG (BON)</span>
-                        <span class="fw-bold text-danger" id="sub-omset-bon">Rp 0</span>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-between mt-2 align-items-center">
-                    <span class="text-muted small" style="font-size: 11px;" id="count-tx-hari-ini">0 Transaksi</span>
-                    <button class="btn btn-sm btn-link py-0 text-decoration-none fw-bold" style="font-size: 11px;" onclick="bukaModalOmset()">Input Manual</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Kas Setoran Masuk Murni -->
-        <div class="col-md-6">
-            <div class="premium-card d-flex flex-column justify-content-between">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="small text-muted fw-bold d-block">TOTAL SETORAN / PIUTANG LALU</span>
-                        <h3 class="fw-bold text-success mt-1 mb-0" id="kpi-kas-hari-ini">Rp 0</h3>
-                        <span class="text-muted small d-block mt-1" style="font-size: 11px;">Khusus cicilan piutang tanpa order baru</span>
-                    </div>
-                    <div class="kpi-icon bg-success bg-opacity-10 text-success">
-                        <i class="bi bi-cash-coin"></i>
-                    </div>
-                </div>
-                <div class="text-end border-top pt-2 mt-2">
-                    <button class="btn btn-sm btn-outline-success fw-bold rounded-2 px-3" style="font-size: 12px;" onclick="bukaModalSetoran()">
-                        <i class="bi bi-plus-circle-fill me-1"></i> Input Setoran Piutang
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MAIN KPI CARDS Row 2 -->
-    <div class="row g-3 mb-3">
-        <!-- Pengeluaran Harian Toko -->
-        <div class="col-md-6">
-            <div class="premium-card d-flex flex-column justify-content-between">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="small text-muted fw-bold d-block">PENGELUARAN HARIAN TOKO</span>
-                        <h3 class="fw-bold text-warning mt-1 mb-0" id="kpi-pengeluaran-hari-ini" style="color: #b58105 !important;">Rp 0</h3>
-                        <span class="text-muted small d-block mt-1" style="font-size: 11px;" id="count-pengeluaran">0 Item Pengeluaran</span>
-                    </div>
-                    <div class="kpi-icon bg-warning bg-opacity-10 text-warning" style="color: #b58105 !important;">
-                        <i class="bi bi-wallet2"></i>
-                    </div>
-                </div>
-                <div class="text-end border-top pt-2 mt-2">
-                    <button class="btn btn-sm btn-outline-warning fw-bold rounded-2 px-3" style="color: #b58105; border-color: #b58105; font-size: 12px;" onclick="bukaModalPengeluaran()">
-                        <i class="bi bi-pencil-square me-1"></i> Kelola Pengeluaran
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Sisa Piutang Aktif Global (Otomatis) -->
-        <div class="col-md-6">
-            <div class="premium-card d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="small text-muted fw-bold d-block">SISA PIUTANG AKTIF (GLOBAL)</span>
-                    <h3 class="fw-bold text-danger mt-1 mb-0" id="kpi-piutang-global">Rp 0</h3>
-                    <span class="text-muted small" style="font-size: 11px;">Sinkron Otomatis dari Buku Piutang Induk</span>
-                </div>
-                <div class="kpi-icon bg-danger bg-opacity-10 text-danger">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MAIN KPI CARDS Row 3 (MENU BARU: PROFIT & TAKE HOME) -->
+    <!-- GRID MENU UTAMA: 2 BARIS 3 KOLOM -->
     <div class="row g-3 mb-4">
-        <!-- Profit Harian -->
-        <div class="col-md-6">
-            <div class="premium-card d-flex align-items-center justify-content-between" style="border-left: 5px solid #0d6efd;">
+        <!-- BARIS 1, KOLOM 1: Omset Penjualan -->
+        <div class="col-md-4">
+            <div class="premium-card d-flex flex-column justify-content-between">
                 <div>
-                    <span class="small text-muted fw-bold d-block">PROFIT HARIAN (OMSET - OPERASIONAL)</span>
-                    <h3 class="fw-bold text-primary mt-1 mb-0" id="kpi-profit-hari-ini">Rp 0</h3>
-                    <span class="text-muted small" style="font-size: 11px;">Total Omset dikurangi Pengeluaran</span>
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <span class="small text-muted fw-bold d-block" style="font-size: 11px;">OMSET HARI INI</span>
+                        <div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-cart-check-fill"></i></div>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-2" id="kpi-omset-hari-ini">Rp 0</h4>
+                    <div class="row g-1 pt-1 border-top" style="font-size: 11px;">
+                        <div class="col-6 border-end text-success fw-bold">Cash: <span id="sub-omset-cash">Rp 0</span></div>
+                        <div class="col-6 ps-1 text-danger fw-bold">Bon: <span id="sub-omset-bon">Rp 0</span></div>
+                    </div>
                 </div>
-                <div class="kpi-icon bg-primary bg-opacity-10 text-primary">
-                    <i class="bi bi-graph-up text-primary"></i>
+                <div class="text-end mt-2 pt-1 border-top">
+                    <button class="btn btn-sm btn-link py-0 text-decoration-none fw-bold small p-0" style="font-size: 11px;" onclick="bukaModalOmset()">Input Omset</button>
                 </div>
             </div>
         </div>
 
-        <!-- Take Home Cash -->
-        <div class="col-md-6">
-            <div class="premium-card d-flex align-items-center justify-content-between" style="border-left: 5px solid #20c997;">
+        <!-- BARIS 1, KOLOM 2: Setoran Piutang Lalu -->
+        <div class="col-md-4">
+            <div class="premium-card d-flex flex-column justify-content-between">
                 <div>
-                    <span class="small text-muted fw-bold d-block">TAKE HOME CASH (UANG FISIK MASUK KAS)</span>
-                    <h3 class="fw-bold text-info mt-1 mb-0" id="kpi-takehome-hari-ini" style="color: #0aa2c0 !important;">Rp 0</h3>
-                    <span class="text-muted small" style="font-size: 11px;">(Cash Lunas + Setoran Piutang) - Pengeluaran</span>
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <span class="small text-muted fw-bold d-block" style="font-size: 11px;">SETORAN PIUTANG LALU</span>
+                        <div class="kpi-icon bg-success bg-opacity-10 text-success"><i class="bi bi-cash-coin"></i></div>
+                    </div>
+                    <h4 class="fw-bold text-success mb-2" id="kpi-kas-hari-ini">Rp 0</h4>
+                    <span class="text-muted d-block" style="font-size: 10px; line-height:1.2;">Cicilan piutang konsumen tanpa order baru hari ini.</span>
                 </div>
-                <div class="kpi-icon bg-info bg-opacity-10 text-info" style="color: #0aa2c0 !important;">
-                    <i class="bi bi-safe2"></i>
+                <div class="text-end mt-2 pt-1 border-top">
+                    <button class="btn btn-sm btn-link py-0 text-decoration-none text-success fw-bold small p-0" style="font-size: 11px;" onclick="bukaModalSetoran()">Input Setoran</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BARIS 1, KOLOM 3: Pengeluaran Toko -->
+        <div class="col-md-4">
+            <div class="premium-card d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <span class="small text-muted fw-bold d-block" style="font-size: 11px;">PENGELUARAN TOKO</span>
+                        <div class="kpi-icon bg-warning bg-opacity-10 text-warning" style="color: #b58105 !important;"><i class="bi bi-wallet2"></i></div>
+                    </div>
+                    <h4 class="fw-bold text-warning mb-2" id="kpi-pengeluaran-hari-ini" style="color: #b58105 !important;">Rp 0</h4>
+                    <span class="text-muted d-block" style="font-size: 10px;" id="count-pengeluaran">0 Item Terdaftar</span>
+                </div>
+                <div class="text-end mt-2 pt-1 border-top">
+                    <button class="btn btn-sm btn-link py-0 text-decoration-none text-warning fw-bold small p-0" style="color: #b58105 !important; font-size: 11px;" onclick="bukaModalPengeluaran()">Kelola Biaya</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BARIS 2, KOLOM 1: Profit Harian -->
+        <div class="col-md-4">
+            <div class="premium-card d-flex flex-column justify-content-between" style="border-left: 4px solid #0d6efd;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <span class="small text-muted fw-bold d-block" style="font-size: 11px;">PROFIT HARIAN</span>
+                        <div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-graph-up"></i></div>
+                    </div>
+                    <h4 class="fw-bold text-primary mb-2" id="kpi-profit-hari-ini">Rp 0</h4>
+                    <span class="text-muted d-block" style="font-size: 10px;">Rumus: Total Omset - Pengeluaran</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- BARIS 2, KOLOM 2: Take Home Cash -->
+        <div class="col-md-4">
+            <div class="premium-card d-flex flex-column justify-content-between" style="border-left: 4px solid #20c997;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <span class="small text-muted fw-bold d-block" style="font-size: 11px;">TAKE HOME CASH</span>
+                        <div class="kpi-icon bg-info bg-opacity-10 text-info" style="color: #0aa2c0 !important;"><i class="bi bi-safe2"></i></div>
+                    </div>
+                    <h4 class="fw-bold text-info mb-2" id="kpi-takehome-hari-ini" style="color: #0aa2c0 !important;">Rp 0</h4>
+                    <span class="text-muted d-block" style="font-size: 10px;">(Omset Cash + Setoran) - Pengeluaran</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- BARIS 2, KOLOM 3: Sisa Piutang Global -->
+        <div class="col-md-4">
+            <div class="premium-card d-flex flex-column justify-content-between" style="border-left: 4px solid #dc3545;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <span class="small text-muted fw-bold d-block" style="font-size: 11px;">SISA PIUTANG GLOBAL</span>
+                        <div class="kpi-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                    </div>
+                    <h4 class="fw-bold text-danger mb-2" id="kpi-piutang-global">Rp 0</h4>
+                    <span class="text-muted d-block" style="font-size: 10px;">Otomatis sinkron dari buku utama</span>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- GRAFIK TREN & TANGGUNGAN TERBESAR -->
     <div class="row g-4 mb-4">
-        <!-- GRAFIK TREN -->
         <div class="col-lg-8">
             <div class="premium-card">
-                <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-graph-up-arrow text-primary"></i> Tren Penjualan & Kas Masuk (7 Hari Terakhir)</h5>
-                <div style="position: relative; height:300px;">
+                <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-graph-up-arrow text-primary"></i> Tren Penjualan & Kas Masuk (7 Hari Terakhir)</h6>
+                <div style="position: relative; height:260px;">
                     <canvas id="trendChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- TOP CUSTOMER BILLS (Otomatis) -->
         <div class="col-lg-4">
             <div class="premium-card">
-                <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-person-lines-fill text-danger"></i> Daftar Tanggungan Terbesar</h5>
-                <div class="list-group list-group-flush" id="top-debtors-list" style="max-height: 300px; overflow-y: auto;">
+                <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-person-lines-fill text-danger"></i> Daftar Tanggungan Terbesar</h6>
+                <div class="list-group list-group-flush" id="top-debtors-list" style="max-height: 260px; overflow-y: auto;">
                     <div class="text-center p-3 text-muted small">Memuat data tagihan...</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- FOOTER RINGKASAN PRODUK -->
+    <!-- MODUL BARU: RIWAYAT HASIL DASHBOARD PER TANGGAL -->
     <div class="premium-card">
-        <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-box-seam text-secondary"></i> Estimasi Volume Terjual (Semua Riwayat)</h5>
-        <div class="row g-3 text-center" id="product-summary-container">
-            <div class="col-4">
-                <div class="p-3 bg-light rounded-3">
-                    <div class="small text-muted fw-bold">AYAM POTONG</div>
-                    <h4 class="fw-bold text-dark mt-1 mb-0" id="vol-potong">0 Kg</h4>
-                </div>
-            </div>
-            <div class="col-4">
-                <div class="p-3 bg-light rounded-3">
-                    <div class="small text-muted fw-bold">AYAM MERAH</div>
-                    <h4 class="fw-bold text-dark mt-1 mb-0" id="vol-merah">0 Ekor</h4>
-                </div>
-            </div>
-            <div class="col-4">
-                <div class="p-3 bg-light rounded-3">
-                    <div class="small text-muted fw-bold">AYAM PENYET</div>
-                    <h4 class="fw-bold text-dark mt-1 mb-0" id="vol-penyet">0 Ekor</h4>
-                </div>
-            </div>
+        <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-calendar-check text-secondary"></i> Riwayat Hasil Akumulasi Finansial (7 Hari Terakhir)</h6>
+        <div class="table-responsive">
+            <table class="table table-sm table-striped table-bordered align-middle text-center mb-0" style="font-size: 12px;">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Omset Belanja</th>
+                        <th>Kas Masuk/Setoran</th>
+                        <th>Piutang Baru Terbentuk</th>
+                        <th>Status Performa</th>
+                    </tr>
+                </thead>
+                <tbody id="riwayat-dashboard-body">
+                    <tr><td colspan="5" class="text-muted py-3">Memuat riwayat performa harian...</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -251,38 +223,44 @@
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content rounded-3">
             <div class="modal-header bg-primary text-white py-2">
-                <h6 class="modal-title fw-bold">Input Manual Omset Hari Ini</h6>
+                <h6 class="modal-title fw-bold m-0" style="font-size:14px;">Input Manual Omset</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body py-3">
                 <div class="mb-2">
                     <label class="small fw-bold">Omset Cash (Lunas)</label>
                     <input type="text" class="form-control form-control-sm input-rupiah-live" id="in-omset-cash" value="Rp 0">
                 </div>
-                <div class="mb-2">
+                <div class="mb-3">
                     <label class="small fw-bold">Omset Bon (Berhutang)</label>
                     <input type="text" class="form-control form-control-sm input-rupiah-live" id="in-omset-bon" value="Rp 0">
                 </div>
-                <button class="btn btn-primary w-100 btn-sm fw-bold mt-2" onclick="simpanOmsetManual()">Simpan Omset</button>
+                <button class="btn btn-primary w-100 btn-sm fw-bold" onclick="simpanOmsetManual()">Simpan Omset</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal Input Setoran Piutang -->
+<!-- Modal Input Setoran Piutang Murni (UPDATE: Ditambah Nama Konsumen) -->
 <div class="modal fade" id="modalSetoran" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content rounded-3">
             <div class="modal-header bg-success text-white py-2">
-                <h6 class="modal-title fw-bold">Input Setoran Murni</h6>
+                <h6 class="modal-title fw-bold m-0" style="font-size:14px;">Input Setoran Murni</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body py-3">
                 <div class="mb-2">
+                    <label class="small fw-bold">Pilih Konsumen</label>
+                    <select class="form-select form-select-sm" id="in-setoran-konsumen">
+                        <option value="">-- Pilih Pelanggan --</option>
+                    </select>
+                </div>
+                <div class="mb-3">
                     <label class="small fw-bold">Nominal Setoran Tunai</label>
                     <input type="text" class="form-control form-control-sm input-rupiah-live" id="in-setoran-murni" value="Rp 0">
                 </div>
-                <button class="btn btn-success w-100 btn-sm fw-bold mt-2" onclick="simpanSetoranManual()">Simpan Setoran</button>
+                <button class="btn btn-success w-100 btn-sm fw-bold" onclick="simpanSetoranManual()">Simpan Setoran</button>
             </div>
         </div>
     </div>
@@ -293,7 +271,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-3">
             <div class="modal-header bg-dark text-white py-2">
-                <h6 class="modal-title fw-bold"><i class="bi bi-wallet2 text-warning"></i> Kelola Pengeluaran Toko</h6>
+                <h6 class="modal-title fw-bold m-0" style="font-size:14px;"><i class="bi bi-wallet2 text-warning"></i> Kelola Pengeluaran Toko</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -301,7 +279,7 @@
                     <input type="hidden" id="edit-idx-pengeluaran" value="-1">
                     <div class="row g-2 align-items-end">
                         <div class="col-6">
-                            <label class="small fw-bold" style="font-size: 11px;">Nama Pengeluaran</label>
+                            <label class="small fw-bold" style="font-size: 11px;">Keterangan Item</label>
                             <input type="text" class="form-control form-control-sm" id="in-item-pengeluaran" placeholder="Bensin, Es, Ops..." required>
                         </div>
                         <div class="col-4">
@@ -313,8 +291,8 @@
                         </div>
                     </div>
                 </form>
-                <div class="table-responsive" style="max-height: 200px;">
-                    <table class="table table-sm table-bordered align-middle text-center" style="font-size: 12px;">
+                <div class="table-responsive" style="max-height: 180px;">
+                    <table class="table table-sm table-bordered align-middle text-center mb-0" style="font-size: 12px;">
                         <thead class="table-dark">
                             <tr>
                                 <th>No</th><th>Keterangan</th><th>Biaya</th><th>Aksi</th>
@@ -341,6 +319,7 @@
     let manualOmsetCash = 0;
     let manualOmsetBon = 0;
     let manualSetoranMurni = 0;
+    let manualNamaKonsumenSetoran = "";
     let listPengeluaranHarian = [];
 
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(Math.round(angka)); }
@@ -379,6 +358,13 @@
                 masterCustomer = res.customers;
                 dataTransaksi = res.transaksis;
                 
+                // Isi dropdown modal setoran dengan daftar nama customer aktif
+                const selectK = document.getElementById("in-setoran-konsumen");
+                selectK.innerHTML = '<option value="">-- Pilih Pelanggan --</option>';
+                masterCustomer.forEach(c => {
+                    selectK.innerHTML += `<option value="${c.nama}">${c.nama}</option>`;
+                });
+
                 prosesDanRenderDashboard();
                 bar.innerHTML = `<span class="text-success"><i class="bi bi-cloud-check-fill"></i> Data Store Terupdate Otomatis</span>`;
             } else {
@@ -391,10 +377,6 @@
 
     function prosesDanRenderDashboard() {
         const tglHariIni = getHariIniFormatted();
-        let txCountHariIni = 0;
-        
-        // Hitung hit riwayat cloud hari ini untuk counter transaksi saja
-        dataTransaksi.forEach(tx => { if(tx.tanggal === tglHariIni) txCountHariIni++; });
 
         // Hitung Piutang Global Berjalan per Customer (Otomatis cloud)
         let mapPiutangCustomer = {};
@@ -417,7 +399,7 @@
         // Hitung Total Pengeluaran
         let totalBiayaPengeluaran = listPengeluaranHarian.reduce((acc, curr) => acc + curr.biaya, 0);
 
-        // LOGIKA BARU KELOLA LABA/RUGI & ARUS KAS MASUK
+        // Logika Finansial Utama
         let totalOmsetHariIni = manualOmsetCash + manualOmsetBon;
         let profitHariIni = totalOmsetHariIni - totalBiayaPengeluaran;
         let takeHomeHariIni = (manualOmsetCash + manualSetoranMurni) - totalBiayaPengeluaran;
@@ -426,14 +408,12 @@
         document.getElementById("kpi-omset-hari-ini").innerText = formatRupiah(totalOmsetHariIni);
         document.getElementById("sub-omset-cash").innerText = formatRupiah(manualOmsetCash);
         document.getElementById("sub-omset-bon").innerText = formatRupiah(manualOmsetBon);
-        document.getElementById("count-tx-hari-ini").innerText = `${txCountHariIni} Transaksi Terhitung Cloud`;
 
         document.getElementById("kpi-kas-hari-ini").innerText = formatRupiah(manualSetoranMurni);
         document.getElementById("kpi-pengeluaran-hari-ini").innerText = formatRupiah(totalBiayaPengeluaran);
-        document.getElementById("count-pengeluaran").innerText = `${listPengeluaranHarian.length} Item Pengeluaran`;
+        document.getElementById("count-pengeluaran").innerText = `${listPengeluaranHarian.length} Item Terdaftar`;
         document.getElementById("kpi-piutang-global").innerText = formatRupiah(totalPiutangGlobal);
 
-        // Render Nilai Komponen Baru ke DOM
         document.getElementById("kpi-profit-hari-ini").innerText = formatRupiah(profitHariIni);
         document.getElementById("kpi-takehome-hari-ini").innerText = formatRupiah(takeHomeHariIni);
 
@@ -447,27 +427,64 @@
                 debtorsContainer.innerHTML += `
                     <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom">
                         <span class="fw-semibold text-dark small">${d.nama}</span>
-                        <span class="badge bg-danger bg-opacity-10 text-danger fw-bold rounded-pill" style="font-size:12px;">${formatRupiah(d.piutang)}</span>
+                        <span class="badge bg-danger bg-opacity-10 text-danger fw-bold rounded-pill" style="font-size:11px;">${formatRupiah(d.piutang)}</span>
                     </div>`;
             });
         }
 
-        // Hitung Volume Produk (Otomatis riwayat)
-        let volPotong = 0, volMerah = 0, volPenyet = 0;
-        dataTransaksi.forEach(tx => {
-            if(tx.items && Array.isArray(tx.items)) {
-                tx.items.forEach(i => {
-                    if(i.nama === "Ayam Potong") volPotong += i.qty;
-                    if(i.nama === "Ayam Merah") volMerah += i.ekor;
-                    if(i.nama === "Ayam Penyet") volPenyet += i.ekor;
-                });
-            }
-        });
-        document.getElementById("vol-potong").innerText = `${volPotong.toFixed(1)} Kg`;
-        document.getElementById("vol-merah").innerText = `${volMerah} Ekor`;
-        document.getElementById("vol-penyet").innerText = `${volPenyet} Ekor`;
+        // Render Riwayat Hasil Dashboard Per Tanggal (7 Hari Terakhir)
+        renderTabelRiwayatHarian(totalOmsetHariIni, manualSetoranMurni);
 
         renderTrendChartEngine();
+    }
+
+    function renderTabelRiwayatHarian(manualOmset, manualSetoran) {
+        let labelDates = [];
+        for(let i=6; i>=0; i--) {
+            const d = new Date(); d.setDate(d.getDate() - i);
+            const hari = String(d.getDate()).padStart(2, '0');
+            const bulan = String(d.getMonth() + 1).padStart(2, '0');
+            const tahun = d.getFullYear();
+            labelDates.push(`${hari}/${bulan}/${tahun}`);
+        }
+
+        const tglHariIni = getHariIniFormatted();
+        const tbody = document.getElementById("riwayat-dashboard-body");
+        tbody.innerHTML = "";
+
+        labelDates.reverse().forEach(tgl => {
+            let omsetTgl = 0;
+            let kasTgl = 0;
+
+            if(tgl === tglHariIni) {
+                omsetTgl = manualOmset;
+                kasTgl = manualSetoran;
+            } else {
+                dataTransaksi.forEach(tx => {
+                    if(tx.tanggal === tgl) {
+                        omsetTgl += tx.totalBelanja;
+                        kasTgl += tx.payment;
+                    }
+                });
+            }
+
+            let selisihPiutang = omsetTgl - kasTgl;
+            let statusBadge = `<span class="badge bg-success rounded-pill">Surplus Kas</span>`;
+            if(selisihPiutang > 0) {
+                statusBadge = `<span class="badge bg-warning text-dark rounded-pill">+ Piutang</span>`;
+            } else if (omsetTgl === 0 && kasTgl === 0) {
+                statusBadge = `<span class="badge bg-secondary rounded-pill">Kosong</span>`;
+            }
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="fw-semibold text-dark">${tgl === tglHariIni ? tgl + ' (Hari Ini)' : tgl}</td>
+                    <td>${formatRupiah(omsetTgl)}</td>
+                    <td>${formatRupiah(kasTgl)}</td>
+                    <td class="${selisihPiutang > 0 ? 'text-danger fw-bold' : 'text-success'}">${selisihPiutang > 0 ? formatRupiah(selisihPiutang) : 'Rp 0'}</td>
+                    <td>${statusBadge}</td>
+                </tr>`;
+        });
     }
 
     function renderTrendChartEngine() {
@@ -492,7 +509,6 @@
             }
         });
 
-        // Selipkan data input manual hari ini ke grafik tren hari ke-7
         let idxHariIni = labelDates.indexOf(tglHariIni);
         if(idxHariIni !== -1) {
             omsetData[idxHariIni] = manualOmsetCash + manualOmsetBon;
@@ -516,7 +532,7 @@
                         tension: 0.2
                     },
                     {
-                        label: 'Kas/Setoran Masuk (Rp)',
+                        label: 'Kas Masuk (Rp)',
                         data: kasData,
                         borderColor: '#198754',
                         backgroundColor: 'rgba(25, 135, 84, 0.1)',
@@ -543,10 +559,12 @@
     }
 
     function bukaModalSetoran() {
+        document.getElementById("in-setoran-konsumen").value = manualNamaKonsumenSetoran;
         document.getElementById("in-setoran-murni").value = formatRupiah(manualSetoranMurni);
         new bootstrap.Modal(document.getElementById('modalSetoran')).show();
     }
     function simpanSetoranManual() {
+        manualNamaKonsumenSetoran = document.getElementById("in-setoran-konsumen").value;
         manualSetoranMurni = menguraiAngka(document.getElementById("in-setoran-murni").value);
         bootstrap.Modal.getInstance(document.getElementById('modalSetoran')).hide();
         prosesDanRenderDashboard();
