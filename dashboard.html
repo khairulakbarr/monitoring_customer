@@ -43,19 +43,6 @@
             justify-content: center;
             font-size: 24px;
         }
-        .nav-card {
-            background: linear-gradient(135deg, #1A73E8, #0D47A1);
-            color: white;
-            border-radius: 14px;
-            text-decoration: none;
-            padding: 20px;
-            display: block;
-            box-shadow: var(--card-shadow);
-        }
-        .nav-card:hover {
-            color: #E8F0FE;
-            opacity: 0.9;
-        }
     </style>
 </head>
 <body>
@@ -87,41 +74,89 @@
         </div>
     </div>
 
-    <!-- MAIN KPI CARDS -->
-    <div class="row g-3 mb-4">
-        <!-- Omset Hari Ini -->
-        <div class="col-md-4">
-            <div class="premium-card d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="small text-muted fw-bold d-block">OMSET BELANJA HARI INI</span>
-                    <h3 class="fw-bold text-dark mt-1 mb-0" id="kpi-omset-hari-ini">Rp 0</h3>
+    <!-- MAIN KPI CARDS Row 1 -->
+    <div class="row g-3 mb-3">
+        <!-- Omset Hari Ini (Pecah Dua) -->
+        <div class="col-md-6">
+            <div class="premium-card">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <span class="small text-muted fw-bold d-block">OMSET PENJUALAN HARI INI</span>
+                        <h3 class="fw-bold text-dark mt-1 mb-2" id="kpi-omset-hari-ini">Rp 0</h3>
+                    </div>
+                    <div class="kpi-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-cart-check-fill"></i>
+                    </div>
+                </div>
+                <div class="row g-2 pt-2 border-top">
+                    <div class="col-6 border-end">
+                        <span class="text-muted d-block" style="font-size: 11px; font-weight: 600;">CASH (LUNAS)</span>
+                        <span class="fw-bold text-success" id="sub-omset-cash">Rp 0</span>
+                    </div>
+                    <div class="col-6 ps-2">
+                        <span class="text-muted d-block" style="font-size: 11px; font-weight: 600;">BERHUTANG (BON)</span>
+                        <span class="fw-bold text-danger" id="sub-omset-bon">Rp 0</span>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between mt-2 align-items-center">
                     <span class="text-muted small" style="font-size: 11px;" id="count-tx-hari-ini">0 Transaksi</span>
-                </div>
-                <div class="kpi-icon bg-primary bg-opacity-10 text-primary">
-                    <i class="bi bi-cart-check-fill"></i>
+                    <button class="btn btn-sm btn-link py-0 text-decoration-none fw-bold" style="font-size: 11px;" onclick="bukaModalOmset()">Input Manual</button>
                 </div>
             </div>
         </div>
-        <!-- Kas Masuk Hari Ini -->
-        <div class="col-md-4">
-            <div class="premium-card d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="small text-muted fw-bold d-block">TOTAL SETORAN / DP MASUK</span>
-                    <h3 class="fw-bold text-success mt-1 mb-0" id="kpi-kas-hari-ini">Rp 0</h3>
-                    <span class="text-muted small" style="font-size: 11px;">Pembayaran Terjaring</span>
+
+        <!-- Kas Setoran Masuk Murni -->
+        <div class="col-md-6">
+            <div class="premium-card d-flex flex-column justify-content-between">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="small text-muted fw-bold d-block">TOTAL SETORAN / PIUTANG LALU</span>
+                        <h3 class="fw-bold text-success mt-1 mb-0" id="kpi-kas-hari-ini">Rp 0</h3>
+                        <span class="text-muted small d-block mt-1" style="font-size: 11px;">Khusus cicilan piutang tanpa order baru</span>
+                    </div>
+                    <div class="kpi-icon bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-cash-coin"></i>
+                    </div>
                 </div>
-                <div class="kpi-icon bg-success bg-opacity-10 text-success">
-                    <i class="bi bi-cash-coin"></i>
+                <div class="text-end border-top pt-2 mt-2">
+                    <button class="btn btn-sm btn-outline-success fw-bold rounded-2 px-3" style="font-size: 12px;" onclick="bukaModalSetoran()">
+                        <i class="bi bi-plus-circle-fill me-1"></i> Input Setoran Piutang
+                    </button>
                 </div>
             </div>
         </div>
-        <!-- Total Piutang Mengendap -->
-        <div class="col-md-4">
+    </div>
+
+    <!-- MAIN KPI CARDS Row 2 -->
+    <div class="row g-3 mb-4">
+        <!-- Pengeluaran Harian Toko (Menu Baru) -->
+        <div class="col-md-6">
+            <div class="premium-card d-flex flex-column justify-content-between">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="small text-muted fw-bold d-block">PENGELUARAN HARIAN TOKO</span>
+                        <h3 class="fw-bold text-warning mt-1 mb-0" id="kpi-pengeluaran-hari-ini" style="color: #b58105 !important;">Rp 0</h3>
+                        <span class="text-muted small d-block mt-1" style="font-size: 11px;" id="count-pengeluaran">0 Item Pengeluaran</span>
+                    </div>
+                    <div class="kpi-icon bg-warning bg-opacity-10 text-warning" style="color: #b58105 !important;">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                </div>
+                <div class="text-end border-top pt-2 mt-2">
+                    <button class="btn btn-sm btn-outline-warning fw-bold rounded-2 px-3" style="color: #b58105; border-color: #b58105; font-size: 12px;" onclick="bukaModalPengeluaran()">
+                        <i class="bi bi-pencil-square me-1"></i> Kelola Pengeluaran
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sisa Piutang Aktif Global (Otomatis) -->
+        <div class="col-md-6">
             <div class="premium-card d-flex align-items-center justify-content-between">
                 <div>
                     <span class="small text-muted fw-bold d-block">SISA PIUTANG AKTIF (GLOBAL)</span>
                     <h3 class="fw-bold text-danger mt-1 mb-0" id="kpi-piutang-global">Rp 0</h3>
-                    <span class="text-muted small" style="font-size: 11px;" id="count-piutang-macet">Semua Pelanggan</span>
+                    <span class="text-muted small" style="font-size: 11px;">Sinkron Otomatis dari Buku Piutang Induk</span>
                 </div>
                 <div class="kpi-icon bg-danger bg-opacity-10 text-danger">
                     <i class="bi bi-exclamation-triangle-fill"></i>
@@ -141,7 +176,7 @@
             </div>
         </div>
 
-        <!-- TOP CUSTOMER BILLS -->
+        <!-- TOP CUSTOMER BILLS (Otomatis) -->
         <div class="col-lg-4">
             <div class="premium-card">
                 <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-person-lines-fill text-danger"></i> Daftar Tanggungan Terbesar</h5>
@@ -178,15 +213,107 @@
     </div>
 </div>
 
+<!-- ================= MODAL DIALOG INPUT MANUAL HARI INI ================= -->
+
+<!-- Modal Input Omset Harian -->
+<div class="modal fade" id="modalOmset" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content rounded-3">
+            <div class="modal-header bg-primary text-white py-2">
+                <h6 class="modal-title fw-bold">Input Manual Omset Hari Ini</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <label class="small fw-bold">Omset Cash (Lunas)</label>
+                    <input type="text" class="form-control form-control-sm input-rupiah-live" id="in-omset-cash" value="Rp 0">
+                </div>
+                <div class="mb-2">
+                    <label class="small fw-bold">Omset Bon (Berhutang)</label>
+                    <input type="text" class="form-control form-control-sm input-rupiah-live" id="in-omset-bon" value="Rp 0">
+                </div>
+                <button class="btn btn-primary w-100 btn-sm fw-bold mt-2" onclick="simpanOmsetManual()">Simpan Omset</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Input Setoran Piutang -->
+<div class="modal fade" id="modalSetoran" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content rounded-3">
+            <div class="modal-header bg-success text-white py-2">
+                <h6 class="modal-title fw-bold">Input Setoran Murni</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <label class="small fw-bold">Nominal Setoran Tunai</label>
+                    <input type="text" class="form-control form-control-sm input-rupiah-live" id="in-setoran-murni" value="Rp 0">
+                </div>
+                <button class="btn btn-success w-100 btn-sm fw-bold mt-2" onclick="simpanSetoranManual()">Simpan Setoran</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Kelola Pengeluaran Harian -->
+<div class="modal fade" id="modalPengeluaran" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-3">
+            <div class="modal-header bg-dark text-white py-2">
+                <h6 class="modal-title fw-bold"><i class="bi bi-wallet2 text-warning"></i> Kelola Pengeluaran Toko</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-pengeluaran" class="bg-light p-2 rounded border mb-3" onsubmit="tambahPengeluaran(event)">
+                    <input type="hidden" id="edit-idx-pengeluaran" value="-1">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-6">
+                            <label class="small fw-bold" style="font-size: 11px;">Nama Pengeluaran</label>
+                            <input type="text" class="form-control form-control-sm" id="in-item-pengeluaran" placeholder="Bensin, Es, Ops..." required>
+                        </div>
+                        <div class="col-4">
+                            <label class="small fw-bold" style="font-size: 11px;">Biaya (Rp)</label>
+                            <input type="text" class="form-control form-control-sm input-rupiah-live" id="in-biaya-pengeluaran" value="Rp 0" required>
+                        </div>
+                        <div class="col-2">
+                            <button type="submit" class="btn btn-sm btn-dark w-100 fw-bold" id="btn-add-pengeluaran">Add</button>
+                        </div>
+                    </div>
+                </form>
+                <div class="table-responsive" style="max-height: 200px;">
+                    <table class="table table-sm table-bordered align-middle text-center" style="font-size: 12px;">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>No</th><th>Keterangan</th><th>Biaya</th><th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="list-pengeluaran-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-    // URL Google Apps Script yang sama dengan file index/supplier kamu
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDjUKtMnrv5pjfJJLX-jODZdvzKjaZiLlVRQK7tw2VCVD08TusJS_VLrDczr7797UT-Q/exec"; 
 
     let masterCustomer = [];
     let dataTransaksi = [];
     let chartInstance = null;
 
+    // State Input Manual Lokal Harian Store
+    let manualOmsetCash = 0;
+    let manualOmsetBon = 0;
+    let manualSetoranMurni = 0;
+    let listPengeluaranHarian = [];
+
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(Math.round(angka)); }
+    function menguraiAngka(str) { if(!str) return 0; return parseInt(str.toString().replace(/\D/g, '')) || 0; }
     
     function getHariIniFormatted() {
         const d = new Date();
@@ -194,6 +321,17 @@
         const bulan = String(d.getMonth() + 1).padStart(2, '0');
         const tahun = d.getFullYear();
         return `${hari}/${bulan}/${tahun}`;
+    }
+
+    function inisialisasiFormatRupiahLive() {
+        document.querySelectorAll('.input-rupiah-live').forEach(input => {
+            input.addEventListener('input', function() {
+                let nilaiBersih = this.value.replace(/\D/g, '');
+                this.value = nilaiBersih === "" ? "Rp 0" : formatRupiah(parseInt(nilaiBersih));
+            });
+            input.addEventListener('focus', function() { if(this.value === "Rp 0") this.value = ""; });
+            input.addEventListener('blur', function() { if(this.value === "") this.value = "Rp 0"; });
+        });
     }
 
     async function muatDataDashboard() {
@@ -222,21 +360,12 @@
 
     function prosesDanRenderDashboard() {
         const tglHariIni = getHariIniFormatted();
-        
-        let omsetHariIni = 0;
-        let kasHariIni = 0;
         let txCountHariIni = 0;
         
-        // 1. Hitung KPI Harian
-        dataTransaksi.forEach(tx => {
-            if(tx.tanggal === tglHariIni) {
-                omsetHariIni += tx.totalBelanja;
-                kasHariIni += tx.payment;
-                txCountHariIni++;
-            }
-        });
+        // Hitung hit riwayat cloud hari ini untuk counter transaksi saja
+        dataTransaksi.forEach(tx => { if(tx.tanggal === tglHariIni) txCountHariIni++; });
 
-        // 2. Hitung Piutang Global Berjalan per Customer
+        // Hitung Piutang Global Berjalan per Customer (Otomatis cloud)
         let mapPiutangCustomer = {};
         masterCustomer.forEach(c => { mapPiutangCustomer[c.nama] = 0; });
         
@@ -250,27 +379,32 @@
         for (let name in mapPiutangCustomer) {
             let saldo = mapPiutangCustomer[name];
             totalPiutangGlobal += saldo;
-            if(saldo > 0) {
-                listDebtors.push({ nama: name, piutang: saldo });
-            }
+            if(saldo > 0) listDebtors.push({ nama: name, piutang: saldo });
         }
-        
-        // Urutkan penunggak dari yang terbesar
         listDebtors.sort((a,b) => b.piutang - a.piutang);
 
-        // Render Angka ke Dom
-        document.getElementById("kpi-omset-hari-ini").innerText = formatRupiah(omsetHariIni);
-        document.getElementById("count-tx-hari-ini").innerText = `${txCountHariIni} Transaksi Hari Ini`;
-        document.getElementById("kpi-kas-hari-ini").innerText = formatRupiah(kasHariIni);
+        // Hitung Total Pengeluaran
+        let totalBiayaPengeluaran = listPengeluaranHarian.reduce((acc, curr) => acc + curr.biaya, 0);
+
+        // Render Angka Utama ke DOM
+        let totalOmsetHariIni = manualOmsetCash + manualOmsetBon;
+        document.getElementById("kpi-omset-hari-ini").innerText = formatRupiah(totalOmsetHariIni);
+        document.getElementById("sub-omset-cash").innerText = formatRupiah(manualOmsetCash);
+        document.getElementById("sub-omset-bon").innerText = formatRupiah(manualOmsetBon);
+        document.getElementById("count-tx-hari-ini").innerText = `${txCountHariIni} Transaksi Terhitung Cloud`;
+
+        document.getElementById("kpi-kas-hari-ini").innerText = formatRupiah(manualSetoranMurni);
+        document.getElementById("kpi-pengeluaran-hari-ini").innerText = formatRupiah(totalBiayaPengeluaran);
+        document.getElementById("count-pengeluaran").innerText = `${listPengeluaranHarian.length} Item Pengeluaran`;
         document.getElementById("kpi-piutang-global").innerText = formatRupiah(totalPiutangGlobal);
 
-        // Render List Tanggungan Terbesar
+        // Render List Tanggungan Terbesar (Otomatis)
         const debtorsContainer = document.getElementById("top-debtors-list");
         debtorsContainer.innerHTML = "";
         if(listDebtors.length === 0) {
             debtorsContainer.innerHTML = `<div class="text-center p-3 text-success small"><i class="bi bi-check-circle-fill"></i> Semua tagihan customer lunas!</div>`;
         } else {
-            listDebtors.slice(0, 10).forEach(d => { // Tampilkan top 10 saja
+            listDebtors.slice(0, 10).forEach(d => {
                 debtorsContainer.innerHTML += `
                     <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom">
                         <span class="fw-semibold text-dark small">${d.nama}</span>
@@ -279,7 +413,7 @@
             });
         }
 
-        // 3. Hitung Volume Produk
+        // Hitung Volume Produk (Otomatis riwayat)
         let volPotong = 0, volMerah = 0, volPenyet = 0;
         dataTransaksi.forEach(tx => {
             if(tx.items && Array.isArray(tx.items)) {
@@ -294,16 +428,13 @@
         document.getElementById("vol-merah").innerText = `${volMerah} Ekor`;
         document.getElementById("vol-penyet").innerText = `${volPenyet} Ekor`;
 
-        // 4. Bangun Grafik Tren 7 Hari Terakhir
         renderTrendChartEngine();
     }
 
     function renderTrendChartEngine() {
-        // Ambil list 7 tanggal terakhir
         let labelDates = [];
         for(let i=6; i>=0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
+            const d = new Date(); d.setDate(d.getDate() - i);
             const hari = String(d.getDate()).padStart(2, '0');
             const bulan = String(d.getMonth() + 1).padStart(2, '0');
             const tahun = d.getFullYear();
@@ -312,18 +443,24 @@
 
         let omsetData = Array(7).fill(0);
         let kasData = Array(7).fill(0);
+        const tglHariIni = getHariIniFormatted();
 
         dataTransaksi.forEach(tx => {
             let idx = labelDates.indexOf(tx.tanggal);
-            if(idx !== -1) {
+            if(idx !== -1 && tx.tanggal !== tglHariIni) {
                 omsetData[idx] += tx.totalBelanja;
                 kasData[idx] += tx.payment;
             }
         });
 
-        // Potong format tampilan tanggal grafik agar ringkas (hanya tgl/bln)
-        let displayLabels = labelDates.map(d => d.substring(0, 5));
+        // Selipkan data input manual hari ini ke grafik tren hari ke-7
+        let idxHariIni = labelDates.indexOf(tglHariIni);
+        if(idxHariIni !== -1) {
+            omsetData[idxHariIni] = manualOmsetCash + manualOmsetBon;
+            kasData[idxHariIni] = manualSetoranMurni; 
+        }
 
+        let displayLabels = labelDates.map(d => d.substring(0, 5));
         const ctx = document.getElementById('trendChart').getContext('2d');
         if(chartInstance) chartInstance.destroy();
         chartInstance = new Chart(ctx, {
@@ -349,17 +486,94 @@
                     }
                 ]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'top' } },
-                scales: { y: { beginAtZero: true } }
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
         });
+    }
+
+    // ================= FUNGSI LOGIKA MODAL INPUT MANUAL =================
+    function bukaModalOmset() {
+        document.getElementById("in-omset-cash").value = formatRupiah(manualOmsetCash);
+        document.getElementById("in-omset-bon").value = formatRupiah(manualOmsetBon);
+        new bootstrap.Modal(document.getElementById('modalOmset')).show();
+    }
+    function simpanOmsetManual() {
+        manualOmsetCash = menguraiAngka(document.getElementById("in-omset-cash").value);
+        manualOmsetBon = menguraiAngka(document.getElementById("in-omset-bon").value);
+        bootstrap.Modal.getInstance(document.getElementById('modalOmset')).hide();
+        prosesDanRenderDashboard();
+    }
+
+    function bukaModalSetoran() {
+        document.getElementById("in-setoran-murni").value = formatRupiah(manualSetoranMurni);
+        new bootstrap.Modal(document.getElementById('modalSetoran')).show();
+    }
+    function simpanSetoranManual() {
+        manualSetoranMurni = menguraiAngka(document.getElementById("in-setoran-murni").value);
+        bootstrap.Modal.getInstance(document.getElementById('modalSetoran')).hide();
+        prosesDanRenderDashboard();
+    }
+
+    function bukaModalPengeluaran() {
+        renderTabelPengeluaranLokal();
+        new bootstrap.Modal(document.getElementById('modalPengeluaran')).show();
+    }
+
+    function renderTabelPengeluaranLokal() {
+        const tbody = document.getElementById("list-pengeluaran-body");
+        tbody.innerHTML = "";
+        listPengeluaranHarian.forEach((item, idx) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td class="text-start">${item.keterangan}</td>
+                    <td>${formatRupiah(item.biaya)}</td>
+                    <td>
+                        <i class="bi bi-pencil-square text-warning me-2" style="cursor:pointer;" onclick="pilihEditPengeluaran(${idx})"></i>
+                        <i class="bi bi-trash text-danger" style="cursor:pointer;" onclick="hapusPengeluaran(${idx})"></i>
+                    </td>
+                </tr>`;
+        });
+    }
+
+    function tambahPengeluaran(e) {
+        e.preventDefault();
+        const keterangan = document.getElementById("in-item-pengeluaran").value;
+        const biaya = menguraiAngka(document.getElementById("in-biaya-pengeluaran").value);
+        const editIdx = parseInt(document.getElementById("edit-idx-pengeluaran").value);
+
+        if (editIdx === -1) {
+            listPengeluaranHarian.push({ keterangan, biaya });
+        } else {
+            listPengeluaranHarian[editIdx] = { keterangan, biaya };
+            document.getElementById("edit-idx-pengeluaran").value = "-1";
+            document.getElementById("btn-add-pengeluaran").innerText = "Add";
+        }
+
+        document.getElementById("form-pengeluaran").reset();
+        document.getElementById("in-biaya-pengeluaran").value = "Rp 0";
+        renderTabelPengeluaranLokal();
+        prosesDanRenderDashboard();
+    }
+
+    function pilihEditPengeluaran(idx) {
+        const item = listPengeluaranHarian[idx];
+        document.getElementById("edit-idx-pengeluaran").value = idx;
+        document.getElementById("in-item-pengeluaran").value = item.keterangan;
+        document.getElementById("in-biaya-pengeluaran").value = formatRupiah(item.biaya);
+        document.getElementById("btn-add-pengeluaran").innerText = "Save";
+    }
+
+    function hapusPengeluaran(idx) {
+        if(confirm("Hapus item pengeluaran ini?")) {
+            listPengeluaranHarian.splice(idx, 1);
+            renderTabelPengeluaranLokal();
+            prosesDanRenderDashboard();
+        }
     }
 
     // Init onload
     document.getElementById("live-date").innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    inisialisasiFormatRupiahLive();
     muatDataDashboard();
 </script>
 </body>
