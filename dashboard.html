@@ -43,6 +43,10 @@
             justify-content: center;
             font-size: 20px;
         }
+        .block-kuning {
+            background-color: #FFF9E6 !important;
+            border-left: 4px solid #FFCC00;
+        }
     </style>
 </head>
 <body>
@@ -74,7 +78,7 @@
         </div>
     </div>
 
-    <!-- GRID MENU UTAMA: 2 BARIS 3 KOLOM -->
+    <!-- GRID MENU UTAMA: MODIFIKASI FITUR PROFIT -->
     <div class="row g-3 mb-4">
         <!-- BARIS 1, KOLOM 1: Omset Penjualan -->
         <div class="col-md-4">
@@ -130,12 +134,12 @@
             </div>
         </div>
 
-        <!-- BARIS 2, KOLOM 1: Profit Harian -->
+        <!-- BARIS 2, KOLOM 1: REVISI JADI GROSS PROFIT -->
         <div class="col-md-4">
             <div class="premium-card d-flex flex-column justify-content-between" style="border-left: 4px solid #0d6efd;">
                 <div>
                     <div class="d-flex justify-content-between align-items-start mb-1">
-                        <span class="small text-muted fw-bold d-block" style="font-size: 11px;">PROFIT HARIAN</span>
+                        <span class="small text-muted fw-bold d-block" style="font-size: 11px;">GROSS PROFIT (LABA KOTOR)</span>
                         <div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-graph-up"></i></div>
                     </div>
                     <h4 class="fw-bold text-primary mb-2" id="kpi-profit-hari-ini">Rp 0</h4>
@@ -144,7 +148,24 @@
             </div>
         </div>
 
-        <!-- BARIS 2, KOLOM 2: Take Home Cash -->
+        <!-- BARIS 2, KOLOM 2: NET PROFIT HARIAN (BARU) -->
+        <div class="col-md-4">
+            <div class="premium-card d-flex flex-column justify-content-between" style="border-left: 4px solid #ffc107;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <span class="small text-dark fw-bold d-block" style="font-size: 11px;">NET PROFIT (LABA BERSIH RIIL)</span>
+                        <div class="kpi-icon bg-warning bg-opacity-20 text-warning" style="color: #b58105 !important;"><i class="bi bi-currency-dollar"></i></div>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-2" id="kpi-net-profit-hari-ini">Rp 0</h4>
+                    <span class="text-muted d-block" style="font-size: 10px;" id="lbl-hpp-terhitung">Modal/HPP Terhitung: Rp 0</span>
+                </div>
+                <div class="text-end mt-2 pt-1 border-top">
+                    <button class="btn btn-sm btn-link py-0 text-decoration-none text-dark fw-bold small p-0" style="font-size: 11px;" onclick="bukaModalHpp()">Input Unit & Modal</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BARIS 3, KOLOM 1: Take Home Cash -->
         <div class="col-md-4">
             <div class="premium-card d-flex flex-column justify-content-between" style="border-left: 4px solid #20c997;">
                 <div>
@@ -158,7 +179,7 @@
             </div>
         </div>
 
-        <!-- BARIS 2, KOLOM 3: Sisa Piutang Global -->
+        <!-- BARIS 3, KOLOM 2: Sisa Piutang Global -->
         <div class="col-md-4">
             <div class="premium-card d-flex flex-column justify-content-between" style="border-left: 4px solid #dc3545;">
                 <div>
@@ -194,7 +215,7 @@
         </div>
     </div>
 
-    <!-- MODUL BARU: RIWAYAT HASIL DASHBOARD PER TANGGAL -->
+    <!-- MODUL RIWAYAT HASIL DASHBOARD PER TANGGAL -->
     <div class="premium-card">
         <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-calendar-check text-secondary"></i> Riwayat Hasil Akumulasi Finansial (7 Hari Terakhir)</h6>
         <div class="table-responsive">
@@ -241,7 +262,7 @@
     </div>
 </div>
 
-<!-- Modal Input Setoran Piutang Murni (UPDATE: Ditambah Nama Konsumen) -->
+<!-- Modal Input Setoran Piutang Murni -->
 <div class="modal fade" id="modalSetoran" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content rounded-3">
@@ -306,6 +327,55 @@
     </div>
 </div>
 
+<!-- MODAL INPUT HPP/MODAL PRODUK TERJUAL (BARU) -->
+<div class="modal fade" id="modalHpp" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-3">
+            <div class="modal-header bg-dark text-white py-2">
+                <h6 class="modal-title fw-bold m-0 style" style="font-size:14px;"><i class="bi bi-box-seam text-warning"></i> Input Volume Terjual & Harga Modal Harian</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle text-center" style="font-size:13px;">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nama Produk</th>
+                                <th style="width: 25%;">Vol Terjual</th>
+                                <th style="width: 40%;">Harga Modal (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-start fw-bold">Ayam Potong</td>
+                                <td><input type="number" step="0.1" class="form-control form-control-sm text-center" id="vol-potong" placeholder="Kg" oninput="hitungSimulasiHpp()"></td>
+                                <td><input type="text" class="form-control form-control-sm text-end input-rupiah-live" id="mod-potong" value="Rp 25.000" oninput="hitungSimulasiHpp()"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-start fw-bold">Ayam Penyet</td>
+                                <td><input type="number" class="form-control form-control-sm text-center" id="vol-penyet" placeholder="Ekor" oninput="hitungSimulasiHpp()"></td>
+                                <td><input type="text" class="form-control form-control-sm text-end input-rupiah-live" id="mod-penyet" value="Rp 27.000" oninput="hitungSimulasiHpp()"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-start fw-bold">Ayam Merah</td>
+                                <td><input type="number" class="form-control form-control-sm text-center" id="vol-merah" placeholder="Ekor" oninput="hitungSimulasiHpp()"></td>
+                                <td><input type="text" class="form-control form-control-sm text-end input-rupiah-live" id="mod-merah" value="Rp 40.000" oninput="hitungSimulasiHpp()"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="p-2 mb-3 rounded block-kuning d-flex justify-content-between align-items-center">
+                    <span class="small fw-bold text-muted">ESTIMASI TOTAL HPP / MODAL:</span>
+                    <span class="fw-bold text-danger" id="display-total-hpp-modal">Rp 0</span>
+                </div>
+
+                <button class="btn btn-warning text-dark w-100 btn-sm fw-bold shadow-sm" onclick="simpanHppManual()">Simpan Data Modal & Hitung Net Profit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
@@ -322,6 +392,12 @@
     let manualNamaKonsumenSetoran = "";
     let listPengeluaranHarian = [];
 
+    // State HPP Modal Pokok Produk Terjual (BARU)
+    let vPotong = 0; mPotong = 25000;
+    let vPenyet = 0; mPenyet = 27000;
+    let vMerah = 0; mMerah = 40000;
+    let akumulasiHppHariIni = 0;
+
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(Math.round(angka)); }
     function menguraiAngka(str) { if(!str) return 0; return parseInt(str.toString().replace(/\D/g, '')) || 0; }
     
@@ -335,13 +411,22 @@
 
     function inisialisasiFormatRupiahLive() {
         document.querySelectorAll('.input-rupiah-live').forEach(input => {
-            input.addEventListener('input', function() {
-                let nilaiBersih = this.value.replace(/\D/g, '');
-                this.value = nilaiBersih === "" ? "Rp 0" : formatRupiah(parseInt(nilaiBersih));
-            });
+            input.removeEventListener('input', handleRupiahMask);
+            input.addEventListener('input', handleRupiahMask);
+            
             input.addEventListener('focus', function() { if(this.value === "Rp 0") this.value = ""; });
             input.addEventListener('blur', function() { if(this.value === "") this.value = "Rp 0"; });
         });
+    }
+
+    function handleRupiahMask() {
+        let nilaiBersih = this.value.replace(/\D/g, '');
+        this.value = nilaiBersih === "" ? "Rp 0" : formatRupiah(parseInt(nilaiBersih));
+        
+        // Integrasi trigger realtime jika input diubah di dalam modal HPP
+        if(this.id === "mod-potong" || this.id === "mod-penyet" || this.id === "mod-merah") {
+            hitungSimulasiHpp();
+        }
     }
 
     async function muatDataDashboard() {
@@ -358,7 +443,6 @@
                 masterCustomer = res.customers;
                 dataTransaksi = res.transaksis;
                 
-                // Isi dropdown modal setoran dengan daftar nama customer aktif
                 const selectK = document.getElementById("in-setoran-konsumen");
                 selectK.innerHTML = '<option value="">-- Pilih Pelanggan --</option>';
                 masterCustomer.forEach(c => {
@@ -378,7 +462,6 @@
     function prosesDanRenderDashboard() {
         const tglHariIni = getHariIniFormatted();
 
-        // Hitung Piutang Global Berjalan per Customer (Otomatis cloud)
         let mapPiutangCustomer = {};
         masterCustomer.forEach(c => { mapPiutangCustomer[c.nama] = 0; });
         
@@ -396,12 +479,14 @@
         }
         listDebtors.sort((a,b) => b.piutang - a.piutang);
 
-        // Hitung Total Pengeluaran
         let totalBiayaPengeluaran = listPengeluaranHarian.reduce((acc, curr) => acc + curr.biaya, 0);
 
-        // Logika Finansial Utama
+        // LOGIKA FINANSIAL REVISI (GROSS & NET PROFIT)
         let totalOmsetHariIni = manualOmsetCash + manualOmsetBon;
-        let profitHariIni = totalOmsetHariIni - totalBiayaPengeluaran;
+        let grossProfitHariIni = totalOmsetHariIni - totalBiayaPengeluaran;
+        
+        // Net profit dikurangi akumulasi HPP produk terjual
+        let netProfitHariIni = totalOmsetHariIni - akumulasiHppHariIni - totalBiayaPengeluaran;
         let takeHomeHariIni = (manualOmsetCash + manualSetoranMurni) - totalBiayaPengeluaran;
 
         // Render Angka Utama ke DOM
@@ -414,10 +499,12 @@
         document.getElementById("count-pengeluaran").innerText = `${listPengeluaranHarian.length} Item Terdaftar`;
         document.getElementById("kpi-piutang-global").innerText = formatRupiah(totalPiutangGlobal);
 
-        document.getElementById("kpi-profit-hari-ini").innerText = formatRupiah(profitHariIni);
+        document.getElementById("kpi-profit-hari-ini").innerText = formatRupiah(grossProfitHariIni);
+        document.getElementById("kpi-net-profit-hari-ini").innerText = formatRupiah(netProfitHariIni);
+        document.getElementById("lbl-hpp-terhitung").innerText = `Modal/HPP Terhitung: ${formatRupiah(akumulasiHppHariIni)}`;
+        
         document.getElementById("kpi-takehome-hari-ini").innerText = formatRupiah(takeHomeHariIni);
 
-        // Render List Tanggungan Terbesar (Otomatis)
         const debtorsContainer = document.getElementById("top-debtors-list");
         debtorsContainer.innerHTML = "";
         if(listDebtors.length === 0) {
@@ -432,9 +519,7 @@
             });
         }
 
-        // Render Riwayat Hasil Dashboard Per Tanggal (7 Hari Terakhir)
         renderTabelRiwayatHarian(totalOmsetHariIni, manualSetoranMurni);
-
         renderTrendChartEngine();
     }
 
@@ -626,6 +711,49 @@
             renderTabelPengeluaranLokal();
             prosesDanRenderDashboard();
         }
+    }
+
+    // ================= FUNGSI LOGIKA BARU: POPUP MODAL HPP & NET PROFIT =================
+    function bukaModalHpp() {
+        document.getElementById("vol-potong").value = vPotong === 0 ? "" : vPotong;
+        document.getElementById("vol-penyet").value = vPenyet === 0 ? "" : vPenyet;
+        document.getElementById("vol-merah").value = vMerah === 0 ? "" : vMerah;
+
+        document.getElementById("mod-potong").value = formatRupiah(mPotong);
+        document.getElementById("mod-penyet").value = formatRupiah(mPenyet);
+        document.getElementById("mod-merah").value = formatRupiah(mMerah);
+
+        hitungSimulasiHpp();
+        new bootstrap.Modal(document.getElementById('modalHpp')).show();
+    }
+
+    function hitungSimulasiHpp() {
+        let vp = parseFloat(document.getElementById("vol-potong").value) || 0;
+        let mp = menguraiAngka(document.getElementById("mod-potong").value);
+        let vnyet = parseInt(document.getElementById("vol-penyet").value) || 0;
+        let mnyet = menguraiAngka(document.getElementById("mod-penyet").value);
+        let vm = parseInt(document.getElementById("vol-merah").value) || 0;
+        let mm = menguraiAngka(document.getElementById("mod-merah").value);
+
+        let totalSimulasi = (vp * mp) + (vnyet * mnyet) + (vm * mm);
+        document.getElementById("display-total-hpp-modal").innerText = formatRupiah(totalSimulasi);
+    }
+
+    function simpanHppManual() {
+        vPotong = parseFloat(document.getElementById("vol-potong").value) || 0;
+        mPotong = menguraiAngka(document.getElementById("mod-potong").value);
+        
+        vPenyet = parseInt(document.getElementById("vol-penyet").value) || 0;
+        mPenyet = menguraiAngka(document.getElementById("mod-penyet").value);
+        
+        vMerah = parseInt(document.getElementById("vol-merah").value) || 0;
+        mMerah = menguraiAngka(document.getElementById("mod-merah").value);
+
+        // Kunci nilai akhir HPP ke variabel global harian
+        akumulasiHppHariIni = (vPotong * mPotong) + (vPenyet * mPenyet) + (vMerah * mMerah);
+
+        bootstrap.Modal.getInstance(document.getElementById('modalHpp')).hide();
+        prosesDanRenderDashboard();
     }
 
     // Init onload
