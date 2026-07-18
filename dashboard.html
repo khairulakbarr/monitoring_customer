@@ -192,7 +192,7 @@
         </div>
     </div>
 
-    <!-- MODUL RIWAYAT HASIL DASHBOARD PER TANGGAL (PERBAIKAN STRUKTUR HTML) -->
+    <!-- MODUL RIWAYAT HASIL DASHBOARD PER TANGGAL (FIX 7 KOLOM BARU) -->
     <div class="premium-card mb-4">
         <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-calendar-check text-secondary"></i> Riwayat Hasil Akumulasi Finansial (7 Hari Terakhir)</h6>
         <div class="table-responsive">
@@ -200,15 +200,16 @@
                 <thead class="table-dark">
                     <tr>
                         <th>Tanggal</th>
-                        <th>Omset Hari Ini (Sales)</th>
+                        <th>Penjualan Cash/Bon</th>
+                        <th>STR Piutang</th>
                         <th>Pengeluaran Toko</th>
                         <th>Gross Profit</th>
                         <th>Net Profit</th>
-                        <th>Take Home (Cash)</th>
+                        <th>Take Home Cash</th>
                     </tr>
                 </thead>
                 <tbody id="riwayat-dashboard-body">
-                    <tr><td colspan="6" class="text-muted py-3">Memuat riwayat performa harian...</td></tr>
+                    <tr><td colspan="7" class="text-muted py-3">Memuat riwayat performa harian...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -480,36 +481,48 @@
 
         // Balik urutan agar tanggal terbaru (Hari Ini) muncul paling atas di tabel
         labelDates.reverse().forEach(tgl => {
-            let omsetTgl = 0;
+            let cashTgl = 0;
+            let bonTgl = 0;
+            let strPiutangTgl = 0;
             let pengeluaranTgl = 0;
             let grossTgl = 0;
             let netTgl = 0;
             let takeHomeTgl = 0;
 
             if(tgl === tglHariIni) {
-                // Ambil data riil dari state input manual hari ini yang sedang berjalan
                 let totalBiayaPengeluaran = listPengeluaranHarian.reduce((acc, curr) => acc + curr.biaya, 0);
-                omsetTgl = manualOmset;
+                cashTgl = manualOmsetCash;
+                bonTgl = manualOmsetBon;
+                strPiutangTgl = manualSetoran;
                 pengeluaranTgl = totalBiayaPengeluaran;
-                grossTgl = omsetTgl - pengeluaranTgl;
-                netTgl = omsetTgl - akumulasiHppHariIni - pengeluaranTgl;
-                takeHomeTgl = (manualOmsetCash + manualSetoranMurni) - totalBiayaPengeluaran;
+                grossTgl = (cashTgl + bonTgl) - pengeluaranTgl;
+                netTgl = (cashTgl + bonTgl) - akumulasiHppHariIni - pengeluaranTgl;
+                takeHomeTgl = (cashTgl + strPiutangTgl) - pengeluaranTgl;
             } else {
-                // Tarik data historis dari database cloud transaksi (berdasarkan kecocokan tanggal)
                 dataTransaksi.forEach(tx => {
                     if(tx.tanggal === tgl) {
-                        omsetTgl += tx.totalBelanja;
-                        takeHomeTgl += tx.payment; 
+                        // Cloud lama: membagi ke cash jika payment = totalBelanja, sisanya masuk bon
+                        if(tx.payment >= tx.totalBelanja) {
+                            cashTgl += tx.totalBelanja;
+                        } else {
+                            cashTgl += tx.payment;
+                            bonTgl += (tx.totalBelanja - tx.payment);
+                        }
                     }
                 });
-                grossTgl = omsetTgl - pengeluaranTgl;
-                netTgl = omsetTgl - pengeluaranTgl; // Default fallback historis cloud
+                grossTgl = (cashTgl + bonTgl) - pengeluaranTgl;
+                netTgl = (cashTgl + bonTgl) - pengeluaranTgl;
+                takeHomeTgl = cashTgl + strPiutangTgl;
             }
 
             tbody.innerHTML += `
                 <tr>
                     <td class="fw-semibold text-dark">${tgl === tglHariIni ? tgl + ' (Hari Ini)' : tgl}</td>
-                    <td>${formatRupiah(omsetTgl)}</td>
+                    <td>
+                        <div class="fw-bold text-dark">${formatRupiah(cashTgl + bonTgl)}</div>
+                        <div style="font-size: 10px;" class="text-muted">C: ${formatRupiah(cashTgl)} | B: ${formatRupiah(bonTgl)}</div>
+                    </td>
+                    <td class="text-success">${formatRupiah(strPiutangTgl)}</td>
                     <td class="text-warning" style="color: #b58105 !important;">${formatRupiah(pengeluaranTgl)}</td>
                     <td class="text-primary fw-bold">${formatRupiah(grossTgl)}</td>
                     <td class="text-dark fw-bold">${formatRupiah(netTgl)}</td>
