@@ -8,6 +8,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- HTML2CANVAS untuk Fitur Download PNG Eksklusif -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
             --bg-main: #f4f6f9;
@@ -242,7 +244,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-3">
             <div class="modal-header bg-dark text-white py-2 no-print">
-                <h6 class="modal-title fw-bold m-0"><i class="bi bi-printer"></i> Jurnal Transaksi Harian</h6>
+                <h6 class="modal-title fw-bold m-0"><i class="bi bi-receipt"></i> Jurnal Transaksi Harian</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body bg-light">
@@ -250,7 +252,7 @@
             </div>
             <div class="modal-footer py-1 no-print">
                 <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                <button class="btn btn-sm btn-primary fw-bold" onclick="window.print()"><i class="bi bi-file-pdf"></i> Cetak Jurnal (PDF/PNG)</button>
+                <button class="btn btn-sm btn-success fw-bold" onclick="unduhJurnalSebagaiPNG()"><i class="bi bi-download"></i> Unduh Jurnal (PNG)</button>
             </div>
         </div>
     </div>
@@ -635,7 +637,7 @@
 
         let htmlNota = `
             <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:10px; margin-bottom:10px;">
-                <h5 style="font-weight:bold; margin:0;">JURNAL HARIAN STORE</h5>
+                <h5 style="font-weight:bold; margin:0;">JURNAL HARIAN UD. DOA AKBAR</h5>
                 <small>Tanggal Dokumen: ${tgl}</small>
             </div>
             
@@ -693,6 +695,41 @@
 
         document.getElementById("area-cetak-jurnal").innerHTML = htmlNota;
         new bootstrap.Modal(document.getElementById('modalCetakJurnal')).show();
+    }
+
+    // ================= FITUR UNDUH JURNAL INSTAN JADI PNG (SUPPORT DESKTOP & SAFARI) =================
+    function unduhJurnalSebagaiPNG() {
+        const elemenJurnal = document.getElementById("area-cetak-jurnal");
+        
+        // Ambil tanggal dokumen untuk penamaan file otomatis
+        const headerJurnal = elemenJurnal.querySelector("small");
+        let namaFile = "Jurnal_Harian_UD_Doa_Akbar";
+        if (headerJurnal) {
+            const tglClean = headerJurnal.innerText.replace("Tanggal Dokumen: ", "").replace(/\//g, "-");
+            namaFile = `Jurnal_UD_Doa_Akbar_${tglClean}`;
+        }
+
+        // Eksekusi html2canvas dengan opsi skala tinggi agar gambar tajam/tidak pecah
+        html2canvas(elemenJurnal, {
+            scale: 2, 
+            useCORS: true,
+            backgroundColor: "#ffffff"
+        }).then(canvas => {
+            // Konversi canvas menjadi data URL PNG
+            const imgData = canvas.toDataURL("image/png");
+            
+            // Membuat elemen link download temporary
+            const linkDownload = document.createElement("a");
+            linkDownload.href = imgData;
+            linkDownload.download = `${namaFile}.png`;
+            
+            // Trigger klik download otomatis (Kompatibel untuk Desktop & Safari Modern)
+            document.body.appendChild(linkDownload);
+            linkDownload.click();
+            document.body.removeChild(linkDownload);
+        }).catch(err => {
+            alert("Waduh, gagal generate gambar PNG: " + err);
+        });
     }
 
     function renderTrendChartEngine() {
