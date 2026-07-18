@@ -78,7 +78,7 @@
         </div>
     </div>
 
-    <!-- GRID MENU UTAMA: MODIFIKASI FITUR PROFIT -->
+    <!-- GRID MENU UTAMA: PAS 2 BARIS 3 KOLOM -->
     <div class="row g-3 mb-4">
         <!-- BARIS 1, KOLOM 1: Omset Penjualan -->
         <div class="col-md-4">
@@ -134,7 +134,7 @@
             </div>
         </div>
 
-        <!-- BARIS 2, KOLOM 1: REVISI JADI GROSS PROFIT -->
+        <!-- BARIS 2, KOLOM 1: Gross Profit -->
         <div class="col-md-4">
             <div class="premium-card d-flex flex-column justify-content-between" style="border-left: 4px solid #0d6efd;">
                 <div>
@@ -148,7 +148,7 @@
             </div>
         </div>
 
-        <!-- BARIS 2, KOLOM 2: NET PROFIT HARIAN (BARU) -->
+        <!-- BARIS 2, KOLOM 2: Net Profit Harian -->
         <div class="col-md-4">
             <div class="premium-card d-flex flex-column justify-content-between" style="border-left: 4px solid #ffc107;">
                 <div>
@@ -165,7 +165,7 @@
             </div>
         </div>
 
-        <!-- BARIS 3, KOLOM 1: Take Home Cash -->
+        <!-- BARIS 2, KOLOM 3: Take Home Cash -->
         <div class="col-md-4">
             <div class="premium-card d-flex flex-column justify-content-between" style="border-left: 4px solid #20c997;">
                 <div>
@@ -178,38 +178,15 @@
                 </div>
             </div>
         </div>
-
-        <!-- BARIS 3, KOLOM 2: Sisa Piutang Global -->
-        <div class="col-md-4">
-            <div class="premium-card d-flex flex-column justify-content-between" style="border-left: 4px solid #dc3545;">
-                <div>
-                    <div class="d-flex justify-content-between align-items-start mb-1">
-                        <span class="small text-muted fw-bold d-block" style="font-size: 11px;">SISA PIUTANG GLOBAL</span>
-                        <div class="kpi-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-exclamation-triangle-fill"></i></div>
-                    </div>
-                    <h4 class="fw-bold text-danger mb-2" id="kpi-piutang-global">Rp 0</h4>
-                    <span class="text-muted d-block" style="font-size: 10px;">Otomatis sinkron dari buku utama</span>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <!-- GRAFIK TREN & TANGGUNGAN TERBESAR -->
-    <div class="row g-4 mb-4">
-        <div class="col-lg-8">
+    <!-- GRAFIK TREN (LEBAR PENUH SEKARANG) -->
+    <div class="row mb-4">
+        <div class="col-12">
             <div class="premium-card">
                 <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-graph-up-arrow text-primary"></i> Tren Penjualan & Kas Masuk (7 Hari Terakhir)</h6>
-                <div style="position: relative; height:260px;">
+                <div style="position: relative; height:280px;">
                     <canvas id="trendChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="premium-card">
-                <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-person-lines-fill text-danger"></i> Daftar Tanggungan Terbesar</h6>
-                <div class="list-group list-group-flush" id="top-debtors-list" style="max-height: 260px; overflow-y: auto;">
-                    <div class="text-center p-3 text-muted small">Memuat data tagihan...</div>
                 </div>
             </div>
         </div>
@@ -327,12 +304,12 @@
     </div>
 </div>
 
-<!-- MODAL INPUT HPP/MODAL PRODUK TERJUAL (BARU) -->
+<!-- MODAL INPUT HPP/MODAL PRODUK TERJUAL -->
 <div class="modal fade" id="modalHpp" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-3">
             <div class="modal-header bg-dark text-white py-2">
-                <h6 class="modal-title fw-bold m-0 style" style="font-size:14px;"><i class="bi bi-box-seam text-warning"></i> Input Volume Terjual & Harga Modal Harian</h6>
+                <h6 class="modal-title fw-bold m-0" style="font-size:14px;"><i class="bi bi-box-seam text-warning"></i> Input Volume Terjual & Harga Modal Harian</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body py-3">
@@ -392,7 +369,7 @@
     let manualNamaKonsumenSetoran = "";
     let listPengeluaranHarian = [];
 
-    // State HPP Modal Pokok Produk Terjual (BARU)
+    // State HPP Modal Pokok Produk Terjual
     let vPotong = 0; mPotong = 25000;
     let vPenyet = 0; mPenyet = 27000;
     let vMerah = 0; mMerah = 40000;
@@ -423,7 +400,6 @@
         let nilaiBersih = this.value.replace(/\D/g, '');
         this.value = nilaiBersih === "" ? "Rp 0" : formatRupiah(parseInt(nilaiBersih));
         
-        // Integrasi trigger realtime jika input diubah di dalam modal HPP
         if(this.id === "mod-potong" || this.id === "mod-penyet" || this.id === "mod-merah") {
             hitungSimulasiHpp();
         }
@@ -460,32 +436,11 @@
     }
 
     function prosesDanRenderDashboard() {
-        const tglHariIni = getHariIniFormatted();
-
-        let mapPiutangCustomer = {};
-        masterCustomer.forEach(c => { mapPiutangCustomer[c.nama] = 0; });
-        
-        dataTransaksi.forEach(tx => {
-            if(!mapPiutangCustomer[tx.pelanggan]) mapPiutangCustomer[tx.pelanggan] = 0;
-            mapPiutangCustomer[tx.pelanggan] += (tx.totalBelanja - tx.payment);
-        });
-
-        let totalPiutangGlobal = 0;
-        let listDebtors = [];
-        for (let name in mapPiutangCustomer) {
-            let saldo = mapPiutangCustomer[name];
-            totalPiutangGlobal += saldo;
-            if(saldo > 0) listDebtors.push({ nama: name, piutang: saldo });
-        }
-        listDebtors.sort((a,b) => b.piutang - a.piutang);
-
         let totalBiayaPengeluaran = listPengeluaranHarian.reduce((acc, curr) => acc + curr.biaya, 0);
 
-        // LOGIKA FINANSIAL REVISI (GROSS & NET PROFIT)
+        // LOGIKA FINANSIAL REVISI
         let totalOmsetHariIni = manualOmsetCash + manualOmsetBon;
         let grossProfitHariIni = totalOmsetHariIni - totalBiayaPengeluaran;
-        
-        // Net profit dikurangi akumulasi HPP produk terjual
         let netProfitHariIni = totalOmsetHariIni - akumulasiHppHariIni - totalBiayaPengeluaran;
         let takeHomeHariIni = (manualOmsetCash + manualSetoranMurni) - totalBiayaPengeluaran;
 
@@ -497,27 +452,12 @@
         document.getElementById("kpi-kas-hari-ini").innerText = formatRupiah(manualSetoranMurni);
         document.getElementById("kpi-pengeluaran-hari-ini").innerText = formatRupiah(totalBiayaPengeluaran);
         document.getElementById("count-pengeluaran").innerText = `${listPengeluaranHarian.length} Item Terdaftar`;
-        document.getElementById("kpi-piutang-global").innerText = formatRupiah(totalPiutangGlobal);
 
         document.getElementById("kpi-profit-hari-ini").innerText = formatRupiah(grossProfitHariIni);
         document.getElementById("kpi-net-profit-hari-ini").innerText = formatRupiah(netProfitHariIni);
         document.getElementById("lbl-hpp-terhitung").innerText = `Modal/HPP Terhitung: ${formatRupiah(akumulasiHppHariIni)}`;
         
         document.getElementById("kpi-takehome-hari-ini").innerText = formatRupiah(takeHomeHariIni);
-
-        const debtorsContainer = document.getElementById("top-debtors-list");
-        debtorsContainer.innerHTML = "";
-        if(listDebtors.length === 0) {
-            debtorsContainer.innerHTML = `<div class="text-center p-3 text-success small"><i class="bi bi-check-circle-fill"></i> Semua tagihan customer lunas!</div>`;
-        } else {
-            listDebtors.slice(0, 10).forEach(d => {
-                debtorsContainer.innerHTML += `
-                    <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 border-bottom">
-                        <span class="fw-semibold text-dark small">${d.nama}</span>
-                        <span class="badge bg-danger bg-opacity-10 text-danger fw-bold rounded-pill" style="font-size:11px;">${formatRupiah(d.piutang)}</span>
-                    </div>`;
-            });
-        }
 
         renderTabelRiwayatHarian(totalOmsetHariIni, manualSetoranMurni);
         renderTrendChartEngine();
@@ -643,6 +583,7 @@
         prosesDanRenderDashboard();
     }
 
+    // (Logika dropdown dibersihkan dari pemrosesan piutang customer global)
     function bukaModalSetoran() {
         document.getElementById("in-setoran-konsumen").value = manualNamaKonsumenSetoran;
         document.getElementById("in-setoran-murni").value = formatRupiah(manualSetoranMurni);
@@ -713,7 +654,7 @@
         }
     }
 
-    // ================= FUNGSI LOGIKA BARU: POPUP MODAL HPP & NET PROFIT =================
+    // ================= FUNGSI LOGIKA POPUP MODAL HPP & NET PROFIT =================
     function bukaModalHpp() {
         document.getElementById("vol-potong").value = vPotong === 0 ? "" : vPotong;
         document.getElementById("vol-penyet").value = vPenyet === 0 ? "" : vPenyet;
@@ -749,7 +690,6 @@
         vMerah = parseInt(document.getElementById("vol-merah").value) || 0;
         mMerah = menguraiAngka(document.getElementById("mod-merah").value);
 
-        // Kunci nilai akhir HPP ke variabel global harian
         akumulasiHppHariIni = (vPotong * mPotong) + (vPenyet * mPenyet) + (vMerah * mMerah);
 
         bootstrap.Modal.getInstance(document.getElementById('modalHpp')).hide();
