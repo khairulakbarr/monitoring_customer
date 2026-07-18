@@ -193,26 +193,16 @@
     </div>
 
     <!-- MODUL RIWAYAT HASIL DASHBOARD PER TANGGAL -->
-    <div class="premium-card">
-        <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-calendar-check text-secondary"></i> Riwayat Hasil Akumulasi Finansial (7 Hari Terakhir)</h6>
-        <div class="table-responsive">
-            <table class="table table-sm table-striped table-bordered align-middle text-center mb-0" style="font-size: 12px;">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Tanggal</th>
-                        <th>Omset Belanja</th>
-                        <th>Kas Masuk/Setoran</th>
-                        <th>Piutang Baru Terbentuk</th>
-                        <th>Status Performa</th>
-                    </tr>
-                </thead>
-                <tbody id="riwayat-dashboard-body">
-                    <tr><td colspan="5" class="text-muted py-3">Memuat riwayat performa harian...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+<thead class="table-dark">
+    <tr>
+        <th>Tanggal</th>
+        <th>Omset Hari Ini (Sales)</th>
+        <th>Pengeluaran Toko</th>
+        <th>Gross Profit</th>
+        <th>Net Profit</th>
+        <th>Take Home (Cash)</th>
+    </tr>
+</thead>
 
 <!-- ================= MODAL DIALOG INPUT MANUAL HARI INI ================= -->
 
@@ -477,41 +467,47 @@
         const tbody = document.getElementById("riwayat-dashboard-body");
         tbody.innerHTML = "";
 
+        // Balik urutan agar tanggal terbaru (Hari Ini) muncul paling atas di tabel
         labelDates.reverse().forEach(tgl => {
             let omsetTgl = 0;
-            let kasTgl = 0;
+            let pengeluaranTgl = 0;
+            let grossTgl = 0;
+            let netTgl = 0;
+            let takeHomeTgl = 0;
 
             if(tgl === tglHariIni) {
+                // Ambil data riil dari state input manual hari ini yang sedang berjalan
+                let totalBiayaPengeluaran = listPengeluaranHarian.reduce((acc, curr) => acc + curr.biaya, 0);
                 omsetTgl = manualOmset;
-                kasTgl = manualSetoran;
+                pengeluaranTgl = totalBiayaPengeluaran;
+                grossTgl = omsetTgl - pengeluaranTgl;
+                netTgl = omsetTgl - akumulasiHppHariIni - pengeluaranTgl;
+                takeHomeTgl = (manualOmsetCash + manualSetoranMurni) - totalBiayaPengeluaran;
             } else {
+                // Tarik data historis dari database cloud transaksi (berdasarkan kecocokan tanggal)
                 dataTransaksi.forEach(tx => {
                     if(tx.tanggal === tgl) {
                         omsetTgl += tx.totalBelanja;
-                        kasTgl += tx.payment;
+                        // Catatan: Data cloud lama belum mencatat pengeluaran/HPP secara dinamis, 
+                        // jadi dikalkulasi berbasis data sales/payment cloud yang tersedia.
+                        takeHomeTgl += tx.payment; 
                     }
                 });
-            }
-
-            let selisihPiutang = omsetTgl - kasTgl;
-            let statusBadge = `<span class="badge bg-success rounded-pill">Surplus Kas</span>`;
-            if(selisihPiutang > 0) {
-                statusBadge = `<span class="badge bg-warning text-dark rounded-pill">+ Piutang</span>`;
-            } else if (omsetTgl === 0 && kasTgl === 0) {
-                statusBadge = `<span class="badge bg-secondary rounded-pill">Kosong</span>`;
+                grossTgl = omsetTgl - pengeluaranTgl;
+                netTgl = omsetTgl - pengeluaranTgl; // Default fallback historis cloud
             }
 
             tbody.innerHTML += `
                 <tr>
                     <td class="fw-semibold text-dark">${tgl === tglHariIni ? tgl + ' (Hari Ini)' : tgl}</td>
                     <td>${formatRupiah(omsetTgl)}</td>
-                    <td>${formatRupiah(kasTgl)}</td>
-                    <td class="${selisihPiutang > 0 ? 'text-danger fw-bold' : 'text-success'}">${selisihPiutang > 0 ? formatRupiah(selisihPiutang) : 'Rp 0'}</td>
-                    <td>${statusBadge}</td>
+                    <td class="text-warning" style="color: #b58105 !important;">${formatRupiah(pengeluaranTgl)}</td>
+                    <td class="text-primary fw-bold">${formatRupiah(grossTgl)}</td>
+                    <td class="text-dark fw-bold">${formatRupiah(netTgl)}</td>
+                    <td class="text-success fw-bold">${formatRupiah(takeHomeTgl)}</td>
                 </tr>`;
         });
     }
-
     function renderTrendChartEngine() {
         let labelDates = [];
         for(let i=6; i>=0; i--) {
