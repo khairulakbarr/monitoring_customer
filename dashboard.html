@@ -47,11 +47,31 @@
             background-color: #FFF9E6 !important;
             border-left: 4px solid #FFCC00;
         }
+        /* Style Nota Jurnal untuk Print/Cetak */
+        .nota-jurnal {
+            font-family: 'Courier New', Courier, monospace;
+            background: #fff;
+            color: #000;
+            padding: 20px;
+            border: 1px dashed #000;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #area-cetak-jurnal, #area-cetak-jurnal * { visibility: visible; }
+            #area-cetak-jurnal { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
     </style>
 </head>
 <body>
 
 <div class="container py-4">
+    <!-- TARGET EDIT WARNING BAR -->
+    <div id="edit-warning-bar" class="alert alert-warning d-none flex-between align-items-center fw-bold shadow-sm mb-3">
+        <span><i class="bi bi-pencil-square"></i> Mode Koreksi Data Histori Tanggal: <span id="lbl-target-edit-tanggal"></span></span>
+        <button class="btn btn-sm btn-dark fw-bold ms-3" onclick="keluarModeEdit()">Selesai & Kembali Ke Hari Ini</button>
+    </div>
+
     <!-- SYNC STATUS BAR -->
     <div class="d-flex justify-content-between align-items-center mb-4 px-3 py-2 bg-white rounded-3 border shadow-sm">
         <div id="sync-status" class="small fw-bold text-muted">
@@ -78,14 +98,14 @@
         </div>
     </div>
 
-    <!-- GRID MENU UTAMA: PAS 2 BARIS 3 KOLOM -->
+    <!-- GRID MENU UTAMA -->
     <div class="row g-3 mb-4">
-        <!-- BARIS 1, KOLOM 1: Omset Penjualan -->
+        <!-- OMSET -->
         <div class="col-md-4">
             <div class="premium-card d-flex flex-column justify-content-between">
                 <div>
                     <div class="d-flex justify-content-between align-items-start mb-1">
-                        <span class="small text-muted fw-bold d-block" style="font-size: 11px;">OMSET HARI INI</span>
+                        <span class="small text-muted fw-bold d-block" style="font-size: 11px;">OMSET <span class="txt-aktif-tgl">HARI INI</span></span>
                         <div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-cart-check-fill"></i></div>
                     </div>
                     <h4 class="fw-bold text-dark mb-2" id="kpi-omset-hari-ini">Rp 0</h4>
@@ -100,7 +120,7 @@
             </div>
         </div>
 
-        <!-- BARIS 1, KOLOM 2: Setoran Piutang Lalu -->
+        <!-- SETORAN PIUTANG LALU -->
         <div class="col-md-4">
             <div class="premium-card d-flex flex-column justify-content-between">
                 <div>
@@ -109,7 +129,7 @@
                         <div class="kpi-icon bg-success bg-opacity-10 text-success"><i class="bi bi-cash-coin"></i></div>
                     </div>
                     <h4 class="fw-bold text-success mb-2" id="kpi-kas-hari-ini">Rp 0</h4>
-                    <span class="text-muted d-block" style="font-size: 10px; line-height:1.2;">Cicilan piutang konsumen tanpa order baru hari ini.</span>
+                    <span class="text-muted d-block" style="font-size: 10px; line-height:1.2;">Cicilan piutang konsumen tanpa order baru harian.</span>
                 </div>
                 <div class="text-end mt-2 pt-1 border-top">
                     <button class="btn btn-sm btn-link py-0 text-decoration-none text-success fw-bold small p-0" style="font-size: 11px;" onclick="bukaModalSetoran()">Input Setoran</button>
@@ -117,7 +137,7 @@
             </div>
         </div>
 
-        <!-- BARIS 1, KOLOM 3: Pengeluaran Toko -->
+        <!-- PENGELUARAN TOKO -->
         <div class="col-md-4">
             <div class="premium-card d-flex flex-column justify-content-between">
                 <div>
@@ -134,7 +154,7 @@
             </div>
         </div>
 
-        <!-- BARIS 2, KOLOM 1: Gross Profit -->
+        <!-- GROSS PROFIT -->
         <div class="col-md-4">
             <div class="premium-card d-flex flex-column justify-content-between" style="border-left: 4px solid #0d6efd;">
                 <div>
@@ -148,7 +168,7 @@
             </div>
         </div>
 
-        <!-- BARIS 2, KOLOM 2: Net Profit Harian -->
+        <!-- NET PROFIT -->
         <div class="col-md-4">
             <div class="premium-card d-flex flex-column justify-content-between" style="border-left: 4px solid #ffc107;">
                 <div>
@@ -165,7 +185,7 @@
             </div>
         </div>
 
-        <!-- BARIS 2, KOLOM 3: Take Home Cash -->
+        <!-- TAKE HOME CASH -->
         <div class="col-md-4">
             <div class="premium-card d-flex flex-column justify-content-between" style="border-left: 4px solid #20c997;">
                 <div>
@@ -180,7 +200,7 @@
         </div>
     </div>
 
-    <!-- GRAFIK TREN (LEBAR PENUH) -->
+    <!-- GRAFIK TREN -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="premium-card">
@@ -192,7 +212,7 @@
         </div>
     </div>
 
-    <!-- MODUL RIWAYAT HASIL DASHBOARD PER TANGGAL (FIX 7 KOLOM BARU) -->
+    <!-- MODUL RIWAYAT DASHBOARD DENGAN KOLOM AKSI JURNAL & EDIT[cite: 2] -->
     <div class="premium-card mb-4">
         <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-calendar-check text-secondary"></i> Riwayat Hasil Akumulasi Finansial (7 Hari Terakhir)</h6>
         <div class="table-responsive">
@@ -206,17 +226,37 @@
                         <th>Gross Profit</th>
                         <th>Net Profit</th>
                         <th>Take Home Cash</th>
+                        <th>Aksi Jurnal</th>
                     </tr>
                 </thead>
                 <tbody id="riwayat-dashboard-body">
-                    <tr><td colspan="7" class="text-muted py-3">Memuat riwayat performa harian...</td></tr>
+                    <tr><td colspan="8" class="text-muted py-3">Memuat riwayat performa harian...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 
-<!-- ================= MODAL DIALOG INPUT MANUAL HARI INI ================= -->
+<!-- ================= MODAL CETAK JURNAL (DAPAT DI-PDF / PRINT) ================= -->
+<div class="modal fade" id="modalCetakJurnal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-3">
+            <div class="modal-header bg-dark text-white py-2 no-print">
+                <h6 class="modal-title fw-bold m-0"><i class="bi bi-printer"></i> Jurnal Transaksi Harian</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bg-light">
+                <div id="area-cetak-jurnal" class="nota-jurnal shadow-sm">
+                    <!-- Dinonaktifkan via JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer py-1 no-print">
+                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button class="btn btn-sm btn-primary fw-bold" onclick="window.print()"><i class="bi bi-file-pdf"></i> Cetak Jurnal (PDF/PNG)</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal Input Omset Harian -->
 <div class="modal fade" id="modalOmset" tabindex="-1" aria-hidden="true">
@@ -364,18 +404,11 @@
     let dataTransaksi = [];
     let chartInstance = null;
 
-    // State Input Manual Lokal Harian Store
-    let manualOmsetCash = 0;
-    let manualOmsetBon = 0;
-    let manualSetoranMurni = 0;
-    let manualNamaKonsumenSetoran = "";
-    let listPengeluaranHarian = [];
+    // Sistem Target Tanggal Aktif (Default: Hari Ini)
+    let tanggalAktifOperasional = ""; 
 
-    // State HPP Modal Pokok Produk Terjual
-    let vPotong = 0; mPotong = 25000;
-    let vPenyet = 0; mPenyet = 27000;
-    let vMerah = 0; mMerah = 40000;
-    let akumulasiHppHariIni = 0;
+    // Database Penyimpanan Finansial Lokal per Tanggal (Menggunakan Objek Key-Value)
+    let databaseManualLokal = JSON.parse(localStorage.getItem('db_store_lokal')) || {};
 
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(Math.round(angka)); }
     function menguraiAngka(str) { if(!str) return 0; return parseInt(str.toString().replace(/\D/g, '')) || 0; }
@@ -388,11 +421,35 @@
         return `${hari}/${bulan}/${tahun}`;
     }
 
+    // Set tanggal aktif default pertama kali saat load
+    tanggalAktifOperasional = getHariIniFormatted();
+
+    // Fungsi inisialisasi state tanggal tertentu di database lokal jika belum ada
+    function siapkanStateTanggal(tgl) {
+        if (!databaseManualLokal[tgl]) {
+            databaseManualLokal[tgl] = {
+                manualOmsetCash: 0,
+                manualOmsetBon: 0,
+                manualSetoranMurni: 0,
+                manualNamaKonsumenSetoran: "",
+                listPengeluaranHarian: [],
+                vPotong: 0, mPotong: 25000,
+                vPenyet: 0, mPenyet: 27000,
+                vMerah: 0, mMerah: 40000,
+                akumulasiHppHariIni: 0
+            };
+        }
+    }
+    siapkanStateTanggal(tanggalAktifOperasional);
+
+    function simpanKeLocalStorage() {
+        localStorage.setItem('db_store_lokal', JSON.stringify(databaseManualLokal));
+    }
+
     function inisialisasiFormatRupiahLive() {
         document.querySelectorAll('.input-rupiah-live').forEach(input => {
             input.removeEventListener('input', handleRupiahMask);
             input.addEventListener('input', handleRupiahMask);
-            
             input.addEventListener('focus', function() { if(this.value === "Rp 0") this.value = ""; });
             input.addEventListener('blur', function() { if(this.value === "") this.value = "Rp 0"; });
         });
@@ -401,7 +458,6 @@
     function handleRupiahMask() {
         let nilaiBersih = this.value.replace(/\D/g, '');
         this.value = nilaiBersih === "" ? "Rp 0" : formatRupiah(parseInt(nilaiBersih));
-        
         if(this.id === "mod-potong" || this.id === "mod-penyet" || this.id === "mod-merah") {
             hitungSimulasiHpp();
         }
@@ -410,7 +466,6 @@
     async function muatDataDashboard() {
         const bar = document.getElementById("sync-status");
         bar.innerHTML = `<span class="text-warning"><div class="spinner-border spinner-border-sm me-1"></div> Menarik ringkasan data store harian...</span>`;
-        
         try {
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: "POST",
@@ -438,34 +493,37 @@
     }
 
     function prosesDanRenderDashboard() {
-        let totalBiayaPengeluaran = listPengeluaranHarian.reduce((acc, curr) => acc + curr.biaya, 0);
+        let state = databaseManualLokal[tanggalAktifOperasional];
+        let totalBiayaPengeluaran = state.listPengeluaranHarian.reduce((acc, curr) => acc + curr.biaya, 0);
 
-        // LOGIKA FINANSIAL REVISI
-        let totalOmsetHariIni = manualOmsetCash + manualOmsetBon;
+        let totalOmsetHariIni = state.manualOmsetCash + state.manualOmsetBon;
         let grossProfitHariIni = totalOmsetHariIni - totalBiayaPengeluaran;
-        let netProfitHariIni = totalOmsetHariIni - akumulasiHppHariIni - totalBiayaPengeluaran;
-        let takeHomeHariIni = (manualOmsetCash + manualSetoranMurni) - totalBiayaPengeluaran;
+        let netProfitHariIni = totalOmsetHariIni - state.akumulasiHppHariIni - totalBiayaPengeluaran;
+        let takeHomeHariIni = (state.manualOmsetCash + state.manualSetoranMurni) - totalBiayaPengeluaran;
 
-        // Render Angka Utama ke DOM
+        // Update DOM Atas
         document.getElementById("kpi-omset-hari-ini").innerText = formatRupiah(totalOmsetHariIni);
-        document.getElementById("sub-omset-cash").innerText = formatRupiah(manualOmsetCash);
-        document.getElementById("sub-omset-bon").innerText = formatRupiah(manualOmsetBon);
-
-        document.getElementById("kpi-kas-hari-ini").innerText = formatRupiah(manualSetoranMurni);
+        document.getElementById("sub-omset-cash").innerText = formatRupiah(state.manualOmsetCash);
+        document.getElementById("sub-omset-bon").innerText = formatRupiah(state.manualOmsetBon);
+        document.getElementById("kpi-kas-hari-ini").innerText = formatRupiah(state.manualSetoranMurni);
         document.getElementById("kpi-pengeluaran-hari-ini").innerText = formatRupiah(totalBiayaPengeluaran);
-        document.getElementById("count-pengeluaran").innerText = `${listPengeluaranHarian.length} Item Terdaftar`;
-
+        document.getElementById("count-pengeluaran").innerText = `${state.listPengeluaranHarian.length} Item Terdaftar`;
         document.getElementById("kpi-profit-hari-ini").innerText = formatRupiah(grossProfitHariIni);
         document.getElementById("kpi-net-profit-hari-ini").innerText = formatRupiah(netProfitHariIni);
-        document.getElementById("lbl-hpp-terhitung").innerText = `Modal/HPP Terhitung: ${formatRupiah(akumulasiHppHariIni)}`;
-        
+        document.getElementById("lbl-hpp-terhitung").innerText = `Modal/HPP Terhitung: ${formatRupiah(state.akumulasiHppHariIni)}`;
         document.getElementById("kpi-takehome-hari-ini").innerText = formatRupiah(takeHomeHariIni);
 
-        renderTabelRiwayatHarian(totalOmsetHariIni, manualSetoranMurni);
+        // Ubah Label Text Judul Kartu untuk mendeteksi mode edit
+        const tglHariIni = getHariIniFormatted();
+        document.querySelectorAll(".txt-aktif-tgl").forEach(el => {
+            el.innerText = (tanggalAktifOperasional === tglHariIni) ? "HARI INI" : `TGL ${tanggalAktifOperasional.substring(0,5)}`;
+        });
+
+        renderTabelRiwayatHarian();
         renderTrendChartEngine();
     }
 
-    function renderTabelRiwayatHarian(manualOmset, manualSetoran) {
+    function renderTabelRiwayatHarian() {
         let labelDates = [];
         for(let i=6; i>=0; i--) {
             const d = new Date(); d.setDate(d.getDate() - i);
@@ -479,44 +537,31 @@
         const tbody = document.getElementById("riwayat-dashboard-body");
         tbody.innerHTML = "";
 
-        // Balik urutan agar tanggal terbaru (Hari Ini) muncul paling atas di tabel
         labelDates.reverse().forEach(tgl => {
-            let cashTgl = 0;
-            let bonTgl = 0;
-            let strPiutangTgl = 0;
-            let pengeluaranTgl = 0;
-            let grossTgl = 0;
-            let netTgl = 0;
-            let takeHomeTgl = 0;
+            siapkanStateTanggal(tgl);
+            let state = databaseManualLokal[tgl];
 
-            if(tgl === tglHariIni) {
-                let totalBiayaPengeluaran = listPengeluaranHarian.reduce((acc, curr) => acc + curr.biaya, 0);
-                cashTgl = manualOmsetCash;
-                bonTgl = manualOmsetBon;
-                strPiutangTgl = manualSetoran;
-                pengeluaranTgl = totalBiayaPengeluaran;
-                grossTgl = (cashTgl + bonTgl) - pengeluaranTgl;
-                netTgl = (cashTgl + bonTgl) - akumulasiHppHariIni - pengeluaranTgl;
-                takeHomeTgl = (cashTgl + strPiutangTgl) - pengeluaranTgl;
-            } else {
+            let cashTgl = state.manualOmsetCash;
+            let bonTgl = state.manualOmsetBon;
+            let strPiutangTgl = state.manualSetoranMurni;
+            let pengeluaranTgl = state.listPengeluaranHarian.reduce((acc, curr) => acc + curr.biaya, 0);
+
+            // Jika kosong data lokalnya dan bukan tanggal aktif, tarik fallback historis cloud
+            if(cashTgl === 0 && bonTgl === 0 && tgl !== tglHariIni && tgl !== tanggalAktifOperasional) {
                 dataTransaksi.forEach(tx => {
                     if(tx.tanggal === tgl) {
-                        // Cloud lama: membagi ke cash jika payment = totalBelanja, sisanya masuk bon
-                        if(tx.payment >= tx.totalBelanja) {
-                            cashTgl += tx.totalBelanja;
-                        } else {
-                            cashTgl += tx.payment;
-                            bonTgl += (tx.totalBelanja - tx.payment);
-                        }
+                        if(tx.payment >= tx.totalBelanja) { cashTgl += tx.totalBelanja; } 
+                        else { cashTgl += tx.payment; bonTgl += (tx.totalBelanja - tx.payment); }
                     }
                 });
-                grossTgl = (cashTgl + bonTgl) - pengeluaranTgl;
-                netTgl = (cashTgl + bonTgl) - pengeluaranTgl;
-                takeHomeTgl = cashTgl + strPiutangTgl;
             }
 
+            let grossTgl = (cashTgl + bonTgl) - pengeluaranTgl;
+            let netTgl = (cashTgl + bonTgl) - state.akumulasiHppHariIni - pengeluaranTgl;
+            let takeHomeTgl = (cashTgl + strPiutangTgl) - pengeluaranTgl;
+
             tbody.innerHTML += `
-                <tr>
+                <tr class="${tgl === tanggalAktifOperasional ? 'table-warning fw-bold' : ''}">
                     <td class="fw-semibold text-dark">${tgl === tglHariIni ? tgl + ' (Hari Ini)' : tgl}</td>
                     <td>
                         <div class="fw-bold text-dark">${formatRupiah(cashTgl + bonTgl)}</div>
@@ -527,8 +572,109 @@
                     <td class="text-primary fw-bold">${formatRupiah(grossTgl)}</td>
                     <td class="text-dark fw-bold">${formatRupiah(netTgl)}</td>
                     <td class="text-success fw-bold">${formatRupiah(takeHomeTgl)}</td>
+                    <td>
+                        <button class="btn btn-xs btn-outline-dark py-0 px-1 me-1" style="font-size:10px;" onclick="bukaCetakJurnal('${tgl}')" title="Cetak Jurnal"><i class="bi bi-printer"></i></button>
+                        <button class="btn btn-xs btn-outline-primary py-0 px-1" style="font-size:10px;" onclick="masukModeEdit('${tgl}')" title="Koreksi/Edit Data"><i class="bi bi-pencil-square"></i></button>
+                    </td>
                 </tr>`;
         });
+    }
+
+    // ================= FITUR EDIT/KOREKSI DATA HARI KEMARIN =================
+    function masukModeEdit(tgl) {
+        tanggalAktifOperasional = tgl;
+        const bar = document.getElementById("edit-warning-bar");
+        document.getElementById("lbl-target-edit-tanggal").innerText = tgl;
+        bar.classList.remove("d-none");
+        bar.classList.add("d-flex");
+        prosesDanRenderDashboard();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function keluarModeEdit() {
+        tanggalAktifOperasional = getHariIniFormatted();
+        const bar = document.getElementById("edit-warning-bar");
+        bar.classList.remove("d-flex");
+        bar.classList.add("d-none");
+        prosesDanRenderDashboard();
+    }
+
+    // ================= FITUR CETAK NOTA JURNAL HARIAN (PDF/PNG READY) =================
+    function bukaCetakJurnal(tgl) {
+        let state = databaseManualLokal[tgl];
+        let cashTgl = state.manualOmsetCash;
+        let bonTgl = state.manualOmsetBon;
+        let strTgl = state.manualSetoranMurni;
+        let listPengeluaran = state.listPengeluaranHarian;
+        let totalBiaya = listPengeluaran.reduce((acc, curr) => acc + curr.biaya, 0);
+
+        if(cashTgl === 0 && bonTgl === 0) {
+            dataTransaksi.forEach(tx => {
+                if(tx.tanggal === tgl) {
+                    if(tx.payment >= tx.totalBelanja) { cashTgl += tx.totalBelanja; } 
+                    else { cashTgl += tx.payment; bonTgl += (tx.totalBelanja - tx.payment); }
+                }
+            });
+        }
+
+        let gross = (cashTgl + bonTgl) - totalBiaya;
+        let net = (cashTgl + bonTgl) - state.akumulasiHppHariIni - totalBiaya;
+        let takeHome = (cashTgl + strTgl) - totalBiaya;
+
+        let pengeluaranRows = "";
+        if (listPengeluaran.length === 0) {
+            pengeluaranRows = `<tr><td colspan="2" style="text-align:center;font-size:11px;">(Tidak Ada Pengeluaran)</td></tr>`;
+        } else {
+            listPengeluaran.forEach((p, idx) => {
+                pengeluaranRows += `
+                <tr>
+                    <td style="font-size:11px;">${idx+1}. ${p.keterangan}</td>
+                    <td style="text-align:right; font-size:11px;">${formatRupiah(p.biaya)}</td>
+                </tr>`;
+            });
+        }
+
+        let htmlNota = `
+            <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:10px; margin-bottom:10px;">
+                <h5 style="font-weight:bold; margin:0;">JURNAL HARIAN STORE</h5>
+                <small>Tanggal Dokumen: ${tgl}</small>
+            </div>
+            
+            <table style="width:100%; font-size:12px; margin-bottom:10px;">
+                <tr><td><strong>1. OMSET & PENJUALAN</strong></td><td style="text-align:right;"><strong>${formatRupiah(cashTgl + bonTgl)}</strong></td></tr>
+                <tr><td style="padding-left:15px; color:#555;">- Penjualan Cash (Lunas)</td><td style="text-align:right; color:#555;">${formatRupiah(cashTgl)}</td></tr>
+                <tr><td style="padding-left:15px; color:#555;">- Penjualan Bon (Piutang Baru)</td><td style="text-align:right; color:#555;">${formatRupiah(bonTgl)}</td></tr>
+                
+                <tr style="height:8px;"><td></td></tr>
+                <tr><td><strong>2. SETORAN PIUTANG LALU (STR)</strong></td><td style="text-align:right; text-weight:bold; color:green;">+ ${formatRupiah(strTgl)}</td></tr>
+                <tr style="font-size:10px; color:#777;"><td colspan="2" style="padding-left:15px;">Pelanggan: ${state.manualNamaKonsumenSetoran || '-'}</td></tr>
+            </table>
+
+            <div style="font-size:12px; font-weight:bold; border-bottom:1px solid #000; margin-top:10px;">3. DAFTAR PENGELUARAN OPERASIONAL</div>
+            <table style="width:100%; margin-bottom:10px;">
+                ${pengeluaranRows}
+                <tr style="border-top:1px dashed #000;">
+                    <td><strong>Total Biaya Toko</strong></td>
+                    <td style="text-align:right; font-weight:bold; color:red;">${formatRupiah(totalBiaya)}</td>
+                </tr>
+            </table>
+
+            <div style="font-size:12px; font-weight:bold; border-bottom:1px solid #000; margin-top:10px;">4. RINGKASAN AKUMULASI PERFORMA</div>
+            <table style="width:100%; font-size:12px; font-weight:bold; margin-top:5px;">
+                <tr><td>GROSS PROFIT</td><td style="text-align:right; color:blue;">${formatRupiah(gross)}</td></tr>
+                <tr><td>ESTIMASI TOTAL HPP</td><td style="text-align:right; color:orange;">${formatRupiah(state.akumulasiHppHariIni)}</td></tr>
+                <tr style="border-bottom:1px dashed #000;"><td>NET PROFIT (BERSIH RIIL)</td><td style="text-align:right;">${formatRupiah(net)}</td></tr>
+                <tr style="font-size:13px; background:#eee;"><td>TAKE HOME CASH</td><td style="text-align:right; color:green;">${formatRupiah(takeHome)}</td></tr>
+            </table>
+
+            <div style="text-align:center; margin-top:20px; font-size:10px; border-top:1px dashed #000; padding-top:10px;">
+                Dokumen Finansial Sah Harian Toko Ayam<br>
+                <em>Printed on: ${new Date().toLocaleString('id-ID')}</em>
+            </div>
+        `;
+
+        document.getElementById("area-cetak-jurnal").innerHTML = htmlNota;
+        new bootstrap.Modal(document.getElementById('modalCetakJurnal')).show();
     }
 
     function renderTrendChartEngine() {
@@ -543,21 +689,26 @@
 
         let omsetData = Array(7).fill(0);
         let kasData = Array(7).fill(0);
-        const tglHariIni = getHariIniFormatted();
 
-        dataTransaksi.forEach(tx => {
-            let idx = labelDates.indexOf(tx.tanggal);
-            if(idx !== -1 && tx.tanggal !== tglHariIni) {
-                omsetData[idx] += tx.totalBelanja;
-                kasData[idx] += tx.payment;
+        labelDates.forEach((tgl, idx) => {
+            siapkanStateTanggal(tgl);
+            let state = databaseManualLokal[tgl];
+            let cashTgl = state.manualOmsetCash;
+            let bonTgl = state.manualOmsetBon;
+            let strTgl = state.manualSetoranMurni;
+
+            if(cashTgl === 0 && bonTgl === 0) {
+                dataTransaksi.forEach(tx => {
+                    if(tx.tanggal === tgl) {
+                        omsetData[idx] += tx.totalBelanja;
+                        kasData[idx] += tx.payment;
+                    }
+                });
+            } else {
+                omsetData[idx] = cashTgl + bonTgl;
+                kasData[idx] = strTgl; 
             }
         });
-
-        let idxHariIni = labelDates.indexOf(tglHariIni);
-        if(idxHariIni !== -1) {
-            omsetData[idxHariIni] = manualOmsetCash + manualOmsetBon;
-            kasData[idxHariIni] = manualSetoranMurni; 
-        }
 
         let displayLabels = labelDates.map(d => d.substring(0, 5));
         const ctx = document.getElementById('trendChart').getContext('2d');
@@ -591,26 +742,32 @@
 
     // ================= FUNGSI LOGIKA MODAL INPUT MANUAL =================
     function bukaModalOmset() {
-        document.getElementById("in-omset-cash").value = formatRupiah(manualOmsetCash);
-        document.getElementById("in-omset-bon").value = formatRupiah(manualOmsetBon);
+        let state = databaseManualLokal[tanggalAktifOperasional];
+        document.getElementById("in-omset-cash").value = formatRupiah(state.manualOmsetCash);
+        document.getElementById("in-omset-bon").value = formatRupiah(state.manualOmsetBon);
         new bootstrap.Modal(document.getElementById('modalOmset')).show();
     }
     function simpanOmsetManual() {
-        manualOmsetCash = menguraiAngka(document.getElementById("in-omset-cash").value);
-        manualOmsetBon = menguraiAngka(document.getElementById("in-omset-bon").value);
+        let state = databaseManualLokal[tanggalAktifOperasional];
+        state.manualOmsetCash = menguraiAngka(document.getElementById("in-omset-cash").value);
+        state.manualOmsetBon = menguraiAngka(document.getElementById("in-omset-bon").value);
         bootstrap.Modal.getInstance(document.getElementById('modalOmset')).hide();
+        simpanKeLocalStorage();
         prosesDanRenderDashboard();
     }
 
     function bukaModalSetoran() {
-        document.getElementById("in-setoran-konsumen").value = manualNamaKonsumenSetoran;
-        document.getElementById("in-setoran-murni").value = formatRupiah(manualSetoranMurni);
+        let state = databaseManualLokal[tanggalAktifOperasional];
+        document.getElementById("in-setoran-konsumen").value = state.manualNamaKonsumenSetoran;
+        document.getElementById("in-setoran-murni").value = formatRupiah(state.manualSetoranMurni);
         new bootstrap.Modal(document.getElementById('modalSetoran')).show();
     }
     function simpanSetoranManual() {
-        manualNamaKonsumenSetoran = document.getElementById("in-setoran-konsumen").value;
-        manualSetoranMurni = menguraiAngka(document.getElementById("in-setoran-murni").value);
+        let state = databaseManualLokal[tanggalAktifOperasional];
+        state.manualNamaKonsumenSetoran = document.getElementById("in-setoran-konsumen").value;
+        state.manualSetoranMurni = menguraiAngka(document.getElementById("in-setoran-murni").value);
         bootstrap.Modal.getInstance(document.getElementById('modalSetoran')).hide();
+        simpanKeLocalStorage();
         prosesDanRenderDashboard();
     }
 
@@ -620,9 +777,10 @@
     }
 
     function renderTabelPengeluaranLokal() {
+        let state = databaseManualLokal[tanggalAktifOperasional];
         const tbody = document.getElementById("list-pengeluaran-body");
         tbody.innerHTML = "";
-        listPengeluaranHarian.forEach((item, idx) => {
+        state.listPengeluaranHarian.forEach((item, idx) => {
             tbody.innerHTML += `
                 <tr>
                     <td>${idx + 1}</td>
@@ -638,14 +796,15 @@
 
     function tambahPengeluaran(e) {
         e.preventDefault();
+        let state = databaseManualLokal[tanggalAktifOperasional];
         const keterangan = document.getElementById("in-item-pengeluaran").value;
         const biaya = menguraiAngka(document.getElementById("in-biaya-pengeluaran").value);
         const editIdx = parseInt(document.getElementById("edit-idx-pengeluaran").value);
 
         if (editIdx === -1) {
-            listPengeluaranHarian.push({ keterangan, biaya });
+            state.listPengeluaranHarian.push({ keterangan, biaya });
         } else {
-            listPengeluaranHarian[editIdx] = { keterangan, biaya };
+            state.listPengeluaranHarian[editIdx] = { keterangan, biaya };
             document.getElementById("edit-idx-pengeluaran").value = "-1";
             document.getElementById("btn-add-pengeluaran").innerText = "Add";
         }
@@ -653,11 +812,13 @@
         document.getElementById("form-pengeluaran").reset();
         document.getElementById("in-biaya-pengeluaran").value = "Rp 0";
         renderTabelPengeluaranLokal();
+        simpanKeLocalStorage();
         prosesDanRenderDashboard();
     }
 
     function pilihEditPengeluaran(idx) {
-        const item = listPengeluaranHarian[idx];
+        let state = databaseManualLokal[tanggalAktifOperasional];
+        const item = state.listPengeluaranHarian[idx];
         document.getElementById("edit-idx-pengeluaran").value = idx;
         document.getElementById("in-item-pengeluaran").value = item.keterangan;
         document.getElementById("in-biaya-pengeluaran").value = formatRupiah(item.biaya);
@@ -665,22 +826,25 @@
     }
 
     function hapusPengeluaran(idx) {
+        let state = databaseManualLokal[tanggalAktifOperasional];
         if(confirm("Hapus item pengeluaran ini?")) {
-            listPengeluaranHarian.splice(idx, 1);
+            state.listPengeluaranHarian.splice(idx, 1);
             renderTabelPengeluaranLokal();
+            simpanKeLocalStorage();
             prosesDanRenderDashboard();
         }
     }
 
-    // ================= FUNGSI LOGIKA POPUP MODAL HPP & NET PROFIT =================
+    // ================= FUNGSI LOGIKA POPUP MODAL HPP =================
     function bukaModalHpp() {
-        document.getElementById("vol-potong").value = vPotong === 0 ? "" : vPotong;
-        document.getElementById("vol-penyet").value = vPenyet === 0 ? "" : vPenyet;
-        document.getElementById("vol-merah").value = vMerah === 0 ? "" : vMerah;
+        let state = databaseManualLokal[tanggalAktifOperasional];
+        document.getElementById("vol-potong").value = state.vPotong === 0 ? "" : state.vPotong;
+        document.getElementById("vol-penyet").value = state.vPenyet === 0 ? "" : state.vPenyet;
+        document.getElementById("vol-merah").value = state.vMerah === 0 ? "" : state.vMerah;
 
-        document.getElementById("mod-potong").value = formatRupiah(mPotong);
-        document.getElementById("mod-penyet").value = formatRupiah(mPenyet);
-        document.getElementById("mod-merah").value = formatRupiah(mMerah);
+        document.getElementById("mod-potong").value = formatRupiah(state.mPotong);
+        document.getElementById("mod-penyet").value = formatRupiah(state.mPenyet);
+        document.getElementById("mod-merah").value = formatRupiah(state.mMerah);
 
         hitungSimulasiHpp();
         new bootstrap.Modal(document.getElementById('modalHpp')).show();
@@ -699,18 +863,18 @@
     }
 
     function simpanHppManual() {
-        vPotong = parseFloat(document.getElementById("vol-potong").value) || 0;
-        mPotong = menguraiAngka(document.getElementById("mod-potong").value);
-        
-        vPenyet = parseInt(document.getElementById("vol-penyet").value) || 0;
-        mPenyet = menguraiAngka(document.getElementById("mod-penyet").value);
-        
-        vMerah = parseInt(document.getElementById("vol-merah").value) || 0;
-        mMerah = menguraiAngka(document.getElementById("mod-merah").value);
+        let state = databaseManualLokal[tanggalAktifOperasional];
+        state.vPotong = parseFloat(document.getElementById("vol-potong").value) || 0;
+        state.mPotong = menguraiAngka(document.getElementById("mod-potong").value);
+        state.vPenyet = parseInt(document.getElementById("vol-penyet").value) || 0;
+        state.mPenyet = menguraiAngka(document.getElementById("mod-penyet").value);
+        state.vMerah = parseInt(document.getElementById("vol-merah").value) || 0;
+        state.mMerah = menguraiAngka(document.getElementById("mod-merah").value);
 
-        akumulasiHppHariIni = (vPotong * mPotong) + (vPenyet * mPenyet) + (vMerah * mMerah);
+        state.akumulasiHppHariIni = (state.vPotong * state.mPotong) + (state.vPenyet * state.mPenyet) + (state.vMerah * state.mMerah);
 
         bootstrap.Modal.getInstance(document.getElementById('modalHpp')).hide();
+        simpanKeLocalStorage();
         prosesDanRenderDashboard();
     }
 
