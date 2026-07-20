@@ -401,7 +401,6 @@
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztJFHNI2rVOF7PBportI7PGv9j2EfZH_BYzCRcoFstxYJrE3cN4VYJt8BsZVJcASkSmQ/exec"; 
 
     let masterCustomer = [];
-    let dataTransaksi = [];
     let chartInstance = null;
 
     let tanggalAktifOperasional = ""; 
@@ -439,6 +438,105 @@
 
     function simpanKeLocalStorage() {
         localStorage.setItem('db_store_lokal', JSON.stringify(databaseManualLokal));
+        kirimDataKeSpreadsheet(tanggalAktifOperasional);
+    }
+
+    // ================= FUNGSI SINKRONISASI CLOUD GOOGLE SPREADSHEET =================
+    async function kirimDataKeSpreadsheet(tgl) {
+        let state = databaseManualLokal[tgl];
+        let totalBiayaPengeluaran = state.listPengeluaranHarian.reduce((acc, curr) => acc + curr.biaya, 0);
+        let totalOmset = state.manualOmsetCash + state.manualOmsetBon;
+        let grossProfit = totalOmset - state.akumulasiHppHariIni;
+        let netProfit = grossProfit - totalBiayaPengeluaran;
+        let takeHomeCash = (state.manualOmsetCash + state.manualSetoranMurni) - totalBiayaPengeluaran;
+
+        const payloadData = {
+            tanggal: tgl,
+            omsetCash: state.manualOmsetCash,
+            omsetBon: state.manualOmsetBon,
+            totalOmset: totalOmset,
+            setoranPiutang: state.manualSetoranMurni,
+            namaPelangganStr: state.manualNamaKonsumenSetoran,
+            vPotong: state.vPotong,
+            mPotong: state.mPotong,
+            vPenyet: state.vPenyet,
+            mPenyet: state.mPenyet,
+            vMerah: state.vMerah,
+            mMerah: state.mMerah,
+            totalHpp: state.akumulasiHppHariIni,
+            totalPengeluaran: totalBiayaPengeluaran,
+            grossProfit: grossProfit,
+            netProfit: netProfit,
+            takeHomeCash: takeHomeCash,
+            listPengeluaran: state.listPengeluaranHarian
+        };
+
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({
+                    action: "saveDataHarian",
+                    payload: payloadData
+                })
+            });
+        } catch (e) {
+            console.error("Gagal sync cloud: ", e);
+        }
+    }
+
+    async function muatDataDashboard() {
+        const bar = document.getElementById("sync-status");
+        bar.innerHTML = `<span class="text-warning"><div class="spinner-border spinner-border-sm me-1"></div> Menarik ringkasan data store harian...</span>`;
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ action: "getData" })
+            });
+            const res = await response.json();
+            if(res.status === "success") {
+                masterCustomer = res.customers || [];
+                
+                // Masukkan data spreadsheet ke local state
+                if(res.rekapHarian && res.rekapHarian.length > 0) {
+                    res.rekapHarian.forEach(row => {
+                        let tgl = row.tanggal;
+                        siapkanStateTanggal(tgl);
+                        
+                        let exps = (res.detailPengeluaran || [])
+                            .filter(e => e.tanggal === tgl)
+                            .map(e => ({ keterangan: e.keterangan, biaya: e.biaya }));
+
+                        databaseManualLokal[tgl] = {
+                            manualOmsetCash: row.omsetCash,
+                            manualOmsetBon: row.omsetBon,
+                            manualSetoranMurni: row.setoranPiutang,
+                            manualNamaKonsumenSetoran: row.namaPelangganStr,
+                            listPengeluaranHarian: exps,
+                            vPotong: row.vPotong, mPotong: row.mPotong,
+                            vPenyet: row.vPenyet, mPenyet: row.mPenyet,
+                            vMerah: row.vMerah, mMerah: row.mMerah,
+                            akumulasiHppHariIni: row.totalHpp
+                        };
+                    });
+                }
+
+                const selectK = document.getElementById("in-setoran-konsumen");
+                selectK.innerHTML = '<option value="">-- Pilih Pelanggan --</option>';
+                masterCustomer.forEach(c => {
+                    selectK.innerHTML += `<option value="${c.nama}">${c.nama}</option>`;
+                });
+
+                prosesDanRenderDashboard();
+                bar.innerHTML = `<span class="text-success"><i class="bi bi-cloud-check-fill"></i> Data Store Terupdate Otomatis</span>`;
+            } else {
+                bar.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Gagal memproses data cloud</span>`;
+            }
+        } catch(e) {
+            console.error(e);
+            bar.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Koneksi internet / URL GAS bermasalah</span>`;
+        }
     }
 
     function inisialisasiFormatRupiahLive() {
@@ -455,35 +553,6 @@
         this.value = nilaiBersih === "" ? "Rp 0" : formatRupiah(parseInt(nilaiBersih));
         if(this.id === "mod-potong" || this.id === "mod-penyet" || this.id === "mod-merah") {
             hitungSimulasiHpp();
-        }
-    }
-
-    async function muatDataDashboard() {
-        const bar = document.getElementById("sync-status");
-        bar.innerHTML = `<span class="text-warning"><div class="spinner-border spinner-border-sm me-1"></div> Menarik ringkasan data store harian...</span>`;
-        try {
-            const response = await fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "getData" })
-            });
-            const res = await response.json();
-            if(res.status === "success") {
-                masterCustomer = res.customers;
-                dataTransaksi = res.transaksis;
-                
-                const selectK = document.getElementById("in-setoran-konsumen");
-                selectK.innerHTML = '<option value="">-- Pilih Pelanggan --</option>';
-                masterCustomer.forEach(c => {
-                    selectK.innerHTML += `<option value="${c.nama}">${c.nama}</option>`;
-                });
-
-                prosesDanRenderDashboard();
-                bar.innerHTML = `<span class="text-success"><i class="bi bi-cloud-check-fill"></i> Data Store Terupdate Otomatis</span>`;
-            } else {
-                bar.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Gagal memproses data cloud</span>`;
-            }
-        } catch(e) {
-            bar.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Koneksi internet bermasalah</span>`;
         }
     }
 
@@ -541,15 +610,6 @@
             let strPiutangTgl = state.manualSetoranMurni;
             let pengeluaranTgl = state.listPengeluaranHarian.reduce((acc, curr) => acc + curr.biaya, 0);
 
-            if(cashTgl === 0 && bonTgl === 0 && tgl !== tglHariIni && tgl !== tanggalAktifOperasional) {
-                dataTransaksi.forEach(tx => {
-                    if(tx.tanggal === tgl) {
-                        if(tx.payment >= tx.totalBelanja) { cashTgl += tx.totalBelanja; } 
-                        else { cashTgl += tx.payment; bonTgl += (tx.totalBelanja - tx.payment); }
-                    }
-                });
-            }
-
             let totalOmsetTgl = cashTgl + bonTgl;
             let grossTgl = totalOmsetTgl - state.akumulasiHppHariIni;
             let netTgl = grossTgl - pengeluaranTgl;
@@ -602,21 +662,11 @@
         let listPengeluaran = state.listPengeluaranHarian;
         let totalBiaya = listPengeluaran.reduce((acc, curr) => acc + curr.biaya, 0);
 
-        if(cashTgl === 0 && bonTgl === 0) {
-            dataTransaksi.forEach(tx => {
-                if(tx.tanggal === tgl) {
-                    if(tx.payment >= tx.totalBelanja) { cashTgl += tx.totalBelanja; } 
-                    else { cashTgl += tx.payment; bonTgl += (tx.totalBelanja - tx.payment); }
-                }
-            });
-        }
-
         let totalOmsetTgl = cashTgl + bonTgl;
         let gross = totalOmsetTgl - state.akumulasiHppHariIni;
         let net = gross - totalBiaya;
         let takeHome = (cashTgl + strTgl) - totalBiaya;
 
-        // Render Baris Pengeluaran
         let pengeluaranRows = "";
         if (listPengeluaran.length === 0) {
             pengeluaranRows = `<tr><td colspan="2" style="text-align:center;font-size:11px;">(Tidak Ada Pengeluaran)</td></tr>`;
@@ -630,7 +680,6 @@
             });
         }
 
-        // Penjabaran Detail HPP Produk Terjual untuk Resi Jurnal
         let hppPotong = state.vPotong * state.mPotong;
         let hppPenyet = state.vPenyet * state.mPenyet;
         let hppMerah = state.vMerah * state.mMerah;
@@ -701,7 +750,6 @@
     function unduhJurnalSebagaiPNG() {
         const elemenJurnal = document.getElementById("area-cetak-jurnal");
         
-        // Ambil tanggal dokumen untuk penamaan file otomatis
         const headerJurnal = elemenJurnal.querySelector("small");
         let namaFile = "Jurnal_Harian_UD_Doa_Akbar";
         if (headerJurnal) {
@@ -709,21 +757,16 @@
             namaFile = `Jurnal_UD_Doa_Akbar_${tglClean}`;
         }
 
-        // Eksekusi html2canvas dengan opsi skala tinggi agar gambar tajam/tidak pecah
         html2canvas(elemenJurnal, {
             scale: 2, 
             useCORS: true,
             backgroundColor: "#ffffff"
         }).then(canvas => {
-            // Konversi canvas menjadi data URL PNG
             const imgData = canvas.toDataURL("image/png");
-            
-            // Membuat elemen link download temporary
             const linkDownload = document.createElement("a");
             linkDownload.href = imgData;
             linkDownload.download = `${namaFile}.png`;
             
-            // Trigger klik download otomatis (Kompatibel untuk Desktop & Safari Modern)
             document.body.appendChild(linkDownload);
             linkDownload.click();
             document.body.removeChild(linkDownload);
@@ -752,17 +795,8 @@
             let bonTgl = state.manualOmsetBon;
             let strTgl = state.manualSetoranMurni;
 
-            if(cashTgl === 0 && bonTgl === 0) {
-                dataTransaksi.forEach(tx => {
-                    if(tx.tanggal === tgl) {
-                        omsetData[idx] += tx.totalBelanja;
-                        kasData[idx] += tx.payment;
-                    }
-                });
-            } else {
-                omsetData[idx] = cashTgl + bonTgl;
-                kasData[idx] = strTgl; 
-            }
+            omsetData[idx] = cashTgl + bonTgl;
+            kasData[idx] = strTgl; 
         });
 
         let displayLabels = labelDates.map(d => d.substring(0, 5));
