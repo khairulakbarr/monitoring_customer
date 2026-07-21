@@ -161,7 +161,6 @@
             .invoice-total-container { width: 100% !important; }
         }
 
-        /* TAMPILAN PEMBATAS LOGIN (LOCKSCREEN) */
         #login-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -189,6 +188,12 @@
     </style>
 </head>
 <body>
+
+<!-- IFRAME SILUMAN DAN FORM BYPASS CORS -->
+<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="if(window.submitted) { showSyncStatus('success', 'Sistem Sinkron Online (Google Sheets)'); window.submitted = false; }"></iframe>
+<form id="cors_bypass_form" action="" method="POST" target="hidden_iframe" style="display:none;">
+    <input type="hidden" name="data" id="cors_bypass_data">
+</form>
 
 <!-- OVERLAY LOGIN KEAMANAN -->
 <div id="login-overlay">
@@ -351,7 +356,6 @@
                         <input type="text" class="form-control border-success text-success fw-bold input-rupiah-direct" id="input-pelunasan" value="Rp 0" required>
                     </div>
 
-                    <!-- KOTAK HASIL AKHIR SISA BON FORM UTAMA -->
                     <div class="mb-3 p-3 rounded-3 block-merah-sisa">
                         <label class="text-danger small fw-bold d-block mb-1">SISA BON AKHIR (PIUTANG)</label>
                         <h4 class="fw-bold text-danger m-0" id="display-sisa-bon-akhir">Rp 0</h4>
@@ -389,62 +393,31 @@
 </div>
 
 <!-- POPUPS/MODALS -->
-
-<!-- MODAL EDIT POP-UP INSTAN -->
-<div class="modal fade" id="modalEditTransaksi" tabindex="-1" aria-labelledby="modalEditTransaksiLabel" aria-hidden="true">
+<div class="modal fade" id="modalEditTransaksi" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
             <div class="modal-header bg-warning text-dark rounded-top-4">
-                <h5 class="modal-title fw-bold" id="modalEditTransaksiLabel">
-                    <i class="bi bi-pencil-square"></i> Edit Transaksi Faktur
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-bold">Edit Transaksi Faktur</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
                 <input type="hidden" id="edit-popup-id">
-                
-                <div class="mb-3">
-                    <label class="form-label fw-bold small text-muted">Tanggal</label>
-                    <input type="text" class="form-control rounded-3" id="edit-popup-tanggal" readonly>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold small text-muted">Nama Pelanggan</label>
-                    <input type="text" class="form-control rounded-3" id="edit-popup-pelanggan" readonly>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold small text-muted">Sisa Tagihan Lalu (Hutang Awal)</label>
-                    <input type="text" class="form-control rounded-3 fw-semibold input-rupiah-direct" id="edit-popup-hutang-awal">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold small text-muted">Total Belanja Hari Ini</label>
-                    <input type="text" class="form-control rounded-3 fw-semibold input-rupiah-direct" id="edit-popup-belanja">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold small text-muted">Total Tagihan Baru</label>
-                    <input type="text" class="form-control rounded-3 fw-bold bg-light" id="edit-popup-tagihan-total" readonly>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold small text-muted">Jumlah Bayar / Setoran</label>
-                    <input type="text" class="form-control rounded-3 fw-bold text-success input-rupiah-direct" id="edit-popup-bayar">
-                </div>
-
-                <!-- KOTAK HASIL AKHIR SISA BON MODAL EDIT -->
-                <div class="p-3 rounded-3 block-merah-sisa">
-                    <label class="text-danger small fw-bold d-block mb-1">SISA BON BARU (PIUTANG)</label>
-                    <h5 class="fw-bold text-danger m-0" id="display-popup-sisa-bon">Rp 0</h5>
-                </div>
+                <div class="mb-3"><label class="form-label fw-bold small text-muted">Tanggal</label><input type="text" class="form-control rounded-3" id="edit-popup-tanggal" readonly></div>
+                <div class="mb-3"><label class="form-label fw-bold small text-muted">Nama Pelanggan</label><input type="text" class="form-control rounded-3" id="edit-popup-pelanggan" readonly></div>
+                <div class="mb-3"><label class="form-label fw-bold small text-muted">Sisa Tagihan Lalu</label><input type="text" class="form-control rounded-3 fw-semibold input-rupiah-direct" id="edit-popup-hutang-awal"></div>
+                <div class="mb-3"><label class="form-label fw-bold small text-muted">Total Belanja Hari Ini</label><input type="text" class="form-control rounded-3 fw-semibold input-rupiah-direct" id="edit-popup-belanja"></div>
+                <div class="mb-3"><label class="form-label fw-bold small text-muted">Total Tagihan Baru</label><input type="text" class="form-control rounded-3 fw-bold bg-light" id="edit-popup-tagihan-total" readonly></div>
+                <div class="mb-3"><label class="form-label fw-bold small text-muted">Jumlah Bayar / Setoran</label><input type="text" class="form-control rounded-3 fw-bold text-success input-rupiah-direct" id="edit-popup-bayar"></div>
+                <div class="p-3 rounded-3 block-merah-sisa"><label class="text-danger small fw-bold d-block mb-1">SISA BON BARU (PIUTANG)</label><h5 class="fw-bold text-danger m-0" id="display-popup-sisa-bon">Rp 0</h5></div>
             </div>
             <div class="modal-footer border-0 p-4 pt-0">
                 <button type="button" class="btn btn-light fw-bold px-3 py-2 rounded-3" data-bs-dismiss="modal">Batal</button>
-                <button type="button" class="btn btn-warning fw-bold text-dark px-4 py-2 rounded-3" onclick="simpanPerubahanTransaksiPopup()">
-                    <i class="bi bi-cloud-upload"></i> Simpan Perubahan
-                </button>
+                <button type="button" class="btn btn-warning fw-bold text-dark px-4 py-2 rounded-3" onclick="simpanPerubahanTransaksiPopup()">Simpan Perubahan</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Jendela Dasbor Customer -->
 <div class="modal fade" id="customerDashboardModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content" style="border-radius: 16px;">
@@ -463,7 +436,6 @@
     </div>
 </div>
 
-<!-- Modal Faktur -->
 <div class="modal fade" id="invoiceModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content" style="background-color: #f1f5f9;">
@@ -481,7 +453,6 @@
     </div>
 </div>
 
-<!-- Modal Kelola Customer -->
 <div class="modal fade" id="customerModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -504,7 +475,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzzG_s9By3oDkNayhfoBmdmE0tdra_g8aRtBYUXFVDpujgki-NepYxgrCm295Y86nCz/exec"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby6QGjLwh7PJ5fJPIFUaDZ55HjWTO_fxFHEPUEQj01yGgitJ-pcx84OblDu_DD4DWJjEg/exec"; 
 
     let masterCustomer = [];
     let dataTransaksi = [];
@@ -513,14 +484,10 @@
     let currentFilter = "Semua";
     let chartInstance = null;
     let namaFileGlobal = "Faktur";
-    
-    // Variabel memori PIN
     let pinSistem = "";
 
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka); }
     function menguraiAngka(str) { if(!str) return 0; return parseInt(str.toString().replace(/\D/g, '')) || 0; }
-    
-    // ================= SINKRONISASI LOGIN PIN DAN MEMORI LOCALSTORAGE =================
     
     function cekSessionLogin() {
         const storedPin = localStorage.getItem("pin_keamanan_piutang");
@@ -534,13 +501,11 @@
         e.preventDefault();
         const pinInput = document.getElementById("input-pin").value;
         const alertBox = document.getElementById("login-alert");
-        
         if(pinInput.length < 4) {
             alertBox.innerText = "PIN harus diisi minimal 4-6 digit angka!";
             alertBox.classList.remove("d-none");
             return;
         }
-
         pinSistem = pinInput;
         localStorage.setItem("pin_keamanan_piutang", pinSistem);
         sembunyikanLoginDanMulai();
@@ -565,25 +530,14 @@
         document.querySelectorAll('.input-rupiah-direct').forEach(input => {
             input.addEventListener('input', function(e) {
                 let nilaiBersih = this.value.replace(/\D/g, '');
-                if(nilaiBersih === "") {
-                    this.value = "Rp 0";
-                } else {
-                    this.value = formatRupiah(parseInt(nilaiBersih));
-                }
+                if(nilaiBersih === "") { this.value = "Rp 0"; } 
+                else { this.value = formatRupiah(parseInt(nilaiBersih)); }
                 
-                if(this.id === "sub-sisa-tagihan" || this.id === "input-pelunasan") {
-                    hitungUlangPiutangForm();
-                }
-                if(this.id === "edit-popup-hutang-awal" || this.id === "edit-popup-belanja" || this.id === "edit-popup-bayar") {
-                    hitungTotalTagihanPopup();
-                }
+                if(this.id === "sub-sisa-tagihan" || this.id === "input-pelunasan") { hitungUlangPiutangForm(); }
+                if(this.id === "edit-popup-hutang-awal" || this.id === "edit-popup-belanja" || this.id === "edit-popup-bayar") { hitungTotalTagihanPopup(); }
             });
-            input.addEventListener('focus', function() {
-                if(this.value === "Rp 0") this.value = "";
-            });
-            input.addEventListener('blur', function() {
-                if(this.value === "") this.value = "Rp 0";
-            });
+            input.addEventListener('focus', function() { if(this.value === "Rp 0") this.value = ""; });
+            input.addEventListener('blur', function() { if(this.value === "") this.value = "Rp 0"; });
         });
     }
 
@@ -615,100 +569,60 @@
     function convertDateToDisplay(dateStr) { if(dateStr.includes("/")) return dateStr; const d = dateStr.split("-"); return `${d[2]}/${d[1]}/${d[0]}`; }
     function convertDateToInput(dateStr) { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
 
-    // ================= MUAT DATA CLOUD =================
-   async function muatDataDariSheets() {
-    showSyncStatus("loading", "Menarik data terbaru dari Google Sheets...");
-    if (!GOOGLE_SCRIPT_URL) {
-        showSyncStatus("error", "URL Google Script belum diisi!");
-        return;
-    }
-    try {
-        // Gunakan URL parameter untuk GET request agar terhindar dari CORS POST pre-flight
-        const payload = encodeURIComponent(JSON.stringify({ action: "getData", pin: pinSistem }));
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?data=${payload}`, {
-            method: "GET",
-            redirect: "follow"
-        });
+    // ================= MUAT DATA VIA SCRIPT INJECTION (BEBAS CORS 100%) =================
+    function muatDataDariSheets() {
+        showSyncStatus("loading", "Menarik data terbaru dari Google Sheets...");
         
-        const res = await response.json();
-        if (res.status === "success") {
-            masterCustomer = res.customers || [];
-            dataTransaksi = JSON.parse(JSON.stringify(res.transaksis || []));
-            renderUiControls();
-            renderDashboard();
-            updateSisaTagihanOtomatis(); 
-            showSyncStatus("success", "Sistem Sinkron Online (Google Sheets)");
-        } else {
-            showSyncStatus("error", "Gagal load data: " + res.message);
-            if (res.message && res.message.toLowerCase().includes("pin")) {
-                logoutSistem();
-                alert("Akses ditolak! PIN Keamanan salah atau kedaluwarsa.");
+        // Hapus callback lama jika ada
+        const scriptLama = document.getElementById("jsonp_script");
+        if(scriptLama) scriptLama.remove();
+
+        // Buat Global Callback Function
+        window.handleGoogleSheetData = function(res) {
+            if(res && res.status === "success") {
+                masterCustomer = res.customers || [];
+                dataTransaksi = JSON.parse(JSON.stringify(res.transaksis || []));
+                renderUiControls();
+                renderDashboard();
+                updateSisaTagihanOtomatis(); 
+                showSyncStatus("success", "Sistem Sinkron Online (Google Sheets)");
+            } else {
+                showSyncStatus("error", "Gagal load data dari cloud.");
             }
-        }
-    } catch (e) {
-        console.error(e);
-        showSyncStatus("error", "Gagal koneksi cloud internet.");
+        };
+
+        const script = document.createElement("script");
+        script.id = "jsonp_script";
+        const payload = encodeURIComponent(JSON.stringify({ action: "getData", pin: pinSistem }));
+        script.src = `${GOOGLE_SCRIPT_URL}?data=${payload}&callback=handleGoogleSheetData`;
+        script.onerror = function() { showSyncStatus("error", "Gagal koneksi cloud internet."); };
+        document.body.appendChild(script);
     }
-}
-    // ================= PUSH DATA SINGKAT (SUPER NGEBUT) =================
-   function pushSingleTransaksiKeSheets(transaksiBaru) {
-    showSyncStatus("loading", "Menyimpan ke Cloud...");
-    
-    return fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        mode: "cors",
-        redirect: "follow",
-        headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-        },
-        body: JSON.stringify({ 
+
+    // ================= PUSH DATA VIA FORM IFRAME SILUMAN (BEBAS CORS 100%) =================
+    function sendPayloadToSheets(payloadObj) {
+        showSyncStatus("loading", "Menyimpan ke Cloud...");
+        const form = document.getElementById("cors_bypass_form");
+        form.action = GOOGLE_SCRIPT_URL;
+        document.getElementById("cors_bypass_data").value = JSON.stringify(payloadObj);
+        window.submitted = true;
+        form.submit();
+    }
+
+    function pushSingleTransaksiKeSheets(transaksiBaru) {
+        sendPayloadToSheets({ 
             action: "appendTransaksi", 
             pin: pinSistem, 
             transaksi: transaksiBaru 
-        })
-    })
-    .then(res => res.json())
-    .then(res => {
-        if (res.status === "success") {
-            showSyncStatus("success", "Tersimpan Instant!");
-            setTimeout(() => {
-                showSyncStatus("success", "Sistem Sinkron Online (Google Sheets)");
-            }, 2000);
-        } else {
-            showSyncStatus("error", "Gagal simpan: " + res.message);
-        }
-    })
-    .catch(e => {
-        console.error("Gagal push data:", e);
-        showSyncStatus("error", "Koneksi terputus. Data tersimpan lokal.");
-    });
-}
+        });
+    }
 
-    // ================= PUSH DATA FULL (BACKUP / KELOLA CUSTOMER / EDIT) =================
     function pushDataKeSheets() {
-        showSyncStatus("loading", "Mensinkronkan ke Cloud...");
-        return fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            redirect: "follow",
-            body: JSON.stringify({
-                action: "saveAll",
-                pin: pinSistem,
-                customers: masterCustomer,
-                transaksis: dataTransaksi
-            })
-        })
-        .then(res => res.json())
-        .then(res => {
-            if(res.status === "success") {
-                showSyncStatus("success", "Sistem Sinkron Online (Google Sheets)");
-            } else {
-                showSyncStatus("error", "Gagal simpan: " + res.message);
-            }
-        })
-        .catch(e => {
-            console.error(e);
-            showSyncStatus("error", "Koneksi terputus.");
+        sendPayloadToSheets({
+            action: "saveAll",
+            pin: pinSistem,
+            customers: masterCustomer,
+            transaksis: dataTransaksi
         });
     }
 
@@ -745,7 +659,6 @@
 
         let sisaTagihanTerakhir = totalBelanja - totalDiterima;
         document.getElementById("sub-sisa-tagihan").value = sisaTagihanTerakhir > 0 ? formatRupiah(Math.round(sisaTagihanTerakhir)) : "Rp 0";
-        
         hitungUlangPiutangForm();
     }
 
@@ -791,7 +704,6 @@
         keranjangSementara.forEach((item, idx) => {
             let totalItem = 0;
             let ketSatuan = "";
-            
             if (item.nama === "Ayam Merah" || item.nama === "Ayam Penyet") {
                 totalItem = item.ekor * item.harga;
                 ketSatuan = `${item.ekor} ekor`;
@@ -799,7 +711,6 @@
                 totalItem = item.qty * item.harga;
                 ketSatuan = `${item.qty} kg`;
             }
-            
             totalBelanjaHariIni += totalItem;
             tbody.innerHTML += `<tr><td><b>${item.nama}</b> (${ketSatuan})</td><td class="text-end text-danger"><i class="bi bi-x-circle" style="cursor:pointer;" onclick="hapusItemKeranjang(${idx})"></i></td></tr>`;
         });
@@ -813,7 +724,6 @@
         const pelunasan = menguraiAngka(document.getElementById("input-pelunasan").value);
         
         document.getElementById("input-tagihan-total").value = formatRupiah(totalTagihanBaru);
-        
         const sisaBonAkhir = totalTagihanBaru - pelunasan;
         document.getElementById("display-sisa-bon-akhir").innerText = formatRupiah(sisaBonAkhir);
     }
@@ -985,7 +895,6 @@
         
         let tj = 0, td = 0, ts = 0;
         let txCustomerAll = dataTransaksi.filter(t => t.pelanggan === nama);
-        
         let idTercatat = new Set();
         let txCustomer = [];
         
@@ -1001,7 +910,6 @@
         txCustomer.forEach(tx => {
             tj += tx.totalBelanja; 
             td += tx.payment;      
-            
             let sisaBaris = Math.round(tx.tagihan - tx.payment);
 
             const itemsDisaring = (tx.items || []).reduce((acc, current) => {
@@ -1103,7 +1011,6 @@
                 totalItem = Math.round(i.qty * i.harga);
                 let qtyBersih = Number(i.qty).toFixed(1);
                 kolomQty = `${qtyBersih} kg`;
-                
                 if (i.ekor > 0 && i.qty > 0) {
                     let avg = (i.qty / i.ekor).toFixed(2);
                     rataRataStr = `<br><small class="text-muted">ABW: ${avg} kg/ekor</small>`;
@@ -1144,7 +1051,6 @@
         });
     });
 
-    // ================= LOGIKA SUBMIT INSTAN OPTIMISTIC UPDATE =================
     document.getElementById("receivable-form").addEventListener("submit", function(e) {
         e.preventDefault();
 
@@ -1166,7 +1072,6 @@
             items: JSON.parse(JSON.stringify(keranjangSementara)) 
         };
 
-        // 1. Simpan instan ke memori lokal
         if(currentId === "") {
             dataTransaksi.push(payload);
         } else {
@@ -1175,7 +1080,6 @@
             batalEditTransaksi();
         }
         
-        // 2. Reset formulir seketika
         keranjangSementara = [];
         renderKeranjang();
         
@@ -1187,11 +1091,9 @@
         document.getElementById("input-pelunasan").value = "Rp 0";
         document.getElementById("display-sisa-bon-akhir").innerText = "Rp 0";
         
-        // 3. Render ulang UI dalam hitungan milidetik
         renderDashboard();
         updateSisaTagihanOtomatis(); 
         
-        // 4. Jalankan sinkronisasi cloud instan di background
         if (currentId === "") {
             pushSingleTransaksiKeSheets(payload);
         } else {
@@ -1317,7 +1219,6 @@
     document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
     document.getElementById("current-date").innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
-    // Inisialisasi awal sistem
     inisialisasiFormatRupiahLive();
     cekSessionLogin();
 </script>
