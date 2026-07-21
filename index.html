@@ -615,7 +615,7 @@
     function convertDateToDisplay(dateStr) { if(dateStr.includes("/")) return dateStr; const d = dateStr.split("-"); return `${d[2]}/${d[1]}/${d[0]}`; }
     function convertDateToInput(dateStr) { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
 
-    // ================= MUAT DATA CLOUD (OPTIMIZED FOR SAFARI & MOBILE) =================
+    // ================= MUAT DATA CLOUD =================
     async function muatDataDariSheets() {
         showSyncStatus("loading", "Menarik data terbaru dari Google Sheets...");
         if(GOOGLE_SCRIPT_URL === "") {
@@ -650,38 +650,64 @@
         }
     }
 
-    // ================= PUSH DATA CLOUD ASYNC BACKGROUND (SUPER NGEBUT) =================
-  // ================= PUSH DATA SINGKAT (SUPER NGEBUT) =================
-function pushSingleTransaksiKeSheets(transaksiBaru) {
-    showSyncStatus("loading", "Menyimpan ke Cloud...");
-    
-    // Kirim hanya 1 transaksi baru ke Apps Script
-    return fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        redirect: "follow",
-        body: JSON.stringify({ 
-            action: "appendTransaksi", 
-            pin: pinSistem, 
-            transaksi: transaksiBaru 
+    // ================= PUSH DATA SINGKAT (SUPER NGEBUT) =================
+    function pushSingleTransaksiKeSheets(transaksiBaru) {
+        showSyncStatus("loading", "Menyimpan ke Cloud...");
+        
+        return fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            redirect: "follow",
+            body: JSON.stringify({ 
+                action: "appendTransaksi", 
+                pin: pinSistem, 
+                transaksi: transaksiBaru 
+            })
         })
-    })
-    .then(res => res.json())
-    .then(res => {
-        if(res.status === "success") {
-            showSyncStatus("success", "Tersimpan Instant!");
-            setTimeout(() => {
+        .then(res => res.json())
+        .then(res => {
+            if(res.status === "success") {
+                showSyncStatus("success", "Tersimpan Instant!");
+                setTimeout(() => {
+                    showSyncStatus("success", "Sistem Sinkron Online (Google Sheets)");
+                }, 2000);
+            } else {
+                showSyncStatus("error", "Gagal simpan: " + res.message);
+            }
+        })
+        .catch(e => {
+            console.error("Gagal push data:", e);
+            showSyncStatus("error", "Koneksi terputus. Data tersimpan lokal.");
+        });
+    }
+
+    // ================= PUSH DATA FULL (BACKUP / KELOLA CUSTOMER / EDIT) =================
+    function pushDataKeSheets() {
+        showSyncStatus("loading", "Mensinkronkan ke Cloud...");
+        return fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            redirect: "follow",
+            body: JSON.stringify({
+                action: "saveAll",
+                pin: pinSistem,
+                customers: masterCustomer,
+                transaksis: dataTransaksi
+            })
+        })
+        .then(res => res.json())
+        .then(res => {
+            if(res.status === "success") {
                 showSyncStatus("success", "Sistem Sinkron Online (Google Sheets)");
-            }, 2000);
-        } else {
-            showSyncStatus("error", "Gagal simpan: " + res.message);
-        }
-    })
-    .catch(e => {
-        console.error("Gagal push data:", e);
-        showSyncStatus("error", "Koneksi terputus. Data tersimpan lokal.");
-    });
-}
+            } else {
+                showSyncStatus("error", "Gagal simpan: " + res.message);
+            }
+        })
+        .catch(e => {
+            console.error(e);
+            showSyncStatus("error", "Koneksi terputus.");
+        });
+    }
 
     function showSyncStatus(type, msg) {
         const bar = document.getElementById("sync-status");
@@ -1162,8 +1188,12 @@ function pushSingleTransaksiKeSheets(transaksiBaru) {
         renderDashboard();
         updateSisaTagihanOtomatis(); 
         
-        // 4. Jalankan sinkronisasi cloud di background
-        pushDataKeSheets();
+        // 4. Jalankan sinkronisasi cloud instan di background
+        if (currentId === "") {
+            pushSingleTransaksiKeSheets(payload);
+        } else {
+            pushDataKeSheets();
+        }
     });
 
     function pilihEditTransaksi(id) {
