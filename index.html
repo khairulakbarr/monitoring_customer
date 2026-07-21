@@ -775,7 +775,6 @@
     function renderDashboard() {
         const tbody = document.getElementById("table-body");
         tbody.innerHTML = "";
-        let kj = 0, kd = 0, kp = 0;
         
         let idTercatatTabelUtama = new Set();
         let dataTransaksiBersih = [];
@@ -790,44 +789,36 @@
                 dataTransaksiBersih.push(tx);
             }
         });
+
+        // AKUMULASI DARI DATA BERSIH
+        let kj = 0; // Total Penjualan
+        let kd = 0; // Total Diterima
         
+        dataTransaksiBersih.forEach(t => {
+            const meta = masterCustomer.find(c => c.nama === t.pelanggan) || {kategori: "Customer Umum"};
+            if(currentFilter === "Semua" || currentFilter === meta.kategori) {
+                kj += Number(t.totalBelanja) || 0;
+                kd += Number(t.payment) || 0;
+            }
+        });
+
+        let kp = kj - kd; // Sisa Piutang Aktif Murni
+
+        // Update Elemen KPI
+        document.getElementById("kpi-total-penjualan").innerText = formatRupiah(Math.round(kj));
+        document.getElementById("kpi-total-diterima").innerText = formatRupiah(Math.round(kd));
+        document.getElementById("kpi-sisa-piutang").innerText = formatRupiah(Math.round(kp));
+
+        // Render baris tabel...
         let transaksiMapped = JSON.parse(JSON.stringify(dataTransaksiBersih));
         transaksiMapped.sort((a, b) => parseTanggal(a.tanggal) - parseTanggal(b.tanggal));
 
         transaksiMapped.forEach((tx, viewIdx) => {
             const meta = masterCustomer.find(c => c.nama === tx.pelanggan) || {kategori: "Customer Umum"};
-            const sisa = Math.round(tx.tagihan - tx.payment);
-            
             if(currentFilter === "Semua" || currentFilter === meta.kategori) {
-                kj += tx.totalBelanja; 
-                kd += tx.payment;
+                const sisa = Math.round(tx.tagihan - tx.payment);
                 
-                const itemsTabelDisaring = (tx.items || []).reduce((acc, current) => {
-                    const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
-                    if (ditemukan) {
-                        let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
-                        ditemukan.qty = parseFloat(totalQty.toFixed(1)); 
-                        ditemukan.ekor = (parseInt(ditemukan.ekor) || 0) + (parseInt(current.ekor) || 0);
-                    } else {
-                        acc.push({ ...current });
-                    }
-                    return acc;
-                }, []);
-
-                if (itemsTabelDisaring.length === 1 && tx.totalBelanja > 0) {
-                    let item = itemsTabelDisaring[0];
-                    if (item.harga > 0 && Math.round(item.qty * item.harga) !== Math.round(tx.totalBelanja)) {
-                        item.qty = parseFloat((tx.totalBelanja / item.harga).toFixed(1));
-                    }
-                }
-                
-                let itemsStr = itemsTabelDisaring.map(i => {
-                    if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                        return `${i.nama}(${i.ekor}ekor)`;
-                    } else {
-                        return `${i.nama}(${Number(i.qty).toFixed(1)}kg)`;
-                    }
-                }).join(", ");
+                let itemsStr = (tx.items || []).map(i => `${i.nama}(${i.qty||i.ekor})`).join(", ");
                 
                 tbody.innerHTML += `
                     <tr>
@@ -848,25 +839,9 @@
             }
         });
 
-        let globalBelanja = 0;
-        let globalDiterima = 0;
-        dataTransaksiBersih.forEach(t => {
-            const meta = masterCustomer.find(c => c.nama === t.pelanggan) || {kategori: "Customer Umum"};
-            if(currentFilter === "Semua" || currentFilter === meta.kategori) {
-                globalBelanja += t.totalBelanja;
-                globalDiterima += t.payment;
-            }
-        });
-        kp = globalBelanja - globalDiterima;
-
-        document.getElementById("kpi-total-penjualan").innerText = formatRupiah(Math.round(kj));
-        document.getElementById("kpi-total-diterima").innerText = formatRupiah(Math.round(kd));
-        document.getElementById("kpi-sisa-piutang").innerText = formatRupiah(Math.round(kp));
-
         renderCustomerGridMenu();
         renderChartEngine(dataTransaksiBersih);
     }
-
     function renderChartEngine(dataBersihGrafik) {
         let dataBahan = dataBersihGrafik || dataTransaksi;
         let pts = {};
