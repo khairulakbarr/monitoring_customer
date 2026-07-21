@@ -616,70 +616,73 @@
     function convertDateToInput(dateStr) { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
 
     // ================= MUAT DATA CLOUD =================
-    async function muatDataDariSheets() {
-        showSyncStatus("loading", "Menarik data terbaru dari Google Sheets...");
-        if(GOOGLE_SCRIPT_URL === "") {
-            showSyncStatus("error", "URL Google Script belum diisi!");
-            return;
-        }
-        try {
-            const response = await fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                redirect: "follow",
-                body: JSON.stringify({ action: "getData", pin: pinSistem })
-            });
-            const res = await response.json();
-            if(res.status === "success") {
-                masterCustomer = res.customers || [];
-                dataTransaksi = JSON.parse(JSON.stringify(res.transaksis || []));
-                renderUiControls();
-                renderDashboard();
-                updateSisaTagihanOtomatis(); 
-                showSyncStatus("success", "Sistem Sinkron Online (Google Sheets)");
-            } else {
-                showSyncStatus("error", "Gagal load data: " + res.message);
-                if(res.message && res.message.toLowerCase().includes("pin")) {
-                    logoutSistem();
-                    alert("Akses ditolak! PIN Keamanan salah atau kedaluwarsa.");
-                }
-            }
-        } catch(e) {
-            console.error(e);
-            showSyncStatus("error", "Gagal koneksi cloud internet.");
-        }
+   async function muatDataDariSheets() {
+    showSyncStatus("loading", "Menarik data terbaru dari Google Sheets...");
+    if (!GOOGLE_SCRIPT_URL) {
+        showSyncStatus("error", "URL Google Script belum diisi!");
+        return;
     }
-
-    // ================= PUSH DATA SINGKAT (SUPER NGEBUT) =================
-    function pushSingleTransaksiKeSheets(transaksiBaru) {
-        showSyncStatus("loading", "Menyimpan ke Cloud...");
-        
-        return fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            redirect: "follow",
-            body: JSON.stringify({ 
-                action: "appendTransaksi", 
-                pin: pinSistem, 
-                transaksi: transaksiBaru 
-            })
-        })
-        .then(res => res.json())
-        .then(res => {
-            if(res.status === "success") {
-                showSyncStatus("success", "Tersimpan Instant!");
-                setTimeout(() => {
-                    showSyncStatus("success", "Sistem Sinkron Online (Google Sheets)");
-                }, 2000);
-            } else {
-                showSyncStatus("error", "Gagal simpan: " + res.message);
-            }
-        })
-        .catch(e => {
-            console.error("Gagal push data:", e);
-            showSyncStatus("error", "Koneksi terputus. Data tersimpan lokal.");
+    try {
+        // Gunakan URL parameter untuk GET request agar terhindar dari CORS POST pre-flight
+        const payload = encodeURIComponent(JSON.stringify({ action: "getData", pin: pinSistem }));
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?data=${payload}`, {
+            method: "GET",
+            redirect: "follow"
         });
+        
+        const res = await response.json();
+        if (res.status === "success") {
+            masterCustomer = res.customers || [];
+            dataTransaksi = JSON.parse(JSON.stringify(res.transaksis || []));
+            renderUiControls();
+            renderDashboard();
+            updateSisaTagihanOtomatis(); 
+            showSyncStatus("success", "Sistem Sinkron Online (Google Sheets)");
+        } else {
+            showSyncStatus("error", "Gagal load data: " + res.message);
+            if (res.message && res.message.toLowerCase().includes("pin")) {
+                logoutSistem();
+                alert("Akses ditolak! PIN Keamanan salah atau kedaluwarsa.");
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        showSyncStatus("error", "Gagal koneksi cloud internet.");
     }
+}
+    // ================= PUSH DATA SINGKAT (SUPER NGEBUT) =================
+   function pushSingleTransaksiKeSheets(transaksiBaru) {
+    showSyncStatus("loading", "Menyimpan ke Cloud...");
+    
+    return fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "cors",
+        redirect: "follow",
+        headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify({ 
+            action: "appendTransaksi", 
+            pin: pinSistem, 
+            transaksi: transaksiBaru 
+        })
+    })
+    .then(res => res.json())
+    .then(res => {
+        if (res.status === "success") {
+            showSyncStatus("success", "Tersimpan Instant!");
+            setTimeout(() => {
+                showSyncStatus("success", "Sistem Sinkron Online (Google Sheets)");
+            }, 2000);
+        } else {
+            showSyncStatus("error", "Gagal simpan: " + res.message);
+        }
+    })
+    .catch(e => {
+        console.error("Gagal push data:", e);
+        showSyncStatus("error", "Koneksi terputus. Data tersimpan lokal.");
+    });
+}
 
     // ================= PUSH DATA FULL (BACKUP / KELOLA CUSTOMER / EDIT) =================
     function pushDataKeSheets() {
