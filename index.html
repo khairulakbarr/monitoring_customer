@@ -651,33 +651,37 @@
     }
 
     // ================= PUSH DATA CLOUD ASYNC BACKGROUND (SUPER NGEBUT) =================
-    function pushDataKeSheets() {
-        showSyncStatus("loading", "Mensinkronkan data ke Cloud...");
-        
-        // Panggil fetch Asynchronous tanpa menahan proses UI utama
-        return fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            redirect: "follow",
-            body: JSON.stringify({ action: "saveAll", pin: pinSistem, customers: masterCustomer, transaksis: dataTransaksi })
+  // ================= PUSH DATA SINGKAT (SUPER NGEBUT) =================
+function pushSingleTransaksiKeSheets(transaksiBaru) {
+    showSyncStatus("loading", "Menyimpan ke Cloud...");
+    
+    // Kirim hanya 1 transaksi baru ke Apps Script
+    return fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        redirect: "follow",
+        body: JSON.stringify({ 
+            action: "appendTransaksi", 
+            pin: pinSistem, 
+            transaksi: transaksiBaru 
         })
-        .then(res => res.json())
-        .then(res => {
-            if(res.status === "success") {
-                showSyncStatus("success", "Data Tersimpan Aman di Google Sheets!");
-            } else {
-                showSyncStatus("error", "Gagal kirim: " + res.message);
-                if(res.message && res.message.toLowerCase().includes("pin")) {
-                    logoutSistem();
-                    alert("Akses ditolak! PIN salah saat menyimpan data.");
-                }
-            }
-        })
-        .catch(e => {
-            console.error("Gagal push data:", e);
-            showSyncStatus("error", "Koneksi terputus. Data tersimpan di memori lokal.");
-        });
-    }
+    })
+    .then(res => res.json())
+    .then(res => {
+        if(res.status === "success") {
+            showSyncStatus("success", "Tersimpan Instant!");
+            setTimeout(() => {
+                showSyncStatus("success", "Sistem Sinkron Online (Google Sheets)");
+            }, 2000);
+        } else {
+            showSyncStatus("error", "Gagal simpan: " + res.message);
+        }
+    })
+    .catch(e => {
+        console.error("Gagal push data:", e);
+        showSyncStatus("error", "Koneksi terputus. Data tersimpan lokal.");
+    });
+}
 
     function showSyncStatus(type, msg) {
         const bar = document.getElementById("sync-status");
