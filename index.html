@@ -830,7 +830,6 @@
         tbody.innerHTML = "";
         let kj = 0, kd = 0, kp = 0;
         
-        // --- PROSES FILTRASI DATA ANTI-DUPLIKAT ---
         let idTercatatTabelUtama = new Set();
         let dataTransaksiBersih = [];
         
@@ -847,7 +846,7 @@
         
         let transaksiMapped = JSON.parse(JSON.stringify(dataTransaksiBersih));
         
-        // URUTKAN TANGGAL TERBARU DI ATAS (DESCENDING: b - a)
+        // URUTKAN TANGGAL TERBARU DI ATAS (DESCENDING)
         transaksiMapped.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
 
         transaksiMapped.forEach((tx, viewIdx) => {
@@ -858,7 +857,6 @@
                 kj += tx.totalBelanja; 
                 kd += tx.payment;
                 
-                // --- PARSE SAFE ARRAY ITEMS ---
                 let rawItems = tx.items;
                 if (typeof rawItems === "string") {
                     try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
@@ -878,23 +876,22 @@
                 }, []);
 
                 let itemsStr = "";
-                
-                if (itemsTabelDisaring.length > 0) {
+
+                // LOGIKA ASLI SIKAT BERSIH:
+                // Jika total belanja = 0 -> "Hanya Pembayaran Bon"
+                // Jika ada belanja -> Baca item asli kg/ekor
+                if (tx.totalBelanja === 0 || tx.totalBelanja === "0") {
+                    itemsStr = "Hanya Pembayaran Bon";
+                } else {
                     itemsStr = itemsTabelDisaring.map(i => {
                         if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                            let totalEkor = i.ekor || (i.harga > 0 ? Math.round(tx.totalBelanja / i.harga) : 0);
-                            return `${i.nama}(${totalEkor}ekor)`;
+                            return `${i.nama}(${i.ekor || 0}ekor)`;
                         } else {
-                            let totalKg = i.qty || (i.harga > 0 ? (tx.totalBelanja / i.harga) : 0);
-                            return `${i.nama}(${Number(totalKg).toFixed(1)}kg)`;
+                            return `${i.nama}(${i.qty || 0}kg)`;
                         }
                     }).join(", ");
-                } else if (tx.totalBelanja > 0) {
-                    // Jika data belanja lama tidak ada array items, kita tampilkan Ayam Potong standar
-                    itemsStr = `Ayam Potong`;
-                } else {
-                    // Murni pembayaran cicilan / pelunasan bon
-                    itemsStr = "Hanya Pembayaran Bon";
+                    
+                    if (!itemsStr) itemsStr = "Ayam Potong";
                 }
                 
                 tbody.innerHTML += `
@@ -953,7 +950,7 @@
         });
     }
 
-    function bukaJendelaDasborCustomer(nama) {
+   function bukaJendelaDasborCustomer(nama) {
         document.getElementById("cust-modal-title").innerText = "Riwayat Buku: " + nama;
         const tbody = document.getElementById("cust-modal-table-body");
         tbody.innerHTML = ""; 
@@ -998,20 +995,18 @@
             }, []);
 
             let iStr = "";
-            if (itemsDisaring.length > 0) {
+            if (tx.totalBelanja === 0 || tx.totalBelanja === "0") {
+                iStr = "Hanya Pembayaran Bon";
+            } else {
                 iStr = itemsDisaring.map(i => {
                     if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                        let totalEkor = i.ekor || (i.harga > 0 ? Math.round(tx.totalBelanja / i.harga) : 0);
-                        return `${i.nama}(${totalEkor}ekor)`;
+                        return `${i.nama}(${i.ekor || 0}ekor)`;
                     } else {
-                        let totalKg = i.qty || (i.harga > 0 ? (tx.totalBelanja / i.harga) : 0);
-                        return `${i.nama}(${Number(totalKg).toFixed(1)}kg)`;
+                        return `${i.nama}(${i.qty || 0}kg)`;
                     }
                 }).join(", ");
-            } else if (tx.totalBelanja > 0) {
-                iStr = `Ayam Potong`;
-            } else {
-                iStr = "Hanya Pembayaran Bon";
+                
+                if (!iStr) iStr = "Ayam Potong";
             }
 
             tbody.innerHTML += `<tr>
@@ -1047,17 +1042,11 @@
         let tglClean = formatTampilanTanggal(trans.tanggal).replace(/\//g,'-');
         namaFileGlobal = `Faktur_${trans.pelanggan}_${tglClean}`;
         
-        // --- SAFE PARSE ITEMS ---
         let rawItems = trans.items;
         if (typeof rawItems === "string") {
             try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
         }
         if (!Array.isArray(rawItems)) rawItems = [];
-
-        // Jika transaksi ada total belanja tapi array items kosong, buatkan 1 item otomatis
-        if (rawItems.length === 0 && trans.totalBelanja > 0) {
-            rawItems = [{ nama: "Ayam Potong", qty: 0, ekor: 0, harga: trans.totalBelanja }];
-        }
 
         const itemsDisaring = rawItems.reduce((acc, current) => {
             const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
@@ -1077,12 +1066,11 @@
             let rataRataStr = "";
             
             if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                totalItem = i.harga > 0 ? Math.round((i.ekor || 1) * i.harga) : trans.totalBelanja;
-                kolomQty = `${i.ekor || 1} ekor`;
+                totalItem = Math.round((i.ekor || 0) * (i.harga || 0));
+                kolomQty = `${i.ekor || 0} ekor`;
             } else {
-                totalItem = i.harga > 0 && i.qty > 0 ? Math.round(i.qty * i.harga) : trans.totalBelanja;
-                let qtyBersih = i.qty > 0 ? Number(i.qty).toFixed(1) : "1.0";
-                kolomQty = `${qtyBersih} kg`;
+                totalItem = Math.round((i.qty || 0) * (i.harga || 0));
+                kolomQty = `${i.qty || 0} kg`;
                 
                 if (i.ekor > 0 && i.qty > 0) {
                     let avg = (i.qty / i.ekor).toFixed(2);
@@ -1090,15 +1078,11 @@
                 }
             }
             
-            if(itemsDisaring.length === 1 && trans.totalBelanja > 0) {
-                totalItem = Math.round(trans.totalBelanja);
-            }
-            
             return `<tr>
                 <td><b>${i.nama}</b>${i.nama !== "Ayam Merah" && i.nama !== "Ayam Penyet" && i.ekor > 0 ? '<br><small>('+i.ekor+' ekor)</small>':''}${rataRataStr}</td>
                 <td>${kolomQty}</td>
-                <td>${formatRupiah(i.harga || totalItem)}</td>
-                <td>${formatRupiah(totalItem)}</td>
+                <td>${formatRupiah(i.harga || 0)}</td>
+                <td>${formatRupiah(totalItem || trans.totalBelanja)}</td>
             </tr>`;
         }).join("");
 
