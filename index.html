@@ -161,7 +161,6 @@
             .invoice-total-container { width: 100% !important; }
         }
 
-        /* TAMPILAN PEMBATAS LOGIN (LOCKSCREEN) */
         #login-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -190,7 +189,6 @@
 </head>
 <body>
 
-<!-- OVERLAY LOGIN KEAMANAN -->
 <div id="login-overlay">
     <div class="login-box">
         <div class="mb-4">
@@ -212,9 +210,7 @@
     </div>
 </div>
 
-<!-- CONTAINER UTAMA APLIKASI -->
 <div id="main-content-app" class="container py-4 d-none">
-    <!-- SYNC STATUS BAR -->
     <div class="d-flex justify-content-between align-items-center mb-4 px-3 py-2 bg-white rounded-3 border shadow-sm">
         <div id="sync-status" class="small fw-bold text-muted">
             <i class="bi bi-cloud-arrow-down-fill text-primary"></i> Menghubungkan ke Google Sheets...
@@ -229,7 +225,6 @@
         </div>
     </div>
 
-    <!-- HEADER -->
     <div class="p-4 bg-primary text-white rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: linear-gradient(135deg, #1A73E8, #0D47A1) !important;">
         <div>
             <h2 class="mb-0 fs-4 fw-bold d-flex align-items-center gap-2">
@@ -247,7 +242,6 @@
         </div>
     </div>
     
-    <!-- TABS -->
     <div class="premium-card p-2 mb-4">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <ul class="nav nav-tabs custom-tabs border-0" id="categoryTabs">
@@ -261,7 +255,6 @@
         </div>
     </div>
 
-    <!-- KPI CARDS -->
     <div class="row g-4 mb-4">
         <div class="col-md-4">
             <div class="premium-card d-flex align-items-center justify-content-between">
@@ -283,14 +276,12 @@
         </div>
     </div>
 
-    <!-- CUSTOMER GRID -->
     <div class="premium-card mb-4 bg-light border">
         <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-person-bounding-box text-primary"></i> Klik Nama Customer Untuk Riwayat Individu:</h6>
         <div class="row g-2" id="customer-grid-container"></div>
     </div>
 
     <div class="row g-4 mb-4">
-        <!-- FORM -->
         <div class="col-lg-5">
             <div class="premium-card">
                 <h5 class="fw-bold mb-3 text-dark" id="form-title"><i class="bi bi-plus-circle-fill text-primary"></i> Input Transaksi Multi-Item</h5>
@@ -351,7 +342,6 @@
                         <input type="text" class="form-control border-success text-success fw-bold input-rupiah-direct" id="input-pelunasan" value="Rp 0" required>
                     </div>
 
-                    <!-- KOTAK HASIL AKHIR SISA BON FORM UTAMA -->
                     <div class="mb-3 p-3 rounded-3 block-merah-sisa">
                         <label class="text-danger small fw-bold d-block mb-1">SISA BON AKHIR (PIUTANG)</label>
                         <h4 class="fw-bold text-danger m-0" id="display-sisa-bon-akhir">Rp 0</h4>
@@ -363,7 +353,6 @@
             </div>
         </div>
 
-        <!-- CHART -->
         <div class="col-lg-7">
             <div class="premium-card">
                 <h5 class="fw-bold mb-4 text-dark">📊 Grafik Saldo Piutang Berjalan</h5>
@@ -372,7 +361,6 @@
         </div>
     </div>
 
-    <!-- TABLE -->
     <div class="premium-card">
         <h5 class="fw-bold mb-3 text-dark">📄 Arus Buku Rincian Catatan Piutang</h5>
         <div class="table-responsive">
@@ -388,9 +376,6 @@
     </div>
 </div>
 
-<!-- POPUPS/MODALS -->
-
-<!-- MODAL EDIT POP-UP INSTAN -->
 <div class="modal fade" id="modalEditTransaksi" tabindex="-1" aria-labelledby="modalEditTransaksiLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
@@ -428,7 +413,6 @@
                     <input type="text" class="form-control rounded-3 fw-bold text-success input-rupiah-direct" id="edit-popup-bayar">
                 </div>
 
-                <!-- KOTAK HASIL AKHIR SISA BON MODAL EDIT -->
                 <div class="p-3 rounded-3 block-merah-sisa">
                     <label class="text-danger small fw-bold d-block mb-1">SISA BON BARU (PIUTANG)</label>
                     <h5 class="fw-bold text-danger m-0" id="display-popup-sisa-bon">Rp 0</h5>
@@ -444,7 +428,6 @@
     </div>
 </div>
 
-<!-- Jendela Dasbor Customer -->
 <div class="modal fade" id="customerDashboardModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content" style="border-radius: 16px;">
@@ -463,7 +446,6 @@
     </div>
 </div>
 
-<!-- Modal Faktur -->
 <div class="modal fade" id="invoiceModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content" style="background-color: #f1f5f9;">
@@ -481,7 +463,6 @@
     </div>
 </div>
 
-<!-- Modal Kelola Customer -->
 <div class="modal fade" id="customerModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -513,14 +494,10 @@
     let currentFilter = "Semua";
     let chartInstance = null;
     let namaFileGlobal = "Faktur";
-    
-    // Variabel memori PIN
     let pinSistem = "";
 
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka); }
     function menguraiAngka(str) { if(!str) return 0; return parseInt(str.toString().replace(/\D/g, '')) || 0; }
-    
-    // ================= SINKRONISASI LOGIN PIN DAN MEMORI LOCALSTORAGE =================
     
     function cekSessionLogin() {
         const storedPin = localStorage.getItem("pin_keamanan_piutang");
@@ -542,7 +519,6 @@
         }
 
         pinSistem = pinInput;
-        // Simpan ke local storage agar user tidak ter-logout sendiri saat reload
         localStorage.setItem("pin_keamanan_piutang", pinSistem);
         sembunyikanLoginDanMulai();
     }
@@ -550,7 +526,6 @@
     function sembunyikanLoginDanMulai() {
         document.getElementById("login-overlay").classList.add("d-none");
         document.getElementById("main-content-app").classList.remove("d-none");
-        // Setelah login berhasil, langsung muat data dari cloud
         muatDataDariSheets();
     }
 
@@ -617,7 +592,6 @@
     function convertDateToDisplay(dateStr) { if(dateStr.includes("/")) return dateStr; const d = dateStr.split("-"); return `${d[2]}/${d[1]}/${d[0]}`; }
     function convertDateToInput(dateStr) { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
 
-    // MENJAGA AGAR SELLER MENDAPATKAN KESELURUHAN DATA BERSIH DENGAN PIN AKSES
     async function muatDataDariSheets() {
         showSyncStatus("loading", "Menarik data terbaru dari Google Sheets...");
         if(GOOGLE_SCRIPT_URL === "") {
@@ -632,7 +606,6 @@
             const res = await response.json();
             if(res.status === "success") {
                 masterCustomer = res.customers || [];
-                // Lakukan deep clone instan saat memuat agar tidak ada bocoran referensi global antar data
                 dataTransaksi = JSON.parse(JSON.stringify(res.transaksis || []));
                 renderUiControls();
                 renderDashboard();
@@ -691,7 +664,6 @@
             return;
         }
 
-        // Jalankan filter unik agar perhitungan tagihan berjalan tidak bengkak saat di-change
         let idTercatatOtomatis = new Set();
         let totalBelanja = 0;
         let totalDiterima = 0;
@@ -825,7 +797,10 @@
         renderDashboard();
     }
 
-  function renderDashboard() {
+    // =========================================================================
+    // FUNGSI RENDER DASHBOARD PRESISI DENGAN ITEM ASLI
+    // =========================================================================
+    function renderDashboard() {
         const tbody = document.getElementById("table-body");
         tbody.innerHTML = "";
         let kj = 0, kd = 0, kp = 0;
@@ -845,8 +820,6 @@
         });
         
         let transaksiMapped = JSON.parse(JSON.stringify(dataTransaksiBersih));
-        
-        // URUTKAN TANGGAL TERBARU DI ATAS (DESCENDING)
         transaksiMapped.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
 
         transaksiMapped.forEach((tx, viewIdx) => {
@@ -877,9 +850,8 @@
 
                 let itemsStr = "";
 
-                // LOGIKA ASLI SIKAT BERSIH:
-                // Jika total belanja = 0 -> "Hanya Pembayaran Bon"
-                // Jika ada belanja -> Baca item asli kg/ekor
+                // LOGIKA PRESISI KUNCI:
+                // Hanya "Hanya Pembayaran Bon" jika total belanja HARI INI = 0
                 if (tx.totalBelanja === 0 || tx.totalBelanja === "0") {
                     itemsStr = "Hanya Pembayaran Bon";
                 } else {
@@ -931,6 +903,7 @@
         renderCustomerGridMenu();
         renderChartEngine(dataTransaksiBersih);
     }
+
     function renderChartEngine(dataBersihGrafik) {
         let dataBahan = dataBersihGrafik || dataTransaksi;
         let pts = {};
@@ -950,7 +923,7 @@
         });
     }
 
-   function bukaJendelaDasborCustomer(nama) {
+    function bukaJendelaDasborCustomer(nama) {
         document.getElementById("cust-modal-title").innerText = "Riwayat Buku: " + nama;
         const tbody = document.getElementById("cust-modal-table-body");
         tbody.innerHTML = ""; 
@@ -1028,12 +1001,13 @@
         
         new bootstrap.Modal(document.getElementById('customerDashboardModal')).show();
     }
+
     function tutupDasborDanBukaFaktur(id) {
         bootstrap.Modal.getInstance(document.getElementById('customerDashboardModal')).hide();
         setTimeout(() => { tampilkanFaktur(id); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
     }
 
-   function tampilkanFaktur(id) {
+    function tampilkanFaktur(id) {
         const targetTx = dataTransaksi.find(t => t.id === id);
         if(!targetTx) return;
         
@@ -1101,13 +1075,13 @@
             </div>
             <div class="invoice-footer-info"><b>INFO:</b> Transfer SeaBank 9017-6605-7787 a.n Khairul Akbar</div>`;
     }
+
     document.getElementById("btn-download-faktur").addEventListener("click", function() {
         html2canvas(document.getElementById("invoice-download-wrapper"), { scale: 2 }).then(canvas => {
             const a = document.createElement("a"); a.download = `${namaFileGlobal}.png`; a.href = canvas.toDataURL(); a.click();
         });
     });
 
-    // ================= LOGIKA SUBMIT TERBARU (SAT SET OPTIMISTIC UPDATE) =================
     document.getElementById("receivable-form").addEventListener("submit", function(e) {
         e.preventDefault();
         const btnSubmit = document.getElementById("btn-submit-transaksi");
@@ -1131,7 +1105,6 @@
             items: JSON.parse(JSON.stringify(keranjangSementara)) 
         };
 
-        // 1. Simpan instan ke memori lokal
         if(currentId === "") {
             dataTransaksi.push(payload);
         } else {
@@ -1140,7 +1113,6 @@
             batalEditTransaksi();
         }
         
-        // 2. Kosongkan formulir seketika
         keranjangSementara = [];
         renderKeranjang();
         
@@ -1152,16 +1124,12 @@
         document.getElementById("input-pelunasan").value = "Rp 0";
         document.getElementById("display-sisa-bon-akhir").innerText = "Rp 0";
         
-        // 3. Render ulang layar detik itu juga biar data langsung kelihatan masuk
         renderDashboard();
         updateSisaTagihanOtomatis(); 
         
-        // 4. Jalankan sinkronisasi awan di background (TIDAK MEMATIKAN TOMBOL UTAMA)
         showSyncStatus("loading", "Mensinkronkan data ke Cloud...");
         pushDataKeSheets()
-            .then(() => {
-                // Berhasil sinkron status bar otomatis diset sukses oleh pushDataKeSheets()
-            })
+            .then(() => {})
             .catch(err => {
                 console.error("Gagal sinkron di background:", err);
                 showSyncStatus("error", "Koneksi terganggu. Data tersimpan aman di lokal.");
@@ -1286,9 +1254,8 @@
     document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
     document.getElementById("current-date").innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
-    // Inisialisasi awal sistem
     inisialisasiFormatRupiahLive();
-    cekSessionLogin(); // Jalankan pengecekan session login otomatis
+    cekSessionLogin();
 </script>
 </body>
 </html>
