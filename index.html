@@ -846,7 +846,7 @@
         renderDashboard();
     }
 
-    // ================= 1. FIX LOGIKA TABEL UTAMA =================
+    // ================= LOGIKA TABEL UTAMA =================
     function renderDashboard() {
         const tbody = document.getElementById("table-body");
         tbody.innerHTML = "";
@@ -951,7 +951,7 @@
         });
     }
 
-    // ================= 2. FIX LOGIKA JENDELA BUKU CUSTOMER =================
+    // ================= LOGIKA JENDELA BUKU CUSTOMER =================
     function bukaJendelaDasborCustomer(nama) {
         document.getElementById("cust-modal-title").innerText = "Riwayat Buku: " + nama;
         const tbody = document.getElementById("cust-modal-table-body");
@@ -1019,7 +1019,7 @@
         setTimeout(() => { tampilkanFaktur(id); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
     }
 
-    // ================= 3. FIX LOGIKA PRATINJAU FAKTUR =================
+    // ================= TAMPILKAN FAKTUR PRESISI (SESUAI SS KE-4 AKURAT) =================
     function tampilkanFaktur(id) {
         const targetTx = dataTransaksi.find(t => t.id === id);
         if(!targetTx) return;
@@ -1036,33 +1036,33 @@
             rows = itemsList.map(i => {
                 let totalItem = 0;
                 let kolomQty = "";
-                
+                let infoEkorDanABW = "";
+
+                const ekorVal = parseInt(i.ekor) || 0;
+                const qtyVal = parseFloat(i.qty) || 0;
+                const hargaVal = parseInt(i.harga) || 0;
+
                 if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                    totalItem = Math.round((i.ekor || 0) * (i.harga || 0));
-                    kolomQty = `${i.ekor || 0} ekor`;
+                    totalItem = Math.round(ekorVal * hargaVal);
+                    kolomQty = `${ekorVal} ekor`;
                 } else {
-                    totalItem = Math.round((i.qty || 0) * (i.harga || 0));
-                    kolomQty = `${Number(i.qty || 0).toFixed(1)} kg`;
-                }
-                
-                if (itemsList.length === 1 && totalItem === 0 && trans.totalBelanja > 0) {
-                    totalItem = Math.round(trans.totalBelanja);
+                    totalItem = Math.round(qtyVal * hargaVal);
+                    kolomQty = `${qtyVal.toFixed(1)} kg`;
+                    
+                    // Menampilkan detail ekor dan kalkulasi ABW persis sesuai SS ke-4
+                    if (ekorVal > 0) {
+                        let avgWeight = qtyVal > 0 ? (qtyVal / ekorVal).toFixed(2) : "0.00";
+                        infoEkorDanABW = `<br><small class="text-muted">(${ekorVal} ekor)<br>ABW: ${avgWeight} kg/ekor</small>`;
+                    }
                 }
 
                 return `<tr>
-                    <td><b>${i.nama}</b>${i.ekor && i.nama !== "Ayam Merah" && i.nama !== "Ayam Penyet" ? `<br><small>(${i.ekor} ekor)</small>` : ''}</td>
-                    <td>${kolomQty}</td>
-                    <td>${formatRupiah(i.harga || 0)}</td>
-                    <td>${formatRupiah(totalItem)}</td>
+                    <td><b>${i.nama}</b>${infoEkorDanABW}</td>
+                    <td style="vertical-align:top;">${kolomQty}</td>
+                    <td style="vertical-align:top;">${formatRupiah(hargaVal)}</td>
+                    <td style="vertical-align:top;">${formatRupiah(totalItem)}</td>
                 </tr>`;
             }).join("");
-        } else if (trans.totalBelanja > 0) {
-            rows = `<tr>
-                <td><b>Item Belanja</b></td>
-                <td>1 Paket</td>
-                <td>${formatRupiah(Math.round(trans.totalBelanja))}</td>
-                <td>${formatRupiah(Math.round(trans.totalBelanja))}</td>
-            </tr>`;
         } else {
             rows = `<tr><td colspan="4" class="text-center text-muted py-3">Hanya Transaksi Titip Bayar Bon</td></tr>`;
         }
@@ -1072,7 +1072,12 @@
                 <div><div class="invoice-title">FAKTUR</div><div class="small">Kepada: <b>${trans.pelanggan}</b></div></div>
                 <div class="text-end small"><b>ID:</b> ${trans.id.substring(0,8)}<br><b>Tgl:</b> ${formatTampilanTanggal(trans.tanggal)}</div>
             </div>
-            <table class="table-invoice-maroon"><thead><tr><th>Barang</th><th>Qty</th><th>Harga</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
+            <table class="table-invoice-maroon">
+                <thead>
+                    <tr><th>Barang</th><th>Qty</th><th>Harga</th><th>Total</th></tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
             <div class="mt-3 text-end" style="font-size:13px;">
                 <div class="invoice-summary-row"><div class="invoice-summary-label">Subtotal</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.totalBelanja))}</div></div>
                 <div class="invoice-summary-row"><div class="invoice-summary-label">Sisa Tagihan Lalu</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.hutangAwal))}</div></div>
