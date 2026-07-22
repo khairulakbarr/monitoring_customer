@@ -825,7 +825,7 @@
         renderDashboard();
     }
 
-   function renderDashboard() {
+  function renderDashboard() {
         const tbody = document.getElementById("table-body");
         tbody.innerHTML = "";
         let kj = 0, kd = 0, kp = 0;
@@ -879,21 +879,21 @@
 
                 let itemsStr = "";
                 
-                // LOGIKA RINCIAN ITEM:
-                // Jika total Belanja > 0 tapi item kosong/terhapus, otomatis buatkan label dari nominal belanja
                 if (itemsTabelDisaring.length > 0) {
                     itemsStr = itemsTabelDisaring.map(i => {
                         if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                            return `${i.nama}(${i.ekor || i.qty || 0}ekor)`;
+                            let totalEkor = i.ekor || (i.harga > 0 ? Math.round(tx.totalBelanja / i.harga) : 0);
+                            return `${i.nama}(${totalEkor}ekor)`;
                         } else {
-                            return `${i.nama}(${Number(i.qty || 0).toFixed(1)}kg)`;
+                            let totalKg = i.qty || (i.harga > 0 ? (tx.totalBelanja / i.harga) : 0);
+                            return `${i.nama}(${Number(totalKg).toFixed(1)}kg)`;
                         }
                     }).join(", ");
                 } else if (tx.totalBelanja > 0) {
-                    // Fallback jika ada belanja tapi array item tidak terbawa
-                    itemsStr = `Ayam Potong (${formatRupiah(Math.round(tx.totalBelanja))})`;
+                    // Jika data belanja lama tidak ada array items, kita tampilkan Ayam Potong standar
+                    itemsStr = `Ayam Potong`;
                 } else {
-                    // Murni tidak ada belanja (Hanya bayar/cicil bon)
+                    // Murni pembayaran cicilan / pelunasan bon
                     itemsStr = "Hanya Pembayaran Bon";
                 }
                 
@@ -1001,13 +1001,15 @@
             if (itemsDisaring.length > 0) {
                 iStr = itemsDisaring.map(i => {
                     if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                        return `${i.nama}(${i.ekor || i.qty || 0}ekor)`;
+                        let totalEkor = i.ekor || (i.harga > 0 ? Math.round(tx.totalBelanja / i.harga) : 0);
+                        return `${i.nama}(${totalEkor}ekor)`;
                     } else {
-                        return `${i.nama}(${Number(i.qty || 0).toFixed(1)}kg)`;
+                        let totalKg = i.qty || (i.harga > 0 ? (tx.totalBelanja / i.harga) : 0);
+                        return `${i.nama}(${Number(totalKg).toFixed(1)}kg)`;
                     }
                 }).join(", ");
             } else if (tx.totalBelanja > 0) {
-                iStr = `Ayam Potong (${formatRupiah(Math.round(tx.totalBelanja))})`;
+                iStr = `Ayam Potong`;
             } else {
                 iStr = "Hanya Pembayaran Bon";
             }
@@ -1036,7 +1038,7 @@
         setTimeout(() => { tampilkanFaktur(id); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
     }
 
-    function tampilkanFaktur(id) {
+   function tampilkanFaktur(id) {
         const targetTx = dataTransaksi.find(t => t.id === id);
         if(!targetTx) return;
         
@@ -1045,7 +1047,19 @@
         let tglClean = formatTampilanTanggal(trans.tanggal).replace(/\//g,'-');
         namaFileGlobal = `Faktur_${trans.pelanggan}_${tglClean}`;
         
-        const itemsDisaring = (trans.items || []).reduce((acc, current) => {
+        // --- SAFE PARSE ITEMS ---
+        let rawItems = trans.items;
+        if (typeof rawItems === "string") {
+            try { rawItems = JSON.parse(rawItems); } catch(e) { rawItems = []; }
+        }
+        if (!Array.isArray(rawItems)) rawItems = [];
+
+        // Jika transaksi ada total belanja tapi array items kosong, buatkan 1 item otomatis
+        if (rawItems.length === 0 && trans.totalBelanja > 0) {
+            rawItems = [{ nama: "Ayam Potong", qty: 0, ekor: 0, harga: trans.totalBelanja }];
+        }
+
+        const itemsDisaring = rawItems.reduce((acc, current) => {
             const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
             if (ditemukan) {
                 let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
@@ -1057,31 +1071,17 @@
             return acc;
         }, []);
 
-        if (itemsDisaring.length === 1 && trans.totalBelanja > 0) {
-            let i = itemsDisaring[0];
-            if (i.harga > 0) {
-                if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                    i.ekor = Math.round(trans.totalBelanja / i.harga);
-                } else {
-                    i.qty = parseFloat((trans.totalBelanja / i.harga).toFixed(1));
-                    if(i.ekor > 50) {
-                        i.ekor = Math.round(i.qty / 1.9) || 1;
-                    }
-                }
-            }
-        }
-
         let rows = itemsDisaring.map(i => {
             let totalItem = 0;
             let kolomQty = "";
             let rataRataStr = "";
             
             if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                totalItem = Math.round(i.ekor * i.harga);
-                kolomQty = `${i.ekor} ekor`;
+                totalItem = i.harga > 0 ? Math.round((i.ekor || 1) * i.harga) : trans.totalBelanja;
+                kolomQty = `${i.ekor || 1} ekor`;
             } else {
-                totalItem = Math.round(i.qty * i.harga);
-                let qtyBersih = Number(i.qty).toFixed(1);
+                totalItem = i.harga > 0 && i.qty > 0 ? Math.round(i.qty * i.harga) : trans.totalBelanja;
+                let qtyBersih = i.qty > 0 ? Number(i.qty).toFixed(1) : "1.0";
                 kolomQty = `${qtyBersih} kg`;
                 
                 if (i.ekor > 0 && i.qty > 0) {
@@ -1090,14 +1090,14 @@
                 }
             }
             
-            if(itemsDisaring.length === 1) {
+            if(itemsDisaring.length === 1 && trans.totalBelanja > 0) {
                 totalItem = Math.round(trans.totalBelanja);
             }
             
             return `<tr>
                 <td><b>${i.nama}</b>${i.nama !== "Ayam Merah" && i.nama !== "Ayam Penyet" && i.ekor > 0 ? '<br><small>('+i.ekor+' ekor)</small>':''}${rataRataStr}</td>
                 <td>${kolomQty}</td>
-                <td>${formatRupiah(i.harga)}</td>
+                <td>${formatRupiah(i.harga || totalItem)}</td>
                 <td>${formatRupiah(totalItem)}</td>
             </tr>`;
         }).join("");
@@ -1117,7 +1117,6 @@
             </div>
             <div class="invoice-footer-info"><b>INFO:</b> Transfer SeaBank 9017-6605-7787 a.n Khairul Akbar</div>`;
     }
-
     document.getElementById("btn-download-faktur").addEventListener("click", function() {
         html2canvas(document.getElementById("invoice-download-wrapper"), { scale: 2 }).then(canvas => {
             const a = document.createElement("a"); a.download = `${namaFileGlobal}.png`; a.href = canvas.toDataURL(); a.click();
