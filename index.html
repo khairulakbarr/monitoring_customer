@@ -542,7 +542,6 @@
         }
 
         pinSistem = pinInput;
-        // Simpan ke local storage agar user tidak ter-logout sendiri saat reload
         localStorage.setItem("pin_keamanan_piutang", pinSistem);
         sembunyikanLoginDanMulai();
     }
@@ -550,7 +549,6 @@
     function sembunyikanLoginDanMulai() {
         document.getElementById("login-overlay").classList.add("d-none");
         document.getElementById("main-content-app").classList.remove("d-none");
-        // Setelah login berhasil, langsung muat data dari cloud
         muatDataDariSheets();
     }
 
@@ -617,7 +615,7 @@
     function convertDateToDisplay(dateStr) { if(dateStr.includes("/")) return dateStr; const d = dateStr.split("-"); return `${d[2]}/${d[1]}/${d[0]}`; }
     function convertDateToInput(dateStr) { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
 
-    // MENJAGA AGAR SELLER MENDAPATKAN KESELURUHAN DATA BERSIH DENGAN PIN AKSES
+    // ================= MUAT DATA CLOUD (OPTIMIZED FOR SAFARI & MOBILE) =================
     async function muatDataDariSheets() {
         showSyncStatus("loading", "Menarik data terbaru dari Google Sheets...");
         if(GOOGLE_SCRIPT_URL === "") {
@@ -627,12 +625,13 @@
         try {
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                redirect: "follow",
                 body: JSON.stringify({ action: "getData", pin: pinSistem })
             });
             const res = await response.json();
             if(res.status === "success") {
                 masterCustomer = res.customers || [];
-                // Lakukan deep clone instan saat memuat agar tidak ada bocoran referensi global antar data
                 dataTransaksi = JSON.parse(JSON.stringify(res.transaksis || []));
                 renderUiControls();
                 renderDashboard();
@@ -646,20 +645,26 @@
                 }
             }
         } catch(e) {
+            console.error(e);
             showSyncStatus("error", "Gagal koneksi cloud internet.");
         }
     }
 
-    async function pushDataKeSheets() {
-        showSyncStatus("loading", "Menyimpan & Mensinkronkan data ke Cloud...");
-        try {
-            const response = await fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "saveAll", pin: pinSistem, customers: masterCustomer, transaksis: dataTransaksi })
-            });
-            const res = await response.json();
+    // ================= PUSH DATA CLOUD ASYNC BACKGROUND (SUPER NGEBUT) =================
+    function pushDataKeSheets() {
+        showSyncStatus("loading", "Mensinkronkan data ke Cloud...");
+        
+        // Panggil fetch Asynchronous tanpa menahan proses UI utama
+        return fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            redirect: "follow",
+            body: JSON.stringify({ action: "saveAll", pin: pinSistem, customers: masterCustomer, transaksis: dataTransaksi })
+        })
+        .then(res => res.json())
+        .then(res => {
             if(res.status === "success") {
-                showSyncStatus("success", "Semua Data Tersimpan Aman di Google Sheets!");
+                showSyncStatus("success", "Data Tersimpan Aman di Google Sheets!");
             } else {
                 showSyncStatus("error", "Gagal kirim: " + res.message);
                 if(res.message && res.message.toLowerCase().includes("pin")) {
@@ -667,9 +672,11 @@
                     alert("Akses ditolak! PIN salah saat menyimpan data.");
                 }
             }
-        } catch(e) {
-            showSyncStatus("error", "Koneksi terputus, antrean tersimpan di lokal.");
-        }
+        })
+        .catch(e => {
+            console.error("Gagal push data:", e);
+            showSyncStatus("error", "Koneksi terputus. Data tersimpan di memori lokal.");
+        });
     }
 
     function showSyncStatus(type, msg) {
@@ -691,7 +698,6 @@
             return;
         }
 
-        // Jalankan filter unik agar perhitungan tagihan berjalan tidak bengkak saat di-change
         let idTercatatOtomatis = new Set();
         let totalBelanja = 0;
         let totalDiterima = 0;
@@ -830,7 +836,6 @@
         tbody.innerHTML = "";
         let kj = 0, kd = 0, kp = 0;
         
-        // --- PROSES FILTRASI DATA ANTI-DUPLIKAT (SAPU JAGAT TINGKAT DATA DATA) ---
         let idTercatatTabelUtama = new Set();
         let dataTransaksiBersih = [];
         
@@ -856,7 +861,6 @@
                 kj += tx.totalBelanja; 
                 kd += tx.payment;
                 
-                // --- FIX SAFETY & AUTOMATIC REPAIR LAYER FOR MAIN TABLE ---
                 const itemsTabelDisaring = (tx.items || []).reduce((acc, current) => {
                     const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
                     if (ditemukan) {
@@ -1107,11 +1111,9 @@
         });
     });
 
-    // ================= LOGIKA SUBMIT TERBARU (SAT SET OPTIMISTIC UPDATE) =================
+    // ================= LOGIKA SUBMIT INSTAN OPTIMISTIC UPDATE =================
     document.getElementById("receivable-form").addEventListener("submit", function(e) {
         e.preventDefault();
-        const btnSubmit = document.getElementById("btn-submit-transaksi");
-        if (btnSubmit.disabled) return;
 
         const pembayaran = menguraiAngka(document.getElementById("input-pelunasan").value);
         if (keranjangSementara.length === 0 && pembayaran <= 0) {
@@ -1140,7 +1142,7 @@
             batalEditTransaksi();
         }
         
-        // 2. Kosongkan formulir seketika
+        // 2. Reset formulir seketika
         keranjangSementara = [];
         renderKeranjang();
         
@@ -1152,20 +1154,12 @@
         document.getElementById("input-pelunasan").value = "Rp 0";
         document.getElementById("display-sisa-bon-akhir").innerText = "Rp 0";
         
-        // 3. Render ulang layar detik itu juga biar data langsung kelihatan masuk
+        // 3. Render ulang UI dalam hitungan milidetik
         renderDashboard();
         updateSisaTagihanOtomatis(); 
         
-        // 4. Jalankan sinkronisasi awan di background (TIDAK MEMATIKAN TOMBOL UTAMA)
-        showSyncStatus("loading", "Mensinkronkan data ke Cloud...");
-        pushDataKeSheets()
-            .then(() => {
-                // Berhasil sinkron status bar otomatis diset sukses oleh pushDataKeSheets()
-            })
-            .catch(err => {
-                console.error("Gagal sinkron di background:", err);
-                showSyncStatus("error", "Koneksi terganggu. Data tersimpan aman di lokal.");
-            });
+        // 4. Jalankan sinkronisasi cloud di background
+        pushDataKeSheets();
     });
 
     function pilihEditTransaksi(id) {
@@ -1247,7 +1241,7 @@
         document.getElementById("display-popup-sisa-bon").innerText = formatRupiah(sisaBonBaru);
     }
 
-    async function simpanPerubahanTransaksiPopup() {
+    function simpanPerubahanTransaksiPopup() {
         const currentId = document.getElementById("edit-popup-id").value;
         const idx = dataTransaksi.findIndex(t => t.id === currentId);
         if (idx === -1) return;
@@ -1279,7 +1273,7 @@
 
         renderDashboard();
         updateSisaTagihanOtomatis();
-        await pushDataKeSheets();
+        pushDataKeSheets();
     }
 
     document.getElementById("input-pelanggan").addEventListener("change", updateSisaTagihanOtomatis);
@@ -1288,7 +1282,7 @@
     
     // Inisialisasi awal sistem
     inisialisasiFormatRupiahLive();
-    cekSessionLogin(); // Jalankan pengecekan session login otomatis
+    cekSessionLogin();
 </script>
 </body>
 </html>
