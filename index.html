@@ -520,6 +520,22 @@
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka); }
     function menguraiAngka(str) { if(!str) return 0; return parseInt(str.toString().replace(/\D/g, '')) || 0; }
     
+    // ================= HELPER UNTUK PARSING ITEMS DARI CLOUD =================
+    function pastikanArrayItems(rawItems) {
+        if (!rawItems) return [];
+        if (Array.isArray(rawItems)) return rawItems;
+        if (typeof rawItems === 'string') {
+            try {
+                let parsed = JSON.parse(rawItems);
+                if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                return [];
+            }
+        }
+        return [];
+    }
+
     // ================= SINKRONISASI LOGIN PIN DAN MEMORI LOCALSTORAGE =================
     
     function cekSessionLogin() {
@@ -650,11 +666,10 @@
         }
     }
 
-    // ================= PUSH DATA CLOUD ASYNC BACKGROUND (SUPER NGEBUT) =================
+    // ================= PUSH DATA CLOUD ASYNC BACKGROUND =================
     function pushDataKeSheets() {
         showSyncStatus("loading", "Mensinkronkan data ke Cloud...");
         
-        // Panggil fetch Asynchronous tanpa menahan proses UI utama
         return fetch(GOOGLE_SCRIPT_URL, {
             method: "POST",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -831,6 +846,7 @@
         renderDashboard();
     }
 
+    // ================= 1. FIX LOGIKA TABEL UTAMA =================
     function renderDashboard() {
         const tbody = document.getElementById("table-body");
         tbody.innerHTML = "";
@@ -861,39 +877,29 @@
                 kj += tx.totalBelanja; 
                 kd += tx.payment;
                 
-                const itemsTabelDisaring = (tx.items || []).reduce((acc, current) => {
-                    const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
-                    if (ditemukan) {
-                        let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
-                        ditemukan.qty = parseFloat(totalQty.toFixed(1)); 
-                        ditemukan.ekor = (parseInt(ditemukan.ekor) || 0) + (parseInt(current.ekor) || 0);
-                    } else {
-                        acc.push({ ...current });
-                    }
-                    return acc;
-                }, []);
-
-                if (itemsTabelDisaring.length === 1 && tx.totalBelanja > 0) {
-                    let item = itemsTabelDisaring[0];
-                    if (item.harga > 0 && Math.round(item.qty * item.harga) !== Math.round(tx.totalBelanja)) {
-                        item.qty = parseFloat((tx.totalBelanja / item.harga).toFixed(1));
-                    }
-                }
+                const itemsList = pastikanArrayItems(tx.items);
                 
-                let itemsStr = itemsTabelDisaring.map(i => {
-                    if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                        return `${i.nama}(${i.ekor}ekor)`;
-                    } else {
-                        return `${i.nama}(${Number(i.qty).toFixed(1)}kg)`;
-                    }
-                }).join(", ");
+                let itemsStr = "";
+                if (itemsList.length > 0) {
+                    itemsStr = itemsList.map(i => {
+                        if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
+                            return `${i.nama}(${i.ekor || 0}ekor)`;
+                        } else {
+                            return `${i.nama}(${Number(i.qty || 0).toFixed(1)}kg)`;
+                        }
+                    }).join(", ");
+                } else if (tx.totalBelanja > 0) {
+                    itemsStr = "Belanja (Rincian Item Tidak Tertulis)";
+                } else {
+                    itemsStr = "Hanya Pembayaran Bon";
+                }
                 
                 tbody.innerHTML += `
                     <tr>
                         <td>${viewIdx + 1}</td>
                         <td>${formatTampilanTanggal(tx.tanggal)}</td>
                         <td class="fw-bold text-primary" style="cursor:pointer;" onclick="bukaJendelaDasborCustomer('${tx.pelanggan}')">${tx.pelanggan}</td>
-                        <td class="small">${itemsStr || "Hanya Pembayaran Bon"}</td>
+                        <td class="small">${itemsStr}</td>
                         <td>${formatRupiah(Math.round(tx.totalBelanja))}</td>
                         <td>${formatRupiah(Math.round(tx.tagihan))}</td>
                         <td>${formatRupiah(Math.round(tx.payment))}</td>
@@ -945,6 +951,7 @@
         });
     }
 
+    // ================= 2. FIX LOGIKA JENDELA BUKU CUSTOMER =================
     function bukaJendelaDasborCustomer(nama) {
         document.getElementById("cust-modal-title").innerText = "Riwayat Buku: " + nama;
         const tbody = document.getElementById("cust-modal-table-body");
@@ -970,37 +977,26 @@
             td += tx.payment;      
             
             let sisaBaris = Math.round(tx.tagihan - tx.payment);
+            const itemsList = pastikanArrayItems(tx.items);
 
-            const itemsDisaring = (tx.items || []).reduce((acc, current) => {
-                const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
-                if (ditemukan) {
-                    let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
-                    ditemukan.qty = parseFloat(totalQty.toFixed(1)); 
-                    ditemukan.ekor = (parseInt(ditemukan.ekor) || 0) + (parseInt(current.ekor) || 0);
-                } else {
-                    acc.push({ ...current });
-                }
-                return acc;
-            }, []);
-
-            if (itemsDisaring.length === 1 && tx.totalBelanja > 0) {
-                let singleI = itemsDisaring[0];
-                if (singleI.harga > 0 && Math.round(singleI.qty * singleI.harga) !== Math.round(tx.totalBelanja)) {
-                    singleI.qty = parseFloat((tx.totalBelanja / singleI.harga).toFixed(1));
-                }
+            let iStr = "";
+            if (itemsList.length > 0) {
+                iStr = itemsList.map(i => {
+                    if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
+                        return `${i.nama}(${i.ekor || 0}ekor)`;
+                    } else {
+                        return `${i.nama}(${Number(i.qty || 0).toFixed(1)}kg)`;
+                    }
+                }).join(", ");
+            } else if (tx.totalBelanja > 0) {
+                iStr = "Belanja (Rincian Item Tidak Tertulis)";
+            } else {
+                iStr = "Hanya Pembayaran Bon";
             }
-
-            let iStr = itemsDisaring.map(i => {
-                if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                    return `${i.nama}(${i.ekor}ekor)`;
-                } else {
-                    return `${i.nama}(${Number(i.qty).toFixed(1)}kg)`;
-                }
-            }).join(", ");
 
             tbody.innerHTML += `<tr>
                 <td>${formatTampilanTanggal(tx.tanggal)}</td>
-                <td class="text-start">${iStr || "Hanya Pembayaran Bon"}</td>
+                <td class="text-start">${iStr}</td>
                 <td>${formatRupiah(tx.totalBelanja)}</td>
                 <td>${formatRupiah(tx.tagihan)}</td>
                 <td>${formatRupiah(tx.payment)}</td>
@@ -1023,6 +1019,7 @@
         setTimeout(() => { tampilkanFaktur(id); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
     }
 
+    // ================= 3. FIX LOGIKA PRATINJAU FAKTUR =================
     function tampilkanFaktur(id) {
         const targetTx = dataTransaksi.find(t => t.id === id);
         if(!targetTx) return;
@@ -1032,69 +1029,50 @@
         let tglClean = formatTampilanTanggal(trans.tanggal).replace(/\//g,'-');
         namaFileGlobal = `Faktur_${trans.pelanggan}_${tglClean}`;
         
-        const itemsDisaring = (trans.items || []).reduce((acc, current) => {
-            const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
-            if (ditemukan) {
-                let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
-                ditemukan.qty = parseFloat(totalQty.toFixed(1)); 
-                ditemukan.ekor = (parseInt(ditemukan.ekor) || 0) + (parseInt(current.ekor) || 0);
-            } else {
-                acc.push({ ...current }); 
-            }
-            return acc;
-        }, []);
+        const itemsList = pastikanArrayItems(trans.items);
+        let rows = "";
 
-        if (itemsDisaring.length === 1 && trans.totalBelanja > 0) {
-            let i = itemsDisaring[0];
-            if (i.harga > 0) {
-                if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                    i.ekor = Math.round(trans.totalBelanja / i.harga);
-                } else {
-                    i.qty = parseFloat((trans.totalBelanja / i.harga).toFixed(1));
-                    if(i.ekor > 50) {
-                        i.ekor = Math.round(i.qty / 1.9) || 1;
-                    }
-                }
-            }
-        }
-
-        let rows = itemsDisaring.map(i => {
-            let totalItem = 0;
-            let kolomQty = "";
-            let rataRataStr = "";
-            
-            if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                totalItem = Math.round(i.ekor * i.harga);
-                kolomQty = `${i.ekor} ekor`;
-            } else {
-                totalItem = Math.round(i.qty * i.harga);
-                let qtyBersih = Number(i.qty).toFixed(1);
-                kolomQty = `${qtyBersih} kg`;
+        if (itemsList.length > 0) {
+            rows = itemsList.map(i => {
+                let totalItem = 0;
+                let kolomQty = "";
                 
-                if (i.ekor > 0 && i.qty > 0) {
-                    let avg = (i.qty / i.ekor).toFixed(2);
-                    rataRataStr = `<br><small class="text-muted">ABW: ${avg} kg/ekor</small>`;
+                if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
+                    totalItem = Math.round((i.ekor || 0) * (i.harga || 0));
+                    kolomQty = `${i.ekor || 0} ekor`;
+                } else {
+                    totalItem = Math.round((i.qty || 0) * (i.harga || 0));
+                    kolomQty = `${Number(i.qty || 0).toFixed(1)} kg`;
                 }
-            }
-            
-            if(itemsDisaring.length === 1) {
-                totalItem = Math.round(trans.totalBelanja);
-            }
-            
-            return `<tr>
-                <td><b>${i.nama}</b>${i.nama !== "Ayam Merah" && i.nama !== "Ayam Penyet" && i.ekor > 0 ? '<br><small>('+i.ekor+' ekor)</small>':''}${rataRataStr}</td>
-                <td>${kolomQty}</td>
-                <td>${formatRupiah(i.harga)}</td>
-                <td>${formatRupiah(totalItem)}</td>
+                
+                if (itemsList.length === 1 && totalItem === 0 && trans.totalBelanja > 0) {
+                    totalItem = Math.round(trans.totalBelanja);
+                }
+
+                return `<tr>
+                    <td><b>${i.nama}</b>${i.ekor && i.nama !== "Ayam Merah" && i.nama !== "Ayam Penyet" ? `<br><small>(${i.ekor} ekor)</small>` : ''}</td>
+                    <td>${kolomQty}</td>
+                    <td>${formatRupiah(i.harga || 0)}</td>
+                    <td>${formatRupiah(totalItem)}</td>
+                </tr>`;
+            }).join("");
+        } else if (trans.totalBelanja > 0) {
+            rows = `<tr>
+                <td><b>Item Belanja</b></td>
+                <td>1 Paket</td>
+                <td>${formatRupiah(Math.round(trans.totalBelanja))}</td>
+                <td>${formatRupiah(Math.round(trans.totalBelanja))}</td>
             </tr>`;
-        }).join("");
+        } else {
+            rows = `<tr><td colspan="4" class="text-center text-muted py-3">Hanya Transaksi Titip Bayar Bon</td></tr>`;
+        }
 
         document.getElementById("invoice-content").innerHTML = `
             <div class="d-flex justify-content-between mb-3">
                 <div><div class="invoice-title">FAKTUR</div><div class="small">Kepada: <b>${trans.pelanggan}</b></div></div>
                 <div class="text-end small"><b>ID:</b> ${trans.id.substring(0,8)}<br><b>Tgl:</b> ${formatTampilanTanggal(trans.tanggal)}</div>
             </div>
-            <table class="table-invoice-maroon"><thead><tr><th>Barang</th><th>Qty</th><th>Harga</th><th>Total</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="text-center text-muted">Hanya Transaksi Titip Bayar Bon</td></tr>'}</tbody></table>
+            <table class="table-invoice-maroon"><thead><tr><th>Barang</th><th>Qty</th><th>Harga</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
             <div class="mt-3 text-end" style="font-size:13px;">
                 <div class="invoice-summary-row"><div class="invoice-summary-label">Subtotal</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.totalBelanja))}</div></div>
                 <div class="invoice-summary-row"><div class="invoice-summary-label">Sisa Tagihan Lalu</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.hutangAwal))}</div></div>
@@ -1133,7 +1111,6 @@
             items: JSON.parse(JSON.stringify(keranjangSementara)) 
         };
 
-        // 1. Simpan instan ke memori lokal
         if(currentId === "") {
             dataTransaksi.push(payload);
         } else {
@@ -1142,7 +1119,6 @@
             batalEditTransaksi();
         }
         
-        // 2. Reset formulir seketika
         keranjangSementara = [];
         renderKeranjang();
         
@@ -1154,11 +1130,9 @@
         document.getElementById("input-pelunasan").value = "Rp 0";
         document.getElementById("display-sisa-bon-akhir").innerText = "Rp 0";
         
-        // 3. Render ulang UI dalam hitungan milidetik
         renderDashboard();
         updateSisaTagihanOtomatis(); 
         
-        // 4. Jalankan sinkronisasi cloud di background
         pushDataKeSheets();
     });
 
@@ -1170,7 +1144,7 @@
         document.getElementById("input-pelanggan").value = tx.pelanggan;
         document.getElementById("sub-sisa-tagihan").value = formatRupiah(tx.hutangAwal);
         document.getElementById("input-pelunasan").value = formatRupiah(tx.payment);
-        keranjangSementara = JSON.parse(JSON.stringify(tx.items || []));
+        keranjangSementara = pastikanArrayItems(tx.items);
         renderKeranjang();
         hitungUlangPiutangForm();
         document.getElementById("btn-batal-edit").classList.remove("d-none");
@@ -1253,7 +1227,7 @@
 
         const transaksiLama = dataTransaksi[idx];
 
-        let itemsTerbaru = JSON.parse(JSON.stringify(transaksiLama.items || []));
+        let itemsTerbaru = pastikanArrayItems(transaksiLama.items);
         if (totalBelanja !== transaksiLama.totalBelanja && itemsTerbaru.length > 0) {
             itemsTerbaru = [{ nama: "Penyesuaian Nilai Nota (Edit)", qty: 1, ekor: 0, harga: totalBelanja }];
         }
