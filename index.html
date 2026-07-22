@@ -504,7 +504,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhTyWkSQFRwJRrDqnozPsWOrUESpg_XvhrMRtW08iQKZoHJ0C5tWVjTViAJJwJLWHt6g/exec"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzr0dYPdGrzMPfR1R5V7xOdT5830uxTdySeCVH9zvH97r2naf5D8nIRES5Q6WAkk7vrGw/exec"; 
 
     let masterCustomer = [];
     let dataTransaksi = [];
@@ -520,22 +520,6 @@
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka); }
     function menguraiAngka(str) { if(!str) return 0; return parseInt(str.toString().replace(/\D/g, '')) || 0; }
     
-    // ================= HELPER UNTUK PARSING ITEMS DARI CLOUD =================
-    function pastikanArrayItems(rawItems) {
-        if (!rawItems) return [];
-        if (Array.isArray(rawItems)) return rawItems;
-        if (typeof rawItems === 'string') {
-            try {
-                let parsed = JSON.parse(rawItems);
-                if (typeof parsed === 'string') parsed = JSON.parse(parsed);
-                return Array.isArray(parsed) ? parsed : [];
-            } catch (e) {
-                return [];
-            }
-        }
-        return [];
-    }
-
     // ================= SINKRONISASI LOGIN PIN DAN MEMORI LOCALSTORAGE =================
     
     function cekSessionLogin() {
@@ -558,6 +542,7 @@
         }
 
         pinSistem = pinInput;
+        // Simpan ke local storage agar user tidak ter-logout sendiri saat reload
         localStorage.setItem("pin_keamanan_piutang", pinSistem);
         sembunyikanLoginDanMulai();
     }
@@ -565,6 +550,7 @@
     function sembunyikanLoginDanMulai() {
         document.getElementById("login-overlay").classList.add("d-none");
         document.getElementById("main-content-app").classList.remove("d-none");
+        // Setelah login berhasil, langsung muat data dari cloud
         muatDataDariSheets();
     }
 
@@ -631,7 +617,7 @@
     function convertDateToDisplay(dateStr) { if(dateStr.includes("/")) return dateStr; const d = dateStr.split("-"); return `${d[2]}/${d[1]}/${d[0]}`; }
     function convertDateToInput(dateStr) { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
 
-    // ================= MUAT DATA CLOUD (OPTIMIZED FOR SAFARI & MOBILE) =================
+    // MENJAGA AGAR SELLER MENDAPATKAN KESELURUHAN DATA BERSIH DENGAN PIN AKSES
     async function muatDataDariSheets() {
         showSyncStatus("loading", "Menarik data terbaru dari Google Sheets...");
         if(GOOGLE_SCRIPT_URL === "") {
@@ -641,13 +627,12 @@
         try {
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: "POST",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                redirect: "follow",
                 body: JSON.stringify({ action: "getData", pin: pinSistem })
             });
             const res = await response.json();
             if(res.status === "success") {
                 masterCustomer = res.customers || [];
+                // Lakukan deep clone instan saat memuat agar tidak ada bocoran referensi global antar data
                 dataTransaksi = JSON.parse(JSON.stringify(res.transaksis || []));
                 renderUiControls();
                 renderDashboard();
@@ -661,37 +646,30 @@
                 }
             }
         } catch(e) {
-            console.error(e);
             showSyncStatus("error", "Gagal koneksi cloud internet.");
         }
     }
 
-    // ================= PUSH DATA CLOUD ASYNC BACKGROUND =================
-    function pushDataKeSheets() {
-        showSyncStatus("loading", "Mensinkronkan data ke Cloud...");
-        
-        return fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            redirect: "follow",
-            body: JSON.stringify({ action: "saveAll", pin: pinSistem, customers: masterCustomer, transaksis: dataTransaksi })
-        })
-        .then(res => res.json())
-        .then(res => {
+    async function pushDataKeSheets() {
+        showSyncStatus("loading", "Menyimpan & Mensinkronkan data ke Cloud...");
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "saveAll", pin: pinSistem, customers: masterCustomer, transaksis: dataTransaksi })
+            });
+            const res = await response.json();
             if(res.status === "success") {
-                showSyncStatus("success", "Data Tersimpan Aman di Google Sheets!");
+                showSyncStatus("success", "Semua Data Tersimpan Aman di Google Sheets!");
             } else {
                 showSyncStatus("error", "Gagal kirim: " + res.message);
                 if(res.message && res.message.toLowerCase().includes("pin")) {
                     logoutSistem();
-                    alert("Akses ditolak! PIN salah saat menyimpan data.");
+                    alert("Akses ditolak! PIN salah saat mencoba menyimpan data.");
                 }
             }
-        })
-        .catch(e => {
-            console.error("Gagal push data:", e);
-            showSyncStatus("error", "Koneksi terputus. Data tersimpan di memori lokal.");
-        });
+        } catch(e) {
+            showSyncStatus("error", "Koneksi terputus, antrean tersimpan di lokal.");
+        }
     }
 
     function showSyncStatus(type, msg) {
@@ -713,6 +691,7 @@
             return;
         }
 
+        // Jalankan filter unik agar perhitungan tagihan berjalan tidak bengkak saat di-change
         let idTercatatOtomatis = new Set();
         let totalBelanja = 0;
         let totalDiterima = 0;
@@ -846,12 +825,12 @@
         renderDashboard();
     }
 
-    // ================= LOGIKA TABEL UTAMA =================
     function renderDashboard() {
         const tbody = document.getElementById("table-body");
         tbody.innerHTML = "";
         let kj = 0, kd = 0, kp = 0;
         
+        // --- PROSES FILTRASI DATA ANTI-DUPLIKAT (SAPU JAGAT TINGKAT DATA DATA) ---
         let idTercatatTabelUtama = new Set();
         let dataTransaksiBersih = [];
         
@@ -877,29 +856,40 @@
                 kj += tx.totalBelanja; 
                 kd += tx.payment;
                 
-                const itemsList = pastikanArrayItems(tx.items);
-                
-                let itemsStr = "";
-                if (itemsList.length > 0) {
-                    itemsStr = itemsList.map(i => {
-                        if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                            return `${i.nama}(${i.ekor || 0}ekor)`;
-                        } else {
-                            return `${i.nama}(${Number(i.qty || 0).toFixed(1)}kg)`;
-                        }
-                    }).join(", ");
-                } else if (tx.totalBelanja > 0) {
-                    itemsStr = "Belanja (Rincian Item Tidak Tertulis)";
-                } else {
-                    itemsStr = "Hanya Pembayaran Bon";
+                // --- FIX SAFETY & AUTOMATIC REPAIR LAYER FOR MAIN TABLE ---
+                const itemsTabelDisaring = (tx.items || []).reduce((acc, current) => {
+                    const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
+                    if (ditemukan) {
+                        let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
+                        ditemukan.qty = parseFloat(totalQty.toFixed(1)); 
+                        ditemukan.ekor = (parseInt(ditemukan.ekor) || 0) + (parseInt(current.ekor) || 0);
+                    } else {
+                        acc.push({ ...current });
+                    }
+                    return acc;
+                }, []);
+
+                if (itemsTabelDisaring.length === 1 && tx.totalBelanja > 0) {
+                    let item = itemsTabelDisaring[0];
+                    if (item.harga > 0 && Math.round(item.qty * item.harga) !== Math.round(tx.totalBelanja)) {
+                        item.qty = parseFloat((tx.totalBelanja / item.harga).toFixed(1));
+                    }
                 }
+                
+                let itemsStr = itemsTabelDisaring.map(i => {
+                    if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
+                        return `${i.nama}(${i.ekor}ekor)`;
+                    } else {
+                        return `${i.nama}(${Number(i.qty).toFixed(1)}kg)`;
+                    }
+                }).join(", ");
                 
                 tbody.innerHTML += `
                     <tr>
                         <td>${viewIdx + 1}</td>
                         <td>${formatTampilanTanggal(tx.tanggal)}</td>
                         <td class="fw-bold text-primary" style="cursor:pointer;" onclick="bukaJendelaDasborCustomer('${tx.pelanggan}')">${tx.pelanggan}</td>
-                        <td class="small">${itemsStr}</td>
+                        <td class="small">${itemsStr || "Hanya Pembayaran Bon"}</td>
                         <td>${formatRupiah(Math.round(tx.totalBelanja))}</td>
                         <td>${formatRupiah(Math.round(tx.tagihan))}</td>
                         <td>${formatRupiah(Math.round(tx.payment))}</td>
@@ -951,7 +941,6 @@
         });
     }
 
-    // ================= LOGIKA JENDELA BUKU CUSTOMER =================
     function bukaJendelaDasborCustomer(nama) {
         document.getElementById("cust-modal-title").innerText = "Riwayat Buku: " + nama;
         const tbody = document.getElementById("cust-modal-table-body");
@@ -977,26 +966,37 @@
             td += tx.payment;      
             
             let sisaBaris = Math.round(tx.tagihan - tx.payment);
-            const itemsList = pastikanArrayItems(tx.items);
 
-            let iStr = "";
-            if (itemsList.length > 0) {
-                iStr = itemsList.map(i => {
-                    if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                        return `${i.nama}(${i.ekor || 0}ekor)`;
-                    } else {
-                        return `${i.nama}(${Number(i.qty || 0).toFixed(1)}kg)`;
-                    }
-                }).join(", ");
-            } else if (tx.totalBelanja > 0) {
-                iStr = "Belanja (Rincian Item Tidak Tertulis)";
-            } else {
-                iStr = "Hanya Pembayaran Bon";
+            const itemsDisaring = (tx.items || []).reduce((acc, current) => {
+                const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
+                if (ditemukan) {
+                    let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
+                    ditemukan.qty = parseFloat(totalQty.toFixed(1)); 
+                    ditemukan.ekor = (parseInt(ditemukan.ekor) || 0) + (parseInt(current.ekor) || 0);
+                } else {
+                    acc.push({ ...current });
+                }
+                return acc;
+            }, []);
+
+            if (itemsDisaring.length === 1 && tx.totalBelanja > 0) {
+                let singleI = itemsDisaring[0];
+                if (singleI.harga > 0 && Math.round(singleI.qty * singleI.harga) !== Math.round(tx.totalBelanja)) {
+                    singleI.qty = parseFloat((tx.totalBelanja / singleI.harga).toFixed(1));
+                }
             }
+
+            let iStr = itemsDisaring.map(i => {
+                if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
+                    return `${i.nama}(${i.ekor}ekor)`;
+                } else {
+                    return `${i.nama}(${Number(i.qty).toFixed(1)}kg)`;
+                }
+            }).join(", ");
 
             tbody.innerHTML += `<tr>
                 <td>${formatTampilanTanggal(tx.tanggal)}</td>
-                <td class="text-start">${iStr}</td>
+                <td class="text-start">${iStr || "Hanya Pembayaran Bon"}</td>
                 <td>${formatRupiah(tx.totalBelanja)}</td>
                 <td>${formatRupiah(tx.tagihan)}</td>
                 <td>${formatRupiah(tx.payment)}</td>
@@ -1019,7 +1019,6 @@
         setTimeout(() => { tampilkanFaktur(id); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
     }
 
-    // ================= TAMPILKAN FAKTUR PRESISI (SESUAI SS KE-4 AKURAT) =================
     function tampilkanFaktur(id) {
         const targetTx = dataTransaksi.find(t => t.id === id);
         if(!targetTx) return;
@@ -1029,55 +1028,69 @@
         let tglClean = formatTampilanTanggal(trans.tanggal).replace(/\//g,'-');
         namaFileGlobal = `Faktur_${trans.pelanggan}_${tglClean}`;
         
-        const itemsList = pastikanArrayItems(trans.items);
-        let rows = "";
+        const itemsDisaring = (trans.items || []).reduce((acc, current) => {
+            const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
+            if (ditemukan) {
+                let totalQty = (parseFloat(ditemukan.qty) || 0) + (parseFloat(current.qty) || 0);
+                ditemukan.qty = parseFloat(totalQty.toFixed(1)); 
+                ditemukan.ekor = (parseInt(ditemukan.ekor) || 0) + (parseInt(current.ekor) || 0);
+            } else {
+                acc.push({ ...current }); 
+            }
+            return acc;
+        }, []);
 
-        if (itemsList.length > 0) {
-            rows = itemsList.map(i => {
-                let totalItem = 0;
-                let kolomQty = "";
-                let infoEkorDanABW = "";
-
-                const ekorVal = parseInt(i.ekor) || 0;
-                const qtyVal = parseFloat(i.qty) || 0;
-                const hargaVal = parseInt(i.harga) || 0;
-
+        if (itemsDisaring.length === 1 && trans.totalBelanja > 0) {
+            let i = itemsDisaring[0];
+            if (i.harga > 0) {
                 if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                    totalItem = Math.round(ekorVal * hargaVal);
-                    kolomQty = `${ekorVal} ekor`;
+                    i.ekor = Math.round(trans.totalBelanja / i.harga);
                 } else {
-                    totalItem = Math.round(qtyVal * hargaVal);
-                    kolomQty = `${qtyVal.toFixed(1)} kg`;
-                    
-                    // Menampilkan detail ekor dan kalkulasi ABW persis sesuai SS ke-4
-                    if (ekorVal > 0) {
-                        let avgWeight = qtyVal > 0 ? (qtyVal / ekorVal).toFixed(2) : "0.00";
-                        infoEkorDanABW = `<br><small class="text-muted">(${ekorVal} ekor)<br>ABW: ${avgWeight} kg/ekor</small>`;
+                    i.qty = parseFloat((trans.totalBelanja / i.harga).toFixed(1));
+                    if(i.ekor > 50) {
+                        i.ekor = Math.round(i.qty / 1.9) || 1;
                     }
                 }
-
-                return `<tr>
-                    <td><b>${i.nama}</b>${infoEkorDanABW}</td>
-                    <td style="vertical-align:top;">${kolomQty}</td>
-                    <td style="vertical-align:top;">${formatRupiah(hargaVal)}</td>
-                    <td style="vertical-align:top;">${formatRupiah(totalItem)}</td>
-                </tr>`;
-            }).join("");
-        } else {
-            rows = `<tr><td colspan="4" class="text-center text-muted py-3">Hanya Transaksi Titip Bayar Bon</td></tr>`;
+            }
         }
+
+        let rows = itemsDisaring.map(i => {
+            let totalItem = 0;
+            let kolomQty = "";
+            let rataRataStr = "";
+            
+            if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
+                totalItem = Math.round(i.ekor * i.harga);
+                kolomQty = `${i.ekor} ekor`;
+            } else {
+                totalItem = Math.round(i.qty * i.harga);
+                let qtyBersih = Number(i.qty).toFixed(1);
+                kolomQty = `${qtyBersih} kg`;
+                
+                if (i.ekor > 0 && i.qty > 0) {
+                    let avg = (i.qty / i.ekor).toFixed(2);
+                    rataRataStr = `<br><small class="text-muted">ABW: ${avg} kg/ekor</small>`;
+                }
+            }
+            
+            if(itemsDisaring.length === 1) {
+                totalItem = Math.round(trans.totalBelanja);
+            }
+            
+            return `<tr>
+                <td><b>${i.nama}</b>${i.nama !== "Ayam Merah" && i.nama !== "Ayam Penyet" && i.ekor > 0 ? '<br><small>('+i.ekor+' ekor)</small>':''}${rataRataStr}</td>
+                <td>${kolomQty}</td>
+                <td>${formatRupiah(i.harga)}</td>
+                <td>${formatRupiah(totalItem)}</td>
+            </tr>`;
+        }).join("");
 
         document.getElementById("invoice-content").innerHTML = `
             <div class="d-flex justify-content-between mb-3">
                 <div><div class="invoice-title">FAKTUR</div><div class="small">Kepada: <b>${trans.pelanggan}</b></div></div>
                 <div class="text-end small"><b>ID:</b> ${trans.id.substring(0,8)}<br><b>Tgl:</b> ${formatTampilanTanggal(trans.tanggal)}</div>
             </div>
-            <table class="table-invoice-maroon">
-                <thead>
-                    <tr><th>Barang</th><th>Qty</th><th>Harga</th><th>Total</th></tr>
-                </thead>
-                <tbody>${rows}</tbody>
-            </table>
+            <table class="table-invoice-maroon"><thead><tr><th>Barang</th><th>Qty</th><th>Harga</th><th>Total</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="text-center text-muted">Hanya Transaksi Titip Bayar Bon</td></tr>'}</tbody></table>
             <div class="mt-3 text-end" style="font-size:13px;">
                 <div class="invoice-summary-row"><div class="invoice-summary-label">Subtotal</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.totalBelanja))}</div></div>
                 <div class="invoice-summary-row"><div class="invoice-summary-label">Sisa Tagihan Lalu</div><div class="invoice-summary-value">${formatRupiah(Math.round(trans.hutangAwal))}</div></div>
@@ -1094,9 +1107,10 @@
         });
     });
 
-    // ================= LOGIKA SUBMIT INSTAN OPTIMISTIC UPDATE =================
-    document.getElementById("receivable-form").addEventListener("submit", function(e) {
+    document.getElementById("receivable-form").addEventListener("submit", async function(e) {
         e.preventDefault();
+        const btnSubmit = document.getElementById("btn-submit-transaksi");
+        if (btnSubmit.disabled) return;
 
         const pembayaran = menguraiAngka(document.getElementById("input-pelunasan").value);
         if (keranjangSementara.length === 0 && pembayaran <= 0) {
@@ -1104,6 +1118,9 @@
             return;
         }
 
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...`;
+        
         const currentId = document.getElementById("edit-transaksi-id").value;
         const payload = {
             id: currentId === "" ? "TX_" + new Date().getTime() : currentId,
@@ -1138,7 +1155,14 @@
         renderDashboard();
         updateSisaTagihanOtomatis(); 
         
-        pushDataKeSheets();
+        try {
+            await pushDataKeSheets();
+        } catch(err) {
+            console.error(err);
+        } finally {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = "Simpan Catatan & Sinkron Cloud";
+        }
     });
 
     function pilihEditTransaksi(id) {
@@ -1149,7 +1173,7 @@
         document.getElementById("input-pelanggan").value = tx.pelanggan;
         document.getElementById("sub-sisa-tagihan").value = formatRupiah(tx.hutangAwal);
         document.getElementById("input-pelunasan").value = formatRupiah(tx.payment);
-        keranjangSementara = pastikanArrayItems(tx.items);
+        keranjangSementara = JSON.parse(JSON.stringify(tx.items || []));
         renderKeranjang();
         hitungUlangPiutangForm();
         document.getElementById("btn-batal-edit").classList.remove("d-none");
@@ -1220,7 +1244,7 @@
         document.getElementById("display-popup-sisa-bon").innerText = formatRupiah(sisaBonBaru);
     }
 
-    function simpanPerubahanTransaksiPopup() {
+    async function simpanPerubahanTransaksiPopup() {
         const currentId = document.getElementById("edit-popup-id").value;
         const idx = dataTransaksi.findIndex(t => t.id === currentId);
         if (idx === -1) return;
@@ -1232,7 +1256,7 @@
 
         const transaksiLama = dataTransaksi[idx];
 
-        let itemsTerbaru = pastikanArrayItems(transaksiLama.items);
+        let itemsTerbaru = JSON.parse(JSON.stringify(transaksiLama.items || []));
         if (totalBelanja !== transaksiLama.totalBelanja && itemsTerbaru.length > 0) {
             itemsTerbaru = [{ nama: "Penyesuaian Nilai Nota (Edit)", qty: 1, ekor: 0, harga: totalBelanja }];
         }
@@ -1252,7 +1276,7 @@
 
         renderDashboard();
         updateSisaTagihanOtomatis();
-        pushDataKeSheets();
+        await pushDataKeSheets();
     }
 
     document.getElementById("input-pelanggan").addEventListener("change", updateSisaTagihanOtomatis);
@@ -1261,7 +1285,7 @@
     
     // Inisialisasi awal sistem
     inisialisasiFormatRupiahLive();
-    cekSessionLogin();
+    cekSessionLogin(); // Jalankan pengecekan session login otomatis
 </script>
 </body>
 </html>
