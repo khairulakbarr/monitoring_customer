@@ -830,7 +830,7 @@
         tbody.innerHTML = "";
         let kj = 0, kd = 0, kp = 0;
         
-        // --- PROSES FILTRASI DATA ANTI-DUPLIKAT (SAPU JAGAT TINGKAT DATA DATA) ---
+        // --- PROSES FILTRASI DATA ANTI-DUPLIKAT ---
         let idTercatatTabelUtama = new Set();
         let dataTransaksiBersih = [];
         
@@ -846,9 +846,12 @@
         });
         
         let transaksiMapped = JSON.parse(JSON.stringify(dataTransaksiBersih));
-        transaksiMapped.sort((a, b) => parseTanggal(a.tanggal) - parseTanggal(b.tanggal));
+        
+        // UPDATED: Sort tanggal dari TERBARU ke TERLAMA (Descending)
+        transaksiMapped.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
 
-        transaksiMapped.forEach((tx, viewIdx) => {
+        let currentNo = 1;
+        transaksiMapped.forEach((tx) => {
             const meta = masterCustomer.find(c => c.nama === tx.pelanggan) || {kategori: "Customer Umum"};
             const sisa = Math.round(tx.tagihan - tx.payment);
             
@@ -886,7 +889,7 @@
                 
                 tbody.innerHTML += `
                     <tr>
-                        <td>${viewIdx + 1}</td>
+                        <td>${currentNo++}</td>
                         <td>${formatTampilanTanggal(tx.tanggal)}</td>
                         <td class="fw-bold text-primary" style="cursor:pointer;" onclick="bukaJendelaDasborCustomer('${tx.pelanggan}')">${tx.pelanggan}</td>
                         <td class="small">${itemsStr || "Hanya Pembayaran Bon"}</td>
@@ -929,6 +932,8 @@
             let tglFormatted = formatTampilanTanggal(t.tanggal);
             pts[tglFormatted] = (pts[tglFormatted] || 0) + (t.tagihan - t.payment); 
         });
+        
+        // UPDATED: Chart diurutkan secara kronologis (Terlama ke Terbaru) agar alur grafik berjalan alami
         const labels = Object.keys(pts).sort((a,b) => parseTanggal(a) - parseTanggal(b));
         const vals = labels.map(l => pts[l]);
 
@@ -959,6 +964,7 @@
             }
         });
         
+        // UPDATED: Sort riwayat customer dari TERBARU ke TERLAMA (Descending)
         txCustomer.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
 
         txCustomer.forEach(tx => {
