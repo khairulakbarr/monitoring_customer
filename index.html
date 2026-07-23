@@ -614,8 +614,22 @@
         return stringTanggal;
     }
 
-    function convertDateToDisplay(dateStr) { if(dateStr.includes("/")) return dateStr; const d = dateStr.split("-"); return `${d[2]}/${d[1]}/${d[0]}`; }
-    function convertDateToInput(dateStr) { if(dateStr.includes("-")) return dateStr; const d = dateStr.split("/"); return `${d[2]}-${d[1]}-${d[0]}`; }
+    // MEMASIKAN FORMAT CONVERT TANGGAL BERSIH DD/MM/YYYY
+    function convertDateToDisplay(dateStr) { 
+        if(!dateStr) return "";
+        if(dateStr.includes("/")) return dateStr; 
+        const d = dateStr.split("-"); 
+        if(d.length === 3) return `${d[2]}/${d[1]}/${d[0]}`;
+        return dateStr;
+    }
+
+    function convertDateToInput(dateStr) { 
+        if(!dateStr) return "";
+        if(dateStr.includes("-")) return dateStr; 
+        const d = dateStr.split("/"); 
+        if(d.length === 3) return `${d[2]}-${d[1]}-${d[0]}`;
+        return dateStr;
+    }
 
     // MENJAGA AGAR SELLER MENDAPATKAN KESELURUHAN DATA BERSIH DENGAN PIN AKSES
     async function muatDataDariSheets() {
@@ -1250,6 +1264,7 @@
         document.getElementById("display-popup-sisa-bon").innerText = formatRupiah(sisaBonBaru);
     }
 
+    // FUNGSI SIMPAN MODAL POPUP EDIT YANG SUDAH DIOPTIMASI & DIPERBAIKI
     async function simpanPerubahanTransaksiPopup() {
         const currentId = document.getElementById("edit-popup-id").value;
         const idx = dataTransaksi.findIndex(t => t.id === currentId);
@@ -1263,8 +1278,20 @@
         const transaksiLama = dataTransaksi[idx];
 
         let itemsTerbaru = JSON.parse(JSON.stringify(transaksiLama.items || []));
-        if (totalBelanja !== transaksiLama.totalBelanja && itemsTerbaru.length > 0) {
-            itemsTerbaru = [{ nama: "Penyesuaian Nilai Nota (Edit)", qty: 1, ekor: 0, harga: totalBelanja }];
+        
+        // Jika nilai total belanja diubah manual dari pop-up, sesuaikan rincian item secara proporsional
+        if (totalBelanja !== transaksiLama.totalBelanja) {
+            if (itemsTerbaru.length === 1) {
+                if (itemsTerbaru[0].qty > 0) {
+                    itemsTerbaru[0].harga = Math.round(totalBelanja / itemsTerbaru[0].qty);
+                } else if (itemsTerbaru[0].ekor > 0) {
+                    itemsTerbaru[0].harga = Math.round(totalBelanja / itemsTerbaru[0].ekor);
+                } else {
+                    itemsTerbaru[0].harga = totalBelanja;
+                }
+            } else if (itemsTerbaru.length > 1) {
+                itemsTerbaru = [{ nama: "Penyesuaian Nilai Nota (Edit)", qty: 1, ekor: 0, harga: totalBelanja }];
+            }
         }
 
         dataTransaksi[idx] = {
