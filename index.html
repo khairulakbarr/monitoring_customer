@@ -147,20 +147,44 @@
         }
         .invoice-footer-info { margin-top: 35px; border-top: 1px dashed #dddddd; padding-top: 15px; font-size: 11px; color: #666; }
 
-        @media (max-width: 576px) {
-            .invoice-box-premium { padding: 15px !important; }
-            .table-invoice-maroon thead { display: none !important; }
-            .table-invoice-maroon tr { display: block; border-bottom: 2px solid var(--maroon-theme); padding: 10px 0; position: relative; }
-            .table-invoice-maroon td { display: block; width: 100% !important; text-align: left !important; padding: 3px 0 !important; border: none !important; }
-            .table-invoice-maroon td:nth-child(2)::before { content: "Jumlah: "; color: #777; font-weight: 600; }
-            .table-invoice-maroon td:nth-child(3)::before { content: "Harga: "; color: #777; font-weight: 600; }
-            .table-invoice-maroon td:last-child { text-align: right !important; font-weight: 700; color: var(--maroon-theme); margin-top: -24px; font-size: 14px; }
-            .invoice-summary-label { width: 55% !important; }
-            .invoice-summary-value { width: 45% !important; }
-            .invoice-total-badge { display: flex; justify-content: flex-end; }
-            .invoice-total-container { width: 100% !important; }
-        }
-
+       /* ================= SAMAKAN TAMPILAN FAKTUR HP/SAFARI DENGAN DESKTOP ================= */
+@media (max-width: 576px) {
+    /* Tampilkan kembali header tabel di HP/Safari */
+    .table-invoice-maroon thead { 
+        display: table-header-group !important; 
+    }
+    .table-invoice-maroon tr { 
+        display: table-row !important; 
+        border-bottom: none !important;
+    }
+    .table-invoice-maroon td { 
+        display: table-cell !important; 
+        width: auto !important; 
+        padding: 8px 6px !important;
+        border-bottom: 1px solid var(--maroon-theme) !important;
+        font-size: 11px !important;
+    }
+    /* Hapus teks buatan 'Jumlah:' dan 'Harga:' */
+    .table-invoice-maroon td:nth-child(2)::before,
+    .table-invoice-maroon td:nth-child(3)::before { 
+        content: none !important; 
+    }
+    .table-invoice-maroon td:last-child { 
+        text-align: right !important; 
+        margin-top: 0 !important; 
+        font-size: 11px !important;
+        color: inherit !important;
+    }
+    
+    #invoice-download-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .invoice-box-premium { 
+        padding: 15px !important; 
+        min-width: 320px;
+    }
+}
         /* TAMPILAN PEMBATAS LOGIN (LOCKSCREEN) */
         #login-overlay {
             position: fixed;
