@@ -420,6 +420,10 @@
                     <input type="text" class="form-control rounded-3 fw-semibold input-rupiah-direct" id="edit-popup-belanja">
                 </div>
                 <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">Jumlah Ekor (Kosongkan jika tidak ada)</label>
+                    <input type="number" class="form-control rounded-3 fw-semibold" id="edit-popup-ekor" placeholder="Contoh: 75">
+                </div>
+                <div class="mb-3">
                     <label class="form-label fw-bold small text-muted">Total Tagihan Baru</label>
                     <input type="text" class="form-control rounded-3 fw-bold bg-light" id="edit-popup-tagihan-total" readonly>
                 </div>
@@ -542,7 +546,6 @@
         }
 
         pinSistem = pinInput;
-        // Simpan ke local storage agar user tidak ter-logout sendiri saat reload
         localStorage.setItem("pin_keamanan_piutang", pinSistem);
         sembunyikanLoginDanMulai();
     }
@@ -550,7 +553,6 @@
     function sembunyikanLoginDanMulai() {
         document.getElementById("login-overlay").classList.add("d-none");
         document.getElementById("main-content-app").classList.remove("d-none");
-        // Setelah login berhasil, langsung muat data dari cloud
         muatDataDariSheets();
     }
 
@@ -614,7 +616,6 @@
         return stringTanggal;
     }
 
-    // MEMASIKAN FORMAT CONVERT TANGGAL BERSIH DD/MM/YYYY
     function convertDateToDisplay(dateStr) { 
         if(!dateStr) return "";
         if(dateStr.includes("/")) return dateStr; 
@@ -631,7 +632,6 @@
         return dateStr;
     }
 
-    // MENJAGA AGAR SELLER MENDAPATKAN KESELURUHAN DATA BERSIH DENGAN PIN AKSES
     async function muatDataDariSheets() {
         showSyncStatus("loading", "Menarik data terbaru dari Google Sheets...");
         if(GOOGLE_SCRIPT_URL === "") {
@@ -646,7 +646,6 @@
             const res = await response.json();
             if(res.status === "success") {
                 masterCustomer = res.customers || [];
-                // Lakukan deep clone instan saat memuat agar tidak ada bocoran referensi global antar data
                 dataTransaksi = JSON.parse(JSON.stringify(res.transaksis || []));
                 renderUiControls();
                 renderDashboard();
@@ -705,7 +704,6 @@
             return;
         }
 
-        // Jalankan filter unik agar perhitungan tagihan berjalan tidak bengkak saat di-change
         let idTercatatOtomatis = new Set();
         let totalBelanja = 0;
         let totalDiterima = 0;
@@ -844,7 +842,6 @@
         tbody.innerHTML = "";
         let kj = 0, kd = 0, kp = 0;
         
-        // --- PROSES FILTRASI DATA ANTI-DUPLIKAT ---
         let idTercatatTabelUtama = new Set();
         let dataTransaksiBersih = [];
         
@@ -860,8 +857,6 @@
         });
         
         let transaksiMapped = JSON.parse(JSON.stringify(dataTransaksiBersih));
-        
-        // UPDATED: Sort tanggal dari TERBARU ke TERLAMA (Descending)
         transaksiMapped.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
 
         let currentNo = 1;
@@ -873,7 +868,6 @@
                 kj += tx.totalBelanja; 
                 kd += tx.payment;
                 
-                // --- FIX SAFETY & AUTOMATIC REPAIR LAYER FOR MAIN TABLE ---
                 const itemsTabelDisaring = (tx.items || []).reduce((acc, current) => {
                     const ditemukan = acc.find(item => item.nama === current.nama && item.harga === current.harga);
                     if (ditemukan) {
@@ -885,13 +879,6 @@
                     }
                     return acc;
                 }, []);
-
-                if (itemsTabelDisaring.length === 1 && tx.totalBelanja > 0) {
-                    let item = itemsTabelDisaring[0];
-                    if (item.harga > 0 && Math.round(item.qty * item.harga) !== Math.round(tx.totalBelanja)) {
-                        item.qty = parseFloat((tx.totalBelanja / item.harga).toFixed(1));
-                    }
-                }
                 
                 let itemsStr = itemsTabelDisaring.map(i => {
                     if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
@@ -947,7 +934,6 @@
             pts[tglFormatted] = (pts[tglFormatted] || 0) + (t.tagihan - t.payment); 
         });
         
-        // UPDATED: Chart diurutkan secara kronologis (Terlama ke Terbaru) agar alur grafik berjalan alami
         const labels = Object.keys(pts).sort((a,b) => parseTanggal(a) - parseTanggal(b));
         const vals = labels.map(l => pts[l]);
 
@@ -978,7 +964,6 @@
             }
         });
         
-        // UPDATED: Sort riwayat customer dari TERBARU ke TERLAMA (Descending)
         txCustomer.sort((a, b) => parseTanggal(b.tanggal) - parseTanggal(a.tanggal));
 
         txCustomer.forEach(tx => {
@@ -998,13 +983,6 @@
                 }
                 return acc;
             }, []);
-
-            if (itemsDisaring.length === 1 && tx.totalBelanja > 0) {
-                let singleI = itemsDisaring[0];
-                if (singleI.harga > 0 && Math.round(singleI.qty * singleI.harga) !== Math.round(tx.totalBelanja)) {
-                    singleI.qty = parseFloat((tx.totalBelanja / singleI.harga).toFixed(1));
-                }
-            }
 
             let iStr = itemsDisaring.map(i => {
                 if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
@@ -1039,6 +1017,7 @@
         setTimeout(() => { tampilkanFaktur(id); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
     }
 
+    // ================= FUNGSI TAMPILKAN FAKTUR (FIX MURNI DATA ASLI SPREADSHEET) =================
     function tampilkanFaktur(id) {
         const targetTx = dataTransaksi.find(t => t.id === id);
         if(!targetTx) return;
@@ -1060,45 +1039,39 @@
             return acc;
         }, []);
 
-        if (itemsDisaring.length === 1 && trans.totalBelanja > 0) {
-            let i = itemsDisaring[0];
-            if (i.harga > 0) {
-                if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                    i.ekor = Math.round(trans.totalBelanja / i.harga);
-                } else {
-                    i.qty = parseFloat((trans.totalBelanja / i.harga).toFixed(1));
-                    if(i.ekor > 50) {
-                        i.ekor = Math.round(i.qty / 1.9) || 1;
-                    }
-                }
-            }
-        }
-
         let rows = itemsDisaring.map(i => {
             let totalItem = 0;
             let kolomQty = "";
+            let teksEkor = "";
             let rataRataStr = "";
             
+            const ekorInput = parseInt(i.ekor) || 0;
+            const qtyInput = parseFloat(i.qty) || 0;
+
             if (i.nama === "Ayam Merah" || i.nama === "Ayam Penyet") {
-                totalItem = Math.round(i.ekor * i.harga);
-                kolomQty = `${i.ekor} ekor`;
+                totalItem = Math.round(ekorInput * i.harga);
+                kolomQty = `${ekorInput} ekor`;
             } else {
-                totalItem = Math.round(i.qty * i.harga);
-                let qtyBersih = Number(i.qty).toFixed(1);
+                totalItem = Math.round(qtyInput * i.harga);
+                let qtyBersih = Number(qtyInput).toFixed(1);
                 kolomQty = `${qtyBersih} kg`;
                 
-                if (i.ekor > 0 && i.qty > 0) {
-                    let avg = (i.qty / i.ekor).toFixed(2);
-                    rataRataStr = `<br><small class="text-muted">ABW: ${avg} kg/ekor</small>`;
+                // MURNI MENGGUNAKAN DATA EKOR SPREADSHEET / INPUTAN FORM (TIDAK DITEMBAK RUMUS AUTOMATIS 1.9)
+                if (ekorInput > 0) {
+                    teksEkor = `<br><small>(${ekorInput} ekor)</small>`;
+                    if (qtyInput > 0) {
+                        let avg = (qtyInput / ekorInput).toFixed(2);
+                        rataRataStr = `<br><small class="text-muted">ABW: ${avg} kg/ekor</small>`;
+                    }
                 }
             }
             
-            if(itemsDisaring.length === 1) {
+            if(itemsDisaring.length === 1 && trans.totalBelanja > 0) {
                 totalItem = Math.round(trans.totalBelanja);
             }
             
             return `<tr>
-                <td><b>${i.nama}</b>${i.nama !== "Ayam Merah" && i.nama !== "Ayam Penyet" && i.ekor > 0 ? '<br><small>('+i.ekor+' ekor)</small>':''}${rataRataStr}</td>
+                <td><b>${i.nama}</b>${teksEkor}${rataRataStr}</td>
                 <td>${kolomQty}</td>
                 <td>${formatRupiah(i.harga)}</td>
                 <td>${formatRupiah(totalItem)}</td>
@@ -1249,6 +1222,10 @@
         document.getElementById("edit-popup-belanja").value = formatRupiah(tx.totalBelanja);
         document.getElementById("edit-popup-tagihan-total").value = formatRupiah(tx.tagihan);
         document.getElementById("edit-popup-bayar").value = formatRupiah(tx.payment);
+        
+        const ekorAsli = (tx.items && tx.items.length > 0) ? (tx.items[0].ekor || 0) : 0;
+        document.getElementById("edit-popup-ekor").value = ekorAsli > 0 ? ekorAsli : "";
+
         hitungTotalTagihanPopup();
         const modalEdit = new bootstrap.Modal(document.getElementById('modalEditTransaksi'));
         modalEdit.show();
@@ -1264,7 +1241,6 @@
         document.getElementById("display-popup-sisa-bon").innerText = formatRupiah(sisaBonBaru);
     }
 
-    // FUNGSI SIMPAN MODAL POPUP EDIT YANG SUDAH DIOPTIMASI & DIPERBAIKI
     async function simpanPerubahanTransaksiPopup() {
         const currentId = document.getElementById("edit-popup-id").value;
         const idx = dataTransaksi.findIndex(t => t.id === currentId);
@@ -1274,23 +1250,19 @@
         const totalBelanja = menguraiAngka(document.getElementById("edit-popup-belanja").value);
         const tagihan = menguraiAngka(document.getElementById("edit-popup-tagihan-total").value);
         const payment = menguraiAngka(document.getElementById("edit-popup-bayar").value);
+        const ekorInput = parseInt(document.getElementById("edit-popup-ekor").value) || 0;
 
         const transaksiLama = dataTransaksi[idx];
-
         let itemsTerbaru = JSON.parse(JSON.stringify(transaksiLama.items || []));
-        
-        // Jika nilai total belanja diubah manual dari pop-up, sesuaikan rincian item secara proporsional
-        if (totalBelanja !== transaksiLama.totalBelanja) {
-            if (itemsTerbaru.length === 1) {
+
+        if (itemsTerbaru.length > 0) {
+            itemsTerbaru[0].ekor = ekorInput;
+            if (totalBelanja !== transaksiLama.totalBelanja) {
                 if (itemsTerbaru[0].qty > 0) {
                     itemsTerbaru[0].harga = Math.round(totalBelanja / itemsTerbaru[0].qty);
-                } else if (itemsTerbaru[0].ekor > 0) {
-                    itemsTerbaru[0].harga = Math.round(totalBelanja / itemsTerbaru[0].ekor);
                 } else {
                     itemsTerbaru[0].harga = totalBelanja;
                 }
-            } else if (itemsTerbaru.length > 1) {
-                itemsTerbaru = [{ nama: "Penyesuaian Nilai Nota (Edit)", qty: 1, ekor: 0, harga: totalBelanja }];
             }
         }
 
@@ -1316,9 +1288,8 @@
     document.getElementById("input-tanggal").value = new Date().toISOString().substring(0, 10);
     document.getElementById("current-date").innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
-    // Inisialisasi awal sistem
     inisialisasiFormatRupiahLive();
-    cekSessionLogin(); // Jalankan pengecekan session login otomatis
+    cekSessionLogin();
 </script>
 </body>
 </html>
