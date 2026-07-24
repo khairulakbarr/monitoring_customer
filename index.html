@@ -147,9 +147,8 @@
         }
         .invoice-footer-info { margin-top: 35px; border-top: 1px dashed #dddddd; padding-top: 15px; font-size: 11px; color: #666; }
 
-       /* ================= SAMAKAN TAMPILAN FAKTUR HP/SAFARI DENGAN DESKTOP ================= */
+/* ================= SAMAKAN TAMPILAN FAKTUR HP/SAFARI DENGAN DESKTOP ================= */
 @media (max-width: 576px) {
-    /* Tampilkan kembali header tabel di HP/Safari */
     .table-invoice-maroon thead { 
         display: table-header-group !important; 
     }
@@ -164,7 +163,6 @@
         border-bottom: 1px solid var(--maroon-theme) !important;
         font-size: 11px !important;
     }
-    /* Hapus teks buatan 'Jumlah:' dan 'Harga:' */
     .table-invoice-maroon td:nth-child(2)::before,
     .table-invoice-maroon td:nth-child(3)::before { 
         content: none !important; 
@@ -185,7 +183,6 @@
         min-width: 320px;
     }
 }
-        /* TAMPILAN PEMBATAS LOGIN (LOCKSCREEN) */
         #login-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -687,6 +684,30 @@
         }
     }
 
+    // Fungsi Kirim Data Cepat (Simpan 1 transaksi)
+    async function simpanKeSheetsFast(transaksiBaru) {
+        showSyncStatus("loading", "Menyimpan transaksi cepat ke Cloud...");
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "saveSingle",
+                    pin: pinSistem,
+                    transaksi: transaksiBaru
+                })
+            });
+            const res = await response.json();
+            if(res.status === "success") {
+                showSyncStatus("success", "Transaksi Berhasil Tersimpan Cepat!");
+            } else {
+                showSyncStatus("error", "Gagal simpan cepat: " + res.message);
+            }
+        } catch(err) {
+            console.error("Gagal simpan ke sheets:", err);
+            showSyncStatus("error", "Koneksi terputus saat simpan cepat.");
+        }
+    }
+
     async function pushDataKeSheets() {
         showSyncStatus("loading", "Menyimpan & Mensinkronkan data ke Cloud...");
         try {
@@ -1041,7 +1062,6 @@
         setTimeout(() => { tampilkanFaktur(id); new bootstrap.Modal(document.getElementById('invoiceModal')).show(); }, 400);
     }
 
-    // ================= FUNGSI TAMPILKAN FAKTUR (FIX MURNI DATA ASLI SPREADSHEET) =================
     function tampilkanFaktur(id) {
         const targetTx = dataTransaksi.find(t => t.id === id);
         if(!targetTx) return;
@@ -1080,7 +1100,6 @@
                 let qtyBersih = Number(qtyInput).toFixed(1);
                 kolomQty = `${qtyBersih} kg`;
                 
-                // MURNI MENGGUNAKAN DATA EKOR SPREADSHEET / INPUTAN FORM (TIDAK DITEMBAK RUMUS AUTOMATIS 1.9)
                 if (ekorInput > 0) {
                     teksEkor = `<br><small>(${ekorInput} ekor)</small>`;
                     if (qtyInput > 0) {
@@ -1173,7 +1192,8 @@
         updateSisaTagihanOtomatis(); 
         
         try {
-            await pushDataKeSheets();
+            // Menggunakan fungsi simpan cepat (saveSingle)
+            await simpanKeSheetsFast(payload);
         } catch(err) {
             console.error(err);
         } finally {
@@ -1290,7 +1310,7 @@
             }
         }
 
-        dataTransaksi[idx] = {
+        const transaksiUpdated = {
             ...transaksiLama, 
             hutangAwal: hutangAwal,
             totalBelanja: totalBelanja,
@@ -1299,13 +1319,16 @@
             items: itemsTerbaru
         };
 
+        dataTransaksi[idx] = transaksiUpdated;
+
         const modalEl = document.getElementById('modalEditTransaksi');
         const modalInstance = bootstrap.Modal.getInstance(modalEl);
         if (modalInstance) modalInstance.hide();
 
         renderDashboard();
         updateSisaTagihanOtomatis();
-        await pushDataKeSheets();
+        // Menggunakan fungsi simpan cepat saat perbarui transaksi
+        await simpanKeSheetsFast(transaksiUpdated);
     }
 
     document.getElementById("input-pelanggan").addEventListener("change", updateSisaTagihanOtomatis);
